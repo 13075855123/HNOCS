@@ -1,9 +1,9 @@
                                                                 
 version 3
-run General-0-20260419-20:29:37-35472
+run General-0-20260419-21:25:46-35384
 attr configname General
-attr datetime 20260419-20:29:37
-attr datetimef 20260419-202937
+attr datetime 20260419-21:25:46
+attr datetimef 20260419-212546
 attr experiment General
 attr inifile omnetpp.ini
 attr iterationvars ""
@@ -11,7 +11,7 @@ attr iterationvarsd ""
 attr iterationvarsf ""
 attr measurement ""
 attr network hnocs.topologies.Mesh
-attr processid 35472
+attr processid 35384
 attr repetition 0
 attr replication #0
 attr resultdir results
@@ -29,7 +29,7 @@ config **.inPortType "\"hnocs.routers.hier.inPort.InPortSync\""
 config **.OPCalcType "\"hnocs.routers.hier.opCalc.static.XYOPCalc\""
 config **.VCCalcType "\"hnocs.routers.hier.vcCalc.free.FLUVCCalc\""
 config **.schedType "\"hnocs.routers.hier.sched.wormhole.SchedSync\""
-config sim-time-limit 2ms
+config sim-time-limit 1us
 config **.numVCs 2
 config **.flitSize 4B
 config **.rows 4
