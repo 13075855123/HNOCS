@@ -1,0 +1,153 @@
+file 7931 1776530293                                            
+version 3
+run General-0-20260418-15:45:40-20088
+attr configname General
+attr datetime 20260418-15:45:40
+attr datetimef 20260418-154540
+attr experiment General
+attr inifile omnetpp.ini
+attr iterationvars $D=3
+attr iterationvarsd D=3
+attr iterationvarsf D=3-
+attr measurement $D=3
+attr network hnocs.topologies.Mesh
+attr processid 20088
+attr repetition 0
+attr replication #0
+attr resultdir results
+attr runnumber 0
+attr seedset 0
+itervar D 3
+config record-eventlog false
+config **.vector-recording false
+config network hnocs.topologies.Mesh
+config repeat 10
+config **.routerType "\"hnocs.routers.hier.Router\""
+config **.coreType "\"hnocs.cores.NI\""
+config **.sourceType "\"hnocs.cores.sources.PktFifoSrc\""
+config **.sinkType "\"hnocs.cores.sinks.InfiniteBWMultiVCSink\""
+config **.portType "\"hnocs.routers.hier.Port\""
+config **.inPortType "\"hnocs.routers.hier.inPort.InPortSync\""
+config **.OPCalcType "\"hnocs.routers.hier.opCalc.static.XYOPCalc\""
+config **.VCCalcType "\"hnocs.routers.hier.vcCalc.free.FLUVCCalc\""
+config **.schedType "\"hnocs.routers.hier.sched.wormhole.SchedSync\""
+config sim-time-limit 1ms
+config **.numVCs 2
+config **.flitSize 4B
+config **.rows 4
+config **.columns 4
+config **.statStartTime 1us
+config **.source.pktVC 0
+config **.source.msgLen 2
+config **.source.pktLen 8
+config **.source.isSynchronous false
+config **.source.isTrace false
+config **.source.fileName "\"\""
+config **.source.flitArrivalDelay exponential(3ns)
+config **.source.maxQueuedPkts 256
+config **.source.dstId "(parent.id + intuniform(1, 15)) % 16"
+config **.inPort.collectPerHopWait false
+config **.inPort.flitsPerVC 5
+config **.sched.arbitration_type 0
+config **.sched.freeRunningClk false
+config **.heterogeneous false
+config **.givenTclk false
+config **.tClk 2ns
+
+vector 0 Mesh.core[0].source dstId ETV
+vector 1 Mesh.core[1].source dstId ETV
+vector 2 Mesh.core[2].source dstId ETV
+vector 3 Mesh.core[3].source dstId ETV
+vector 4 Mesh.core[4].source dstId ETV
+vector 5 Mesh.core[5].source dstId ETV
+vector 6 Mesh.core[6].source dstId ETV
+vector 7 Mesh.core[7].source dstId ETV
+vector 8 Mesh.core[8].source dstId ETV
+vector 9 Mesh.core[9].source dstId ETV
+vector 10 Mesh.core[10].source dstId ETV
+vector 11 Mesh.core[11].source dstId ETV
+vector 12 Mesh.core[12].source dstId ETV
+vector 13 Mesh.core[13].source dstId ETV
+vector 14 Mesh.core[14].source dstId ETV
+vector 15 Mesh.core[15].source dstId ETV
+vector 16 Mesh.router[6].port[2].inPort Inport_total_Queue_Length ETV
+vector 17 Mesh.router[8].port[0].inPort Inport_total_Queue_Length ETV
+vector 18 Mesh.router[7].port[0].inPort Inport_total_Queue_Length ETV
+vector 19 Mesh.core[14].sink end-to-end-latency-ns ETV
+vector 20 Mesh.core[1].sink end-to-end-latency-ns ETV
+vector 21 Mesh.router[14].port[1].inPort Inport_total_Queue_Length ETV
+vector 22 Mesh.router[4].port[0].inPort Inport_total_Queue_Length ETV
+vector 23 Mesh.router[13].port[1].inPort Inport_total_Queue_Length ETV
+vector 24 Mesh.router[0].port[3].inPort Inport_total_Queue_Length ETV
+vector 25 Mesh.core[13].sink end-to-end-latency-ns ETV
+vector 26 Mesh.core[5].sink end-to-end-latency-ns ETV
+vector 27 Mesh.router[5].port[0].inPort Inport_total_Queue_Length ETV
+vector 28 Mesh.core[4].sink end-to-end-latency-ns ETV
+vector 29 Mesh.router[3].port[1].inPort Inport_total_Queue_Length ETV
+vector 30 Mesh.core[3].sink end-to-end-latency-ns ETV
+vector 31 Mesh.router[5].port[2].inPort Inport_total_Queue_Length ETV
+vector 32 Mesh.router[10].port[2].inPort Inport_total_Queue_Length ETV
+vector 33 Mesh.core[10].sink end-to-end-latency-ns ETV
+vector 34 Mesh.router[10].port[0].inPort Inport_total_Queue_Length ETV
+vector 35 Mesh.router[10].port[1].inPort Inport_total_Queue_Length ETV
+vector 36 Mesh.router[13].port[4].inPort Inport_total_Queue_Length ETV
+vector 37 Mesh.router[1].port[4].inPort Inport_total_Queue_Length ETV
+vector 38 Mesh.router[5].port[4].inPort Inport_total_Queue_Length ETV
+vector 39 Mesh.router[8].port[4].inPort Inport_total_Queue_Length ETV
+vector 40 Mesh.router[4].port[4].inPort Inport_total_Queue_Length ETV
+vector 41 Mesh.router[3].port[4].inPort Inport_total_Queue_Length ETV
+vector 42 Mesh.router[14].port[0].inPort Inport_total_Queue_Length ETV
+vector 43 Mesh.router[1].port[2].inPort Inport_total_Queue_Length ETV
+vector 44 Mesh.router[12].port[4].inPort Inport_total_Queue_Length ETV
+vector 45 Mesh.router[13].port[0].inPort Inport_total_Queue_Length ETV
+vector 46 Mesh.router[9].port[1].inPort Inport_total_Queue_Length ETV
+vector 47 Mesh.router[1].port[1].inPort Inport_total_Queue_Length ETV
+vector 48 Mesh.router[9].port[2].inPort Inport_total_Queue_Length ETV
+vector 49 Mesh.router[9].port[4].inPort Inport_total_Queue_Length ETV
+vector 50 Mesh.core[7].sink end-to-end-latency-ns ETV
+vector 51 Mesh.router[6].port[1].inPort Inport_total_Queue_Length ETV
+vector 52 Mesh.router[3].port[2].inPort Inport_total_Queue_Length ETV
+vector 53 Mesh.router[9].port[0].inPort Inport_total_Queue_Length ETV
+vector 54 Mesh.router[7].port[2].inPort Inport_total_Queue_Length ETV
+vector 55 Mesh.router[12].port[0].inPort Inport_total_Queue_Length ETV
+vector 56 Mesh.router[5].port[3].inPort Inport_total_Queue_Length ETV
+vector 57 Mesh.router[11].port[2].inPort Inport_total_Queue_Length ETV
+vector 58 Mesh.router[2].port[2].inPort Inport_total_Queue_Length ETV
+vector 59 Mesh.router[0].port[4].inPort Inport_total_Queue_Length ETV
+vector 60 Mesh.router[6].port[3].inPort Inport_total_Queue_Length ETV
+vector 61 Mesh.router[15].port[1].inPort Inport_total_Queue_Length ETV
+vector 62 Mesh.router[7].port[4].inPort Inport_total_Queue_Length ETV
+vector 63 Mesh.router[4].port[2].inPort Inport_total_Queue_Length ETV
+vector 64 Mesh.router[15].port[4].inPort Inport_total_Queue_Length ETV
+vector 65 Mesh.core[12].sink end-to-end-latency-ns ETV
+vector 66 Mesh.router[6].port[4].inPort Inport_total_Queue_Length ETV
+vector 67 Mesh.router[11].port[1].inPort Inport_total_Queue_Length ETV
+vector 68 Mesh.core[2].sink end-to-end-latency-ns ETV
+vector 69 Mesh.router[10].port[4].inPort Inport_total_Queue_Length ETV
+vector 70 Mesh.core[6].sink end-to-end-latency-ns ETV
+vector 71 Mesh.router[0].port[2].inPort Inport_total_Queue_Length ETV
+vector 72 Mesh.router[14].port[4].inPort Inport_total_Queue_Length ETV
+vector 73 Mesh.router[1].port[3].inPort Inport_total_Queue_Length ETV
+vector 74 Mesh.core[0].sink end-to-end-latency-ns ETV
+vector 75 Mesh.router[2].port[3].inPort Inport_total_Queue_Length ETV
+vector 76 Mesh.router[13].port[3].inPort Inport_total_Queue_Length ETV
+vector 77 Mesh.router[2].port[4].inPort Inport_total_Queue_Length ETV
+vector 78 Mesh.router[10].port[3].inPort Inport_total_Queue_Length ETV
+vector 79 Mesh.router[11].port[4].inPort Inport_total_Queue_Length ETV
+vector 80 Mesh.router[6].port[0].inPort Inport_total_Queue_Length ETV
+vector 81 Mesh.router[5].port[1].inPort Inport_total_Queue_Length ETV
+vector 82 Mesh.core[8].sink end-to-end-latency-ns ETV
+vector 83 Mesh.core[15].sink end-to-end-latency-ns ETV
+vector 84 Mesh.core[9].sink end-to-end-latency-ns ETV
+vector 85 Mesh.router[7].port[1].inPort Inport_total_Queue_Length ETV
+vector 86 Mesh.router[11].port[0].inPort Inport_total_Queue_Length ETV
+vector 87 Mesh.core[11].sink end-to-end-latency-ns ETV
+vector 88 Mesh.router[9].port[3].inPort Inport_total_Queue_Length ETV
+vector 89 Mesh.router[8].port[3].inPort Inport_total_Queue_Length ETV
+vector 90 Mesh.router[15].port[0].inPort Inport_total_Queue_Length ETV
+vector 91 Mesh.router[12].port[3].inPort Inport_total_Queue_Length ETV
+vector 92 Mesh.router[4].port[3].inPort Inport_total_Queue_Length ETV
+vector 93 Mesh.router[8].port[2].inPort Inport_total_Queue_Length ETV
+vector 94 Mesh.router[2].port[1].inPort Inport_total_Queue_Length ETV
+vector 95 Mesh.router[14].port[3].inPort Inport_total_Queue_Length ETV
+

@@ -1,0 +1,84 @@
+file 4713 1776443254                                            
+version 3
+run General-0-20260418-00:25:49-21792
+attr configname General
+attr datetime 20260418-00:25:49
+attr datetimef 20260418-002549
+attr experiment General
+attr inifile omnetpp.ini
+attr iterationvars ""
+attr iterationvarsd ""
+attr iterationvarsf ""
+attr measurement ""
+attr network hnocs.topologies.Mesh
+attr processid 21792
+attr repetition 0
+attr replication #0
+attr resultdir results
+attr runnumber 0
+attr seedset 0
+config record-eventlog false
+config **.vector-recording true
+config network hnocs.topologies.Mesh
+config **.routerType "\"hnocs.routers.hier.idealRouter\""
+config **.coreType "\"hnocs.cores.NI\""
+config **.sourceType "\"hnocs.cores.sources.PktFifoSrc\""
+config **.sinkType "\"hnocs.cores.sinks.InfiniteBWMultiVCSink\""
+config **.portType "\"hnocs.routers.hier.Port\""
+config **.inPortType "\"hnocs.routers.hier.inPort.InPortAsync\""
+config **.OPCalcType "\"hnocs.routers.hier.opCalc.static.XYOPCalc\""
+config **.VCCalcType "\"hnocs.routers.hier.vcCalc.free.FLUVCCalc\""
+config **.schedType "\"hnocs.routers.hier.sched.wormhole.SchedAsync\""
+config sim-time-limit 2us
+config **.numVCs 2
+config **.flitSize 4B
+config **.rows 4
+config **.columns 4
+config **.statStartTime 1us
+config **.source.pktVC 0
+config **.source.msgLen 4
+config **.source.pktLen 8
+config **.source.isSynchronous false
+config **.source.isTrace false
+config **.source.fileName "\"\""
+config **.source.flitArrivalDelay 2ns
+config **.source.maxQueuedPkts 16
+config **.source.dstId "(parent.id + intuniform(1, 15)) % 16"
+config **.inPort.collectPerHopWait false
+config **.inPort.flitsPerVC 1
+config **.inPort.sendReqInAdvance true
+config **.sched.arbitration_type 0
+
+vector 0 Mesh.core[0].source dstId ETV
+vector 1 Mesh.core[1].source dstId ETV
+vector 2 Mesh.core[2].source dstId ETV
+vector 3 Mesh.core[3].source dstId ETV
+vector 4 Mesh.core[4].source dstId ETV
+vector 5 Mesh.core[5].source dstId ETV
+vector 6 Mesh.core[6].source dstId ETV
+vector 7 Mesh.core[7].source dstId ETV
+vector 8 Mesh.core[8].source dstId ETV
+vector 9 Mesh.core[9].source dstId ETV
+vector 10 Mesh.core[10].source dstId ETV
+vector 11 Mesh.core[11].source dstId ETV
+vector 12 Mesh.core[12].source dstId ETV
+vector 13 Mesh.core[13].source dstId ETV
+vector 14 Mesh.core[14].source dstId ETV
+vector 15 Mesh.core[15].source dstId ETV
+0	2354 146 129 8913 0 0.000000096 7 1 13 55 679
+1	2500 146 132 8914 0 0.000000096 7 5 12 63 651
+2	2646 142 135 8915 0 0.000000096 7 4 8 40 256
+3	2788 146 138 8916 0 0.000000096 7 2 10 46 412
+4	2934 146 141 8917 0 0.000000096 7 5 12 63 651
+5	3080 146 144 8918 0 0.000000096 7 8 13 76 868
+6	3226 145 147 8919 0 0.000000096 7 5 10 50 400
+7	3371 142 150 8920 0 0.000000096 7 0 0 0 0
+8	3513 149 153 8921 0 0.000000096 7 10 10 70 700
+9	3662 149 156 8922 0 0.000000096 7 13 15 99 1407
+10	3811 149 159 8923 0 0.000000096 7 4 8 40 256
+11	3960 152 162 8924 0 0.000000096 7 9 15 81 999
+12	4112 149 165 8925 0 0.000000096 7 0 5 20 100
+13	4261 152 168 8926 0 0.000000096 7 7 12 64 628
+14	4413 149 171 8927 0 0.000000096 7 3 6 30 144
+15	4562 149 174 8928 0 0.000000096 7 0 3 12 36
+
