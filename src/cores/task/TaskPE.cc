@@ -413,9 +413,10 @@ void TaskPE::sendTaskData(TaskDescriptor* task) {
             flit->setInjectTime(simTime());
             flit->setSchedulingPriority(0);
 
-            if (numFlits == 1) {
-                flit->setType(NOC_START_FLIT);   // single-flit packet
-            } else if (fi == 0) {
+            // Follow the same flit-type convention as PktFifoSrc:
+            // first flit is START, last flit is END, middle flits are MID.
+            // For a single-flit packet fi==0 triggers START_FLIT.
+            if (fi == 0) {
                 flit->setType(NOC_START_FLIT);
             } else if (fi == numFlits - 1) {
                 flit->setType(NOC_END_FLIT);

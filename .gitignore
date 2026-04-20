@@ -8,3 +8,5 @@
 *.vec
 /src/Makefile
 /out
+__pycache__/
+*.pyc
