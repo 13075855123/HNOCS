@@ -65,6 +65,10 @@ void InPortAsync::initialize() {
 	QLenVec.setName("Inport_total_Queue_Length");
 	sendReqtime.resize(numVCs,0);
 
+	bufferWriteCount = 0;
+	bufferReadCount = 0;
+	crossbarTraversal = 0;
+
 	if (collectPerHopWait) {
 		qTimeBySrcDst_head_flit.resize(rows * columns);
 		qTimeBySrcDst_body_flits.resize(rows * columns);
@@ -167,6 +171,7 @@ void InPortAsync::sendFlit(NoCFlitMsg *msg) {
 
 	// collect
 	if (simTime()> statStartTime) {
+		crossbarTraversal++;
 		if (collectPerHopWait) {
 
 			simtime_t arrivalTime=msg->getArrivalTime();
@@ -209,6 +214,9 @@ void InPortAsync::handleCalcOPResp(NoCFlitMsg *msg) {
 	}
 	// we queue the flits on their out Port and VC
 	QByiVC[inVC].insert(msg);
+	if (simTime() > statStartTime) {
+		bufferWriteCount++;
+	}
 
 	// Total queue size
 	measureQlength();
@@ -294,6 +302,9 @@ void InPortAsync::handleInFlitMsg(NoCFlitMsg *msg) {
 
 		// we queue the flits on their out Port and VC
 		QByiVC[inVC].insert(msg);
+		if (simTime() > statStartTime) {
+			bufferWriteCount++;
+		}
 
 		// Total queue size
 		measureQlength();
@@ -312,6 +323,9 @@ void InPortAsync::handleGntMsg(NoCGntMsg *msg) {
 	NoCFlitMsg* foundFlit = NULL;
 	if (!QByiVC[inVC].isEmpty()) {
 		foundFlit = (NoCFlitMsg*)QByiVC[inVC].pop();
+		if (simTime() > statStartTime) {
+			bufferReadCount++;
+		}
 		// Total queue size
 		measureQlength();
 
@@ -419,5 +433,8 @@ void InPortAsync::finish() {
 				}
 			}
 		}
+		recordScalar("bufferWriteCount", bufferWriteCount);
+		recordScalar("bufferReadCount", bufferReadCount);
+		recordScalar("crossbarTraversal", crossbarTraversal);
 	}
 }
