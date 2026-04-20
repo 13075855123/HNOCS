@@ -74,6 +74,9 @@ private:
 	std::vector<std::vector<cStdDev> > qTimeBySrcDst_head_flit; // VC acquiring time
 	std::vector<std::vector<cStdDev> > qTimeBySrcDst_body_flits; // transmission time: queue time of body flits untill it sent (doesnt include inter delay of the router and the transmission time over the link)
 	cOutVector QLenVec; // Queue length
+	long bufferWriteCount;   // buffer write operation count
+	long bufferReadCount;    // buffer read operation count
+	long crossbarTraversal;  // crossbar traversal count
 
 	// we later define the attached extended info for a FLIT in the InPort
 	class inPortFlitInfo* getFlitInfo(NoCFlitMsg *msg);

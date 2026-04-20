@@ -78,6 +78,7 @@ private:
 	std::vector< int > vcUsage; // count number of pending reqs per VC
 	cStdDev linkUtilization; // the egress link utiliztion connected to the sched
 	double busyTime;
+	long arbiterActivity;    // arbiter activation count
 
 
 	// methods

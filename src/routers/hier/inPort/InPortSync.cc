@@ -55,6 +55,10 @@ void InPortSync::initialize() {
 
 	QLenVec.setName("Inport_total_Queue_Length");
 
+	bufferWriteCount = 0;
+	bufferReadCount = 0;
+	crossbarTraversal = 0;
+
 	if (collectPerHopWait) {
 		qTimeBySrcDst_head_flit.resize(rows * columns);
 		qTimeBySrcDst_body_flits.resize(rows * columns);
@@ -154,6 +158,7 @@ void InPortSync::sendFlit(NoCFlitMsg *msg) {
 
 	// collect
 	if (simTime()> statStartTime) {
+		crossbarTraversal++;
 		if (collectPerHopWait) {
 			if (msg->getType() == NOC_START_FLIT) {
 				qTimeBySrcDst_head_flit[msg->getSrcId()][msg->getDstId()].collect(1e9*(simTime().dbl() - msg->getArrivalTime().dbl()));
@@ -184,6 +189,9 @@ void InPortSync::handleCalcVCResp(NoCFlitMsg *msg) {
 		QByiVC[inVC].insert(msg);
 	} else {
 		QByiVC[inVC].insertBefore(QByiVC[inVC].front(), msg);
+	}
+	if (simTime() > statStartTime) {
+		bufferWriteCount++;
 	}
 
 	// Total queue size
@@ -288,6 +296,9 @@ void InPortSync::handleInFlitMsg(NoCFlitMsg *msg) {
 		// May cause BW issue if the arrival is a little "slower" then Sched GNT
 		// since it realy depends on the order of events in same tick!
 		QByiVC[inVC].insert(msg);
+		if (simTime() > statStartTime) {
+			bufferWriteCount++;
+		}
 
 		// Total queue size
 		measureQlength();
@@ -306,6 +317,9 @@ void InPortSync::handleGntMsg(NoCGntMsg *msg) {
 	NoCFlitMsg* foundFlit = NULL;
 	if (!QByiVC[inVC].isEmpty()) {
 		foundFlit = (NoCFlitMsg*)QByiVC[inVC].pop();
+		if (simTime() > statStartTime) {
+			bufferReadCount++;
+		}
 		foundFlit->setVC(curOutVC[inVC]);
 
 		// Total queue size
@@ -314,6 +328,9 @@ void InPortSync::handleGntMsg(NoCGntMsg *msg) {
 		// If NOC_END_FLIT, then check if there is another packet, if yes send to calcVC
 		if (foundFlit->getType() == NOC_END_FLIT && !QByiVC[inVC].isEmpty()) {
 			NoCFlitMsg* nextPkt = (NoCFlitMsg*)QByiVC[inVC].pop();
+			if (simTime() > statStartTime) {
+				bufferReadCount++;
+			}
 			// need to get oVC and the response will send the req
 			send(nextPkt,"calcVc$o");
 		}
@@ -394,6 +411,9 @@ void InPortSync::finish() {
 				}
 			}
 		}
+		recordScalar("bufferWriteCount", bufferWriteCount);
+		recordScalar("bufferReadCount", bufferReadCount);
+		recordScalar("crossbarTraversal", crossbarTraversal);
 	}
 }
 

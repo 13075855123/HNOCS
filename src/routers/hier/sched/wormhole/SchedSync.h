@@ -77,6 +77,7 @@ private:
 
 	// Statistics
 	cStdDev linkUtilization; // the egress link utiliztion connected to the sched
+	long arbiterActivity;    // arbiter activation count
 
 	// methods
 	void handleFlitMsg(NoCFlitMsg *msg );

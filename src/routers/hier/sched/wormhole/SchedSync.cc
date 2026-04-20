@@ -53,6 +53,7 @@ void SchedSync::initialize() {
 	linkUtilization.setName("link-utilization");
     statStartTime = par("statStartTime");
     numSends = 0;
+    arbiterActivity = 0;
 
 	// arbitration state
 	vcCurInPort.resize(numVCs, 0);
@@ -237,6 +238,9 @@ void SchedSync::arbitrate() {
 	gnt->setInVC(inVC);
 	gnt->setSchedulingPriority(0);
 
+	if (simTime() > statStartTime) {
+		arbiterActivity++;
+	}
 	send(gnt, "ctrl$o", vcCurInPort[curVC]);
 
 	// after completing a Req start scanning from next VC
@@ -401,6 +405,7 @@ void SchedSync::finish() {
         int numClks=(int) round((simTime().dbl()-statStartTime.dbl())/tClk_s);
         linkUtilization.collect(100*(double) numSends/numClks);
         linkUtilization.record();
+        recordScalar("arbiterActivity", arbiterActivity);
     }else{
         linkUtilization.collect(-1); // invalid statistics
         linkUtilization.record();

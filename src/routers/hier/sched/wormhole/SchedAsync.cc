@@ -54,6 +54,7 @@ void SchedAsync::initialize() {
 	linkUtilization.setName("link-utilization");
 	statStartTime = par("statStartTime");
 	busyTime = 0;
+	arbiterActivity = 0;
 
 	// arbitration state
 	WATCH_VECTOR(vcCurInPort);
@@ -249,6 +250,9 @@ void SchedAsync::arbitrate() {
 	gnt->setOutVC(curVC);
 	gnt->setInVC(inVC);
 	gnt->setSchedulingPriority(0);
+	if (simTime() > statStartTime) {
+		arbiterActivity++;
+	}
 	send(gnt, "ctrl$o", vcCurInPort[curVC]);
 
 	isBusy = true; // Don`t arbitrate until pop or Nack
@@ -507,6 +511,7 @@ void SchedAsync::finish() {
 		double totalTime=(simTime().dbl()-statStartTime.dbl());
 		linkUtilization.collect(100*busyTime/totalTime);
 		linkUtilization.record();
+		recordScalar("arbiterActivity", arbiterActivity);
 	}else{
 		linkUtilization.collect(-1); // invalid statistics
 		linkUtilization.record();
