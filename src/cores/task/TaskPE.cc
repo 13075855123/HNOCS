@@ -16,18 +16,8 @@
 //
 // TaskPE – Task-driven Processing Element
 //
-// Each PE:
-//   1. Loads a task graph for the chosen application at initialization.
-//   2. Executes tasks one at a time (scheduleNextTask → startComputation).
-//   3. On computation completion (computeCompleteMsg) sends result flits to
-//      every successor PE.
-//   4. When a TaskMsg arrives from the network the corresponding dependency
-//      counter is decremented; if it reaches zero the task becomes ready.
-//   5. Power is tracked continuously and optionally written to a CSV trace.
-//
 
 #include "TaskPE.h"
-#include "messages/TaskMsg_m.h"
 
 Define_Module(TaskPE);
 
@@ -35,10 +25,10 @@ Define_Module(TaskPE);
 // initialize
 // -----------------------------------------------------------------------
 void TaskPE::initialize() {
-    peId           = par("id");
-    numVCs         = par("numVCs");
-    flitSize       = par("flitSize");
-    statStartTime  = par("statStartTime");
+    peId            = par("id");
+    numVCs          = par("numVCs");
+    flitSize        = par("flitSize");
+    statStartTime   = par("statStartTime");
     applicationName = par("application").stringValue();
 
     powerIdle        = par("powerIdle");
@@ -61,6 +51,8 @@ void TaskPE::initialize() {
     totalComputeTime    = 0;
     totalIdleTime       = 0;
 
+    credits = 0;
+
     powerVec.setName("power");
 
     // Derive clock period from outgoing link
@@ -77,7 +69,6 @@ void TaskPE::initialize() {
     // Power trace
     powerTrace = new PowerTraceWriter();
     if (enablePowerTrace && peId == 0) {
-        // Only PE-0 opens the shared trace file to avoid concurrent writes
         const char* traceFile   = par("powerTraceFile").stringValue();
         const char* hotspotFile = par("hotspotTraceFile").stringValue();
         powerTrace->open(traceFile, hotspotFile);
@@ -88,15 +79,19 @@ void TaskPE::initialize() {
     // Self-messages
     computeCompleteMsg = new cMessage("computeComplete");
     powerSampleMsg     = new cMessage("powerSample");
+    injectPopMsg       = new cMessage("injectPop");
 
-    // Load the task graph for this application
+    // Load task graph
     loadTaskGraph();
 
-    // Schedule periodic power sampling
+    // Periodic power sampling
     double sampleInterval = par("powerSampleInterval");
     scheduleAt(simTime() + sampleInterval, powerSampleMsg);
 
-    // Immediately try to schedule the first task
+    // Injection pop clock (similar to synchronous source pacing)
+    scheduleAt(simTime() + tClk_s, injectPopMsg);
+
+    // Try first task immediately
     scheduleNextTask();
 }
 
@@ -106,29 +101,49 @@ void TaskPE::initialize() {
 void TaskPE::handleMessage(cMessage* msg) {
     if (msg == computeCompleteMsg) {
         completeComputation();
-    } else if (msg == powerSampleMsg) {
+        return;
+    }
+
+    if (msg == powerSampleMsg) {
         samplePower();
         double sampleInterval = par("powerSampleInterval");
         scheduleAt(simTime() + sampleInterval, powerSampleMsg);
-    } else if (msg->getKind() == NOC_FLIT_MSG) {
-        // Incoming data from another PE
+        return;
+    }
+
+    if (msg == injectPopMsg) {
+        sendFlitFromQ();
+        scheduleAt(simTime() + tClk_s, injectPopMsg);
+        return;
+    }
+
+    if (msg->getKind() == NOC_CREDIT_MSG) {
+        NoCCreditMsg* crd = check_and_cast<NoCCreditMsg*>(msg);
+        if (crd->getVC() == 0) {
+            credits += crd->getFlits();
+        }
+        delete crd;
+        sendFlitFromQ();
+        return;
+    }
+
+    if (msg->getKind() == NOC_FLIT_MSG) {
         TaskMsg* taskMsg = dynamic_cast<TaskMsg*>(msg);
         if (taskMsg) {
             handleDataArrival(taskMsg);
         } else {
-            // Plain NoCFlitMsg – receive and discard (sink behaviour)
             delete msg;
         }
-    } else {
-        delete msg;
+        return;
     }
+
+    delete msg;
 }
 
 // -----------------------------------------------------------------------
 // finish
 // -----------------------------------------------------------------------
 void TaskPE::finish() {
-    // Accumulate remaining idle time
     simtime_t now = simTime();
     if (isIdle) {
         totalIdleTime += now - lastEventTime;
@@ -139,7 +154,7 @@ void TaskPE::finish() {
     double simDuration = now.dbl();
     if (simDuration > 0) {
         avgPower = (totalComputeTime.dbl() * powerCompute +
-                    totalIdleTime.dbl()    * powerIdle)   / simDuration;
+                    totalIdleTime.dbl()    * powerIdle) / simDuration;
     }
 
     recordScalar("totalTasksCompleted", totalTasksCompleted);
@@ -162,13 +177,20 @@ void TaskPE::finish() {
 TaskPE::~TaskPE() {
     cancelAndDelete(computeCompleteMsg);
     cancelAndDelete(powerSampleMsg);
+    cancelAndDelete(injectPopMsg);
 
     for (TaskDescriptor* t : taskList) {
         delete t;
     }
 
+    while (!injectQ.empty()) {
+        delete injectQ.front();
+        injectQ.pop();
+    }
+
     if (powerTrace) {
         delete powerTrace;
+        powerTrace = nullptr;
     }
 }
 
@@ -198,13 +220,10 @@ void TaskPE::loadTaskGraph() {
 
 // -----------------------------------------------------------------------
 // 应用 1：矩阵乘法
-//
-// 16 个处理元素（PE）网格。每个 PE 独立计算 C = A × B 的一个块
-// 没有处理元素之间的数据依赖；所有任务立即就绪
 // -----------------------------------------------------------------------
 void TaskPE::loadMatrixMultiplyTasks() {
-    const int blockSize    = 64;       // output bytes per block
-    const simtime_t compT  = 100e-9;   // 100 ns per block
+    const int blockSize   = 64;
+    const simtime_t compT = 100e-9;
 
     TaskDescriptor* task = new TaskDescriptor(peId, peId, compT, blockSize);
     task->pendingDependencies = 0;
@@ -218,11 +237,7 @@ void TaskPE::loadMatrixMultiplyTasks() {
 }
 
 // -----------------------------------------------------------------------
-// Application 2: CNN Inference (simplified 3-layer CNN on 6 PEs)
-//
-//   PE0: Conv-layer-1, 100 ns, 256 B → PE1,2,3,4
-//   PE1-4: Conv-layer-2, 200 ns, 128 B → PE5
-//   PE5: FC-layer-3, 150 ns, no output
+// Application 2: CNN Inference
 // -----------------------------------------------------------------------
 void TaskPE::loadCNNInferenceTasks() {
     if (peId == 0) {
@@ -251,37 +266,36 @@ void TaskPE::loadCNNInferenceTasks() {
         taskList.push_back(t);
         taskMap[5] = t;
     }
-    // PEs 6-15 are idle in this application
+
     EV << "-I- TaskPE[" << peId << "] loaded cnn_inference task(s)" << endl;
 }
 
 // -----------------------------------------------------------------------
-// Application 3: Graph Traversal (BFS, 4-level)
-//
-//   Level 0: PE0 (root)  → PE1, PE2
-//   Level 1: PE1,PE2     → PE3,PE4 (from PE1) and PE5,PE6 (from PE2)
-//   Level 2: PE3-PE6     → PE7-PE10 (each sends to one child)
-//   Level 3: PE7-PE10    (leaf nodes, no output)
+// Application 3: Graph Traversal
 // -----------------------------------------------------------------------
 void TaskPE::loadGraphTraversalTasks() {
-    struct TInfo { int id; int pe; double compNs; int dataB;
-                   std::vector<int> preds; std::vector<int> succs;
-                   std::map<int,int> succPE; };
+    struct TInfo {
+        int id;
+        int pe;
+        double compNs;
+        int dataB;
+        std::vector<int> preds;
+        std::vector<int> succs;
+        std::map<int,int> succPE;
+    };
 
-    // Build the complete table and pick the entry for this PE
     std::vector<TInfo> table = {
-        // id  pe  comp(ns)  data  preds   succs   succPE
-        {  0,  0,  50e-9,   64,  {},     {1,2},  {{1,1},{2,2}} },
-        {  1,  1,  50e-9,   64,  {0},   {3,4},  {{3,3},{4,4}} },
-        {  2,  2,  50e-9,   64,  {0},   {5,6},  {{5,5},{6,6}} },
-        {  3,  3,  50e-9,   32,  {1},   {7},    {{7,7}} },
-        {  4,  4,  50e-9,   32,  {1},   {8},    {{8,8}} },
-        {  5,  5,  50e-9,   32,  {2},   {9},    {{9,9}} },
-        {  6,  6,  50e-9,   32,  {2},   {10},   {{10,10}} },
-        {  7,  7,  50e-9,    0,  {3},   {},     {} },
-        {  8,  8,  50e-9,    0,  {4},   {},     {} },
-        {  9,  9,  50e-9,    0,  {5},   {},     {} },
-        { 10, 10,  50e-9,    0,  {6},   {},     {} },
+        {  0,  0,  50e-9, 64, {},    {1,2},   {{1,1},{2,2}} },
+        {  1,  1,  50e-9, 64, {0},   {3,4},   {{3,3},{4,4}} },
+        {  2,  2,  50e-9, 64, {0},   {5,6},   {{5,5},{6,6}} },
+        {  3,  3,  50e-9, 32, {1},   {7},     {{7,7}} },
+        {  4,  4,  50e-9, 32, {1},   {8},     {{8,8}} },
+        {  5,  5,  50e-9, 32, {2},   {9},     {{9,9}} },
+        {  6,  6,  50e-9, 32, {2},   {10},    {{10,10}} },
+        {  7,  7,  50e-9,  0, {3},   {},      {} },
+        {  8,  8,  50e-9,  0, {4},   {},      {} },
+        {  9,  9,  50e-9,  0, {5},   {},      {} },
+        { 10, 10,  50e-9,  0, {6},   {},      {} },
     };
 
     for (auto& info : table) {
@@ -308,8 +322,8 @@ void TaskPE::loadGraphTraversalTasks() {
 // scheduleNextTask
 // -----------------------------------------------------------------------
 void TaskPE::scheduleNextTask() {
-    if (currentTask != nullptr) return;          // already running
-    if (readyQueue.empty())     return;          // nothing ready
+    if (currentTask != nullptr) return;
+    if (readyQueue.empty()) return;
 
     TaskDescriptor* task = readyQueue.front();
     readyQueue.pop();
@@ -324,7 +338,6 @@ void TaskPE::startComputation(TaskDescriptor* task) {
     task->startTime = simTime();
     currentTask     = task;
 
-    // Power accounting
     simtime_t now = simTime();
     if (isIdle) {
         totalIdleTime += now - lastEventTime;
@@ -355,7 +368,6 @@ void TaskPE::completeComputation() {
     currentTask      = nullptr;
     totalTasksCompleted++;
 
-    // Power accounting
     simtime_t now = simTime();
     totalComputeTime += now - lastEventTime;
     lastEventTime    = now;
@@ -369,17 +381,15 @@ void TaskPE::completeComputation() {
     EV << "-I- TaskPE[" << peId << "] completed task " << task->taskId
        << " at " << simTime() << endl;
 
-    // Send results to successors
     if (task->outputDataSize > 0) {
         sendTaskData(task);
     }
 
-    // Pick next task
     scheduleNextTask();
 }
 
 // -----------------------------------------------------------------------
-// sendTaskData – inject flits carrying task result to each successor
+// sendTaskData – create flits and queue them for injection
 // -----------------------------------------------------------------------
 void TaskPE::sendTaskData(TaskDescriptor* task) {
     int numFlits = calculateNumFlits(task->outputDataSize);
@@ -387,8 +397,9 @@ void TaskPE::sendTaskData(TaskDescriptor* task) {
     for (int succTaskId : task->successors) {
         auto it = task->successorPE.find(succTaskId);
         if (it == task->successorPE.end()) continue;
+
         int dstPE = it->second;
-        if (dstPE == peId) continue;   // same PE – no network transfer needed
+        if (dstPE == peId) continue;
 
         pktIdCounter++;
         int pktId = pktIdCounter;
@@ -413,10 +424,10 @@ void TaskPE::sendTaskData(TaskDescriptor* task) {
             flit->setInjectTime(simTime());
             flit->setSchedulingPriority(0);
 
-            // Follow the same flit-type convention as PktFifoSrc:
-            // first flit is START, last flit is END, middle flits are MID.
-            // For a single-flit packet fi==0 triggers START_FLIT.
-            if (fi == 0) {
+            // Single-flit packet: treat as END so receiver/scheduler can close it.
+            if (numFlits == 1) {
+                flit->setType(NOC_END_FLIT);
+            } else if (fi == 0) {
                 flit->setType(NOC_START_FLIT);
             } else if (fi == numFlits - 1) {
                 flit->setType(NOC_END_FLIT);
@@ -431,17 +442,36 @@ void TaskPE::sendTaskData(TaskDescriptor* task) {
             flit->setDataSize(task->outputDataSize);
             flit->setComputeTime(task->computeTime);
 
-            send(flit, "out$o");
-            totalFlitsSent++;
-
-            if (powerTrace) {
-                powerTrace->recordPEEvent(peId, PE_SEND_FLIT, simTime(),
-                                          powerIdle + powerSendPerFlit / tClk_s);
-            }
+            injectQ.push(flit);
         }
 
-        EV << "-I- TaskPE[" << peId << "] sent " << numFlits
+        EV << "-I- TaskPE[" << peId << "] queued " << numFlits
            << " flits to PE" << dstPE << " for task " << succTaskId << endl;
+    }
+
+    sendFlitFromQ();
+}
+
+// -----------------------------------------------------------------------
+// sendFlitFromQ – PktFifoSrc-like injection
+// -----------------------------------------------------------------------
+void TaskPE::sendFlitFromQ() {
+    if (injectQ.empty()) return;
+    if (credits <= 0) return;
+
+    cChannel* ch = gate("out$o")->getTransmissionChannel();
+    if (ch && ch->isBusy()) return;
+
+    TaskMsg* flit = injectQ.front();
+    injectQ.pop();
+
+    send(flit, "out$o");
+    credits--;
+    totalFlitsSent++;
+
+    if (powerTrace) {
+        powerTrace->recordPEEvent(peId, PE_SEND_FLIT, simTime(),
+                                  powerIdle + powerSendPerFlit / tClk_s);
     }
 }
 
@@ -456,7 +486,7 @@ void TaskPE::handleDataArrival(TaskMsg* msg) {
                                   powerIdle + powerRecvPerFlit / tClk_s);
     }
 
-    // Only act on the last flit of each packet
+    // Only act on last flit of a multi-flit packet
     if (msg->getType() != NOC_END_FLIT && msg->getFlits() > 1) {
         delete msg;
         return;
@@ -465,7 +495,6 @@ void TaskPE::handleDataArrival(TaskMsg* msg) {
     int targetTaskId = msg->getTaskId();
     delete msg;
 
-    // Find the task waiting on this data
     auto it = taskMap.find(targetTaskId);
     if (it == taskMap.end()) {
         EV << "-W- TaskPE[" << peId << "] received data for unknown task "
@@ -475,7 +504,7 @@ void TaskPE::handleDataArrival(TaskMsg* msg) {
 
     TaskDescriptor* task = it->second;
     if (task->state == TASK_COMPLETED || task->state == TASK_COMPUTING) {
-        return;  // already handled
+        return;
     }
 
     receivedDependencies[targetTaskId]++;
@@ -496,7 +525,7 @@ void TaskPE::handleDataArrival(TaskMsg* msg) {
 // -----------------------------------------------------------------------
 int TaskPE::calculateNumFlits(int dataSize) const {
     if (dataSize <= 0 || flitSize <= 0) return 1;
-    return (dataSize + flitSize - 1) / flitSize;   // ceiling division
+    return (dataSize + flitSize - 1) / flitSize;
 }
 
 // -----------------------------------------------------------------------

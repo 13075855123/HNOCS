@@ -25,11 +25,9 @@
 #include "TaskDescriptor.h"
 #include "PowerTrace.h"
 #include "NoCs_m.h"
+#include "messages/TaskMsg_m.h"
 
 using namespace omnetpp;
-
-// Forward declaration
-class TaskMsg;
 
 //
 // Task-driven Processing Element (PE).
@@ -55,12 +53,16 @@ private:
     TaskDescriptor* currentTask;
 
     // === Dependency tracking ===
-    // Maps taskId -> number of dependency messages already received
     std::map<int, int> receivedDependencies;
 
     // === Self-messages ===
     cMessage* computeCompleteMsg;
     cMessage* powerSampleMsg;
+    cMessage* injectPopMsg;
+
+    // === Injection-side state (PktFifoSrc-like) ===
+    std::queue<TaskMsg*> injectQ;   // queued flits waiting for injection
+    int credits;                    // currently available credits on VC0
 
     // === Statistics ===
     long totalTasksCompleted;
@@ -72,15 +74,15 @@ private:
     bool isIdle;
 
     // Instantaneous power
-    double currentPower;    // current power (W)
-    double peakPower;       // peak power (W)
-    double avgPower;        // average power (W)
+    double currentPower;
+    double peakPower;
+    double avgPower;
 
     // Power model parameters
-    double powerIdle;           // idle power (W)
-    double powerCompute;        // compute power (W)
-    double powerSendPerFlit;    // energy per sent flit (J)
-    double powerRecvPerFlit;    // energy per received flit (J)
+    double powerIdle;
+    double powerCompute;
+    double powerSendPerFlit;
+    double powerRecvPerFlit;
 
     // Power trace
     PowerTraceWriter* powerTrace;
@@ -89,7 +91,7 @@ private:
     // OMNeT++ output vectors / scalars
     cOutVector powerVec;
 
-    // Global packet-id counter (shared across all flits of one data transfer)
+    // Global packet-id counter
     int pktIdCounter;
 
     // === Helpers ===
@@ -102,6 +104,7 @@ private:
     void startComputation(TaskDescriptor* task);
     void completeComputation();
     void sendTaskData(TaskDescriptor* task);
+    void sendFlitFromQ();
     void handleDataArrival(TaskMsg* msg);
     int  calculateNumFlits(int dataSize) const;
 

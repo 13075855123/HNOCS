@@ -47,8 +47,8 @@ simple TaskPE like hnocs.cores.NI_Ifc
         double powerSampleInterval @unit(s) = default(1us);
 
         @display("i=block/process");
-        @statistic[power](title="Power Consumption (W)"; record=vector,stats; interpolationmode=sample-hold);
-        @statistic[utilization](title="PE Utilization"; record=last);
+        //@statistic[power](title="Power Consumption (W)"; record=vector,stats; interpolationmode=sample-hold);
+        //@statistic[utilization](title="PE Utilization"; record=last);
 
     gates:
         inout in;

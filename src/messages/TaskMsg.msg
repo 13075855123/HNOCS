@@ -6,7 +6,7 @@
 // router modules can forward it without modification.
 //
 
-import "../NoCs";
+import NoCs;
 
 packet TaskMsg extends NoCFlitMsg {
     int taskId;              // target task ID on the receiving PE
