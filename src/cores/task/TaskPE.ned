@@ -37,8 +37,8 @@ simple TaskPE like hnocs.cores.NI_Ifc
         // Power model
         double powerIdle    @unit(W) = default(0.1W);        // idle power
         double powerCompute @unit(W) = default(2.0W);        // compute power
-        double powerSendPerFlit @unit(J) = default(0.1nJ);   // energy per sent flit
-        double powerRecvPerFlit @unit(J) = default(0.05nJ);  // energy per received flit
+        double powerSendPerFlit @unit(J) = default(0.1e-9 J);   // energy per sent flit
+        double powerRecvPerFlit @unit(J) = default(0.05e-9 J);  // energy per received flit
 
         // Power trace output
         bool   enablePowerTrace    = default(true);

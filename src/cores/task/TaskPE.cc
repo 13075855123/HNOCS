@@ -197,10 +197,10 @@ void TaskPE::loadTaskGraph() {
 }
 
 // -----------------------------------------------------------------------
-// Application 1: Matrix Multiply
+// 应用 1：矩阵乘法
 //
-// 16-PE mesh.  Each PE independently computes one block of C = A × B.
-// No inter-PE data dependencies; all tasks are immediately ready.
+// 16 个处理元素（PE）网格。每个 PE 独立计算 C = A × B 的一个块
+// 没有处理元素之间的数据依赖；所有任务立即就绪
 // -----------------------------------------------------------------------
 void TaskPE::loadMatrixMultiplyTasks() {
     const int blockSize    = 64;       // output bytes per block
