@@ -39,6 +39,7 @@ network TaskMesh
 {
     parameters:
         string routerType;
+        string coreType = default("hnocs.cores.task.TaskPE");
         int columns = default(4);
         int rows    = default(4);
 
