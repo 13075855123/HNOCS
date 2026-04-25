@@ -455,9 +455,7 @@ void TaskPE::sendTaskData(TaskDescriptor* task) {
             flit->setSchedulingPriority(0);
 
             // Single-flit packet: treat as END so receiver/scheduler can close it.
-            if (numFlits == 1) {
-                flit->setType(NOC_END_FLIT);
-            } else if (fi == 0) {
+            if (fi == 0) {
                 flit->setType(NOC_START_FLIT);
             } else if (fi == numFlits - 1) {
                 flit->setType(NOC_END_FLIT);

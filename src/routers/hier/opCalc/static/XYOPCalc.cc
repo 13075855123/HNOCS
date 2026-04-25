@@ -12,7 +12,7 @@
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
-// along with this program.  If not, see http://www.gnu.org/licenses/.
+// along with this program.  If not, see http://www.gnu.org/licenses/>.
 //
 
 #include "XYOPCalc.h"
@@ -88,8 +88,6 @@ XYOPCalc::isCoreModule(cModule *mod)
 
     // 2) Generic endpoint-core match:
     //    accept modules that look like local NI/core/PE endpoints:
-    //    - have an id parameter
-    //    - expose in/out gates
     bool hasId  = mod->hasPar("id");
     bool hasIn  = mod->hasGate("in");
     bool hasOut = mod->hasGate("out");
@@ -146,8 +144,27 @@ XYOPCalc::getIdxOfSwPortConnectedToPort(cModule *port)
     return -1;
 }
 
+// Map local sw index to router physical port index.
+// Router.ned removes the local physical port from sw_in/sw_out.
+static int swIndexToPhysicalPort(int localPhysicalPort, int swIdx)
+{
+    return (swIdx < localPhysicalPort) ? swIdx : (swIdx + 1);
+}
+
+// Check whether a router physical port is externally connected.
+static bool isRouterPhysicalPortConnected(cModule *router, int physicalPort)
+{
+    cGate *outGate = router->gateHalf("out", cGate::OUTPUT, physicalPort);
+    cGate *inGate  = router->gateHalf("in",  cGate::INPUT,  physicalPort);
+
+    bool outConnected = (outGate && outGate->isConnectedOutside());
+    bool inConnected  = (inGate  && inGate->isConnectedOutside());
+
+    return (outConnected || inConnected);
+}
+
 // Analyze the topology of this router and obtain the port numbers
-// connected to the 4 directions
+// connected to the 4 directions and the local core/PE endpoint.
 int
 XYOPCalc::analyzeMeshTopology()
 {
@@ -157,98 +174,66 @@ XYOPCalc::analyzeMeshTopology()
     eastPort  = -1;
     corePort  = -1;
 
-    cModule *router = getParentModule()->getParentModule();
+    cModule *port   = getParentModule();
+    cModule *router = port->getParentModule();
 
-    for (cModule::SubmoduleIterator iter(router); !iter.end(); iter++) {
-        if (!isPortModule(*iter)) continue;
-        cModule *port = *iter;
+    int localPhysicalPort = port->getIndex();
 
-        cModule *remPort = getPortRemotePort(port);
-        cModule *remCore = getPortRemoteCore(port);
+    for (int swIdx = 0; swIdx < port->gateSize("sw_out"); swIdx++) {
+        int physicalPort = swIndexToPhysicalPort(localPhysicalPort, swIdx);
 
-        int portIdx = getIdxOfSwPortConnectedToPort(port);
+        if (!isRouterPhysicalPortConnected(router, physicalPort))
+            continue;
 
-        if (remCore) {
-            int x, y;
-            rowColByID(remCore->par("id"), x, y);
-            if ((rx == x) && (ry == y)) {
-                EV << "-I- " << getParentModule()->getFullPath()
-                   << " connected through sw_out[" << portIdx
-                   << "] to Core port: " << port->getFullPath()
-                   << " remoteCore=" << remCore->getFullPath()
-                   << " coreType=" << remCore->getNedTypeName() << endl;
-                corePort = portIdx;
-            } else {
-                throw cRuntimeError("Port: %s and connected Core %s do not share the same x:%d and y:%d",
-                        port->getFullPath().c_str(), remCore->getFullPath().c_str(),
-                        x, y);
-            }
-        }
-        else if (remPort) {
-            int x, y;
-            rowColByID(remPort->getParentModule()->par("id"), x, y);
+        switch (physicalPort) {
+            case 0:
+                if (northPort != -1)
+                    throw cRuntimeError("Already found north port %d and another mapping %d on %s",
+                                        northPort, swIdx, getFullPath().c_str());
+                northPort = swIdx;
+                EV << "-I- " << getFullPath()
+                   << " mapped physical north port[0] to sw_out[" << swIdx << "]" << endl;
+                break;
 
-            if ((rx == x) && (ry == y)) {
-                throw cRuntimeError("Ports: %s and %s share the same x:%d and y:%d",
-                        port->getFullPath().c_str(), remPort->getFullPath().c_str(), x, y);
-            }
-            else if ((rx == x) && (ry == y + 1)) {
-                if (southPort != -1) {
-                    throw cRuntimeError("Already found a south port: %d for ports: %s."
-                            " %s is miss-configured",
-                            southPort, port->getFullPath().c_str(),
-                            remPort->getFullPath().c_str());
-                } else {
-                    EV << "-I- " << getParentModule()->getFullPath()
-                       << " connected through sw_out[" << portIdx
-                       << "] to South port: " << port->getFullPath() << endl;
-                    southPort = portIdx;
-                }
-            }
-            else if ((rx == x) && (ry == y - 1)) {
-                if (northPort != -1) {
-                    throw cRuntimeError("Already found a north port: %d for ports: %s."
-                            " %s is miss-configured",
-                            northPort, port->getFullPath().c_str(),
-                            remPort->getFullPath().c_str());
-                } else {
-                    EV << "-I- " << getParentModule()->getFullPath()
-                       << " connected through sw_out[" << portIdx
-                       << "] to North port: " << port->getFullPath() << endl;
-                    northPort = portIdx;
-                }
-            }
-            else if ((rx == x + 1) && (ry == y)) {
-                if (westPort != -1) {
-                    throw cRuntimeError("Already found a west port: %d for ports: %s."
-                            " %s is miss-configured",
-                            westPort, port->getFullPath().c_str(),
-                            remPort->getFullPath().c_str());
-                } else {
-                    EV << "-I- " << getParentModule()->getFullPath()
-                       << " connected through sw_out[" << portIdx
-                       << "] to West port: " << port->getFullPath() << endl;
-                    westPort = portIdx;
-                }
-            }
-            else if ((rx == x - 1) && (ry == y)) {
-                if (eastPort != -1) {
-                    throw cRuntimeError("Already found an east port: %d for ports: %s."
-                            " %s is miss-configured",
-                            eastPort, port->getFullPath().c_str(),
-                            remPort->getFullPath().c_str());
-                } else {
-                    EV << "-I- " << getParentModule()->getFullPath()
-                       << " connected through sw_out[" << portIdx
-                       << "] to East port: " << port->getFullPath() << endl;
-                    eastPort = portIdx;
-                }
-            }
-            else {
-                throw cRuntimeError("Found a non Mesh connection between %s (%d,%d) and %s (%d,%d)",
-                        port->getFullPath().c_str(), rx, ry,
-                        remPort->getFullPath().c_str(), x, y);
-            }
+            case 1:
+                if (westPort != -1)
+                    throw cRuntimeError("Already found west port %d and another mapping %d on %s",
+                                        westPort, swIdx, getFullPath().c_str());
+                westPort = swIdx;
+                EV << "-I- " << getFullPath()
+                   << " mapped physical west port[1] to sw_out[" << swIdx << "]" << endl;
+                break;
+
+            case 2:
+                if (southPort != -1)
+                    throw cRuntimeError("Already found south port %d and another mapping %d on %s",
+                                        southPort, swIdx, getFullPath().c_str());
+                southPort = swIdx;
+                EV << "-I- " << getFullPath()
+                   << " mapped physical south port[2] to sw_out[" << swIdx << "]" << endl;
+                break;
+
+            case 3:
+                if (eastPort != -1)
+                    throw cRuntimeError("Already found east port %d and another mapping %d on %s",
+                                        eastPort, swIdx, getFullPath().c_str());
+                eastPort = swIdx;
+                EV << "-I- " << getFullPath()
+                   << " mapped physical east port[3] to sw_out[" << swIdx << "]" << endl;
+                break;
+
+            case 4:
+                if (corePort != -1)
+                    throw cRuntimeError("Already found core port %d and another mapping %d on %s",
+                                        corePort, swIdx, getFullPath().c_str());
+                corePort = swIdx;
+                EV << "-I- " << getFullPath()
+                   << " mapped physical core/PE port[4] to sw_out[" << swIdx << "]" << endl;
+                break;
+
+            default:
+                // Ignore any extra physical ports if a larger router is ever used.
+                break;
         }
     }
 
@@ -267,31 +252,6 @@ void XYOPCalc::initialize()
     rowColByID(id, rx, ry);
 
     analyzeMeshTopology();
-
-    int autoDetectedCorePort = corePort;
-
-    if (autoDetectedCorePort < 0) {
-        int thisPortIdx = getParentModule()->getIndex();
-        int corePhysicalPort = 4;
-
-        if (thisPortIdx != corePhysicalPort) {
-            corePort = (corePhysicalPort < thisPortIdx) ? corePhysicalPort : (corePhysicalPort - 1);
-            EV << "-I- " << getFullPath()
-               << " corePort auto-discovery failed for coreType=" << coreType
-               << ", using fallback local-core mapping via physical port[4], resolved C="
-               << corePort << endl;
-        } else {
-            corePort = -1;
-            EV << "-I- " << getFullPath()
-               << " corePort auto-discovery failed for coreType=" << coreType
-               << ", this is the local physical core port[4], keeping C=-1 to avoid self-route"
-               << endl;
-        }
-    } else {
-        EV << "-I- " << getFullPath()
-           << " auto-detected corePort C=" << autoDetectedCorePort
-           << " for coreType=" << coreType << endl;
-    }
 
     EV << "-I- " << getFullPath() << " Found N/W/S/E/C ports:" << northPort
        << "/" << westPort << "/" << southPort << "/"
