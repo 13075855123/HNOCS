@@ -1,9 +1,9 @@
-file 2349 1776798400                                            
+                                                                
 version 3
-run General-0-20260422-03:05:43-32136
+run General-0-20260425-21:24:20-21736
 attr configname General
-attr datetime 20260422-03:05:43
-attr datetimef 20260422-030543
+attr datetime 20260425-21:24:20
+attr datetimef 20260425-212420
 attr experiment General
 attr inifile omnetpp.ini
 attr iterationvars ""
@@ -11,7 +11,7 @@ attr iterationvarsd ""
 attr iterationvarsf ""
 attr measurement ""
 attr network hnocs.topologies.TaskMesh
-attr processid 32136
+attr processid 21736
 attr repetition 0
 attr replication #0
 attr resultdir results
@@ -31,8 +31,8 @@ config **.inPortType "\"hnocs.routers.hier.inPort.InPortSync\""
 config **.OPCalcType "\"hnocs.routers.hier.opCalc.static.XYOPCalc\""
 config **.VCCalcType "\"hnocs.routers.hier.vcCalc.free.FLUVCCalc\""
 config **.schedType "\"hnocs.routers.hier.sched.wormhole.SchedSync\""
-config **.numVCs 2
-config **.flitSize 4B
+config **.numVCs 4
+config **.flitSize 16B
 config **.statStartTime 1us
 config **.pe[*].powerIdle 0.1W
 config **.pe[*].powerCompute 2.0W
@@ -48,7 +48,7 @@ config **.sched.arbitration_type 0
 config **.sched.freeRunningClk false
 config **.heterogeneous false
 config **.givenTclk false
-config **.tClk 2ns
+config **.tClk 1ns
 config result-dir results
 
 vector 0 TaskMesh.pe[0] power ETV
@@ -67,4 +67,3 @@ vector 12 TaskMesh.pe[12] power ETV
 vector 13 TaskMesh.pe[13] power ETV
 vector 14 TaskMesh.pe[14] power ETV
 vector 15 TaskMesh.pe[15] power ETV
-

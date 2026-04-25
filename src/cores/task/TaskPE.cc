@@ -91,6 +91,15 @@ void TaskPE::initialize() {
     // Injection pop clock (similar to synchronous source pacing)
     scheduleAt(simTime() + tClk_s, injectPopMsg);
 
+    EV << "=== TASKPE_DEBUG_BUILD_ACTIVE pe=" << peId
+       << " app=" << applicationName << " ===" << endl;
+
+    EV << "-I- TaskPE[" << peId << "] init application=" << applicationName
+       << " numVCs=" << numVCs
+       << " flitSize=" << flitSize
+       << "B tClk=" << tClk_s
+       << " initialCredits=" << credits << endl;
+
     // Try first task immediately
     scheduleNextTask();
 }
@@ -119,9 +128,25 @@ void TaskPE::handleMessage(cMessage* msg) {
 
     if (msg->getKind() == NOC_CREDIT_MSG) {
         NoCCreditMsg* crd = check_and_cast<NoCCreditMsg*>(msg);
-        if (crd->getVC() == 0) {
-            credits += crd->getFlits();
+        int recvVc = crd->getVC();
+        int recvFlits = crd->getFlits();
+
+        EV << "-I- TaskPE[" << peId << "] CREDIT"
+           << " vc=" << recvVc
+           << " flits=" << recvFlits
+           << " creditsBefore=" << credits
+           << " at " << simTime() << endl;
+
+        if (recvVc == 0) {
+            credits += recvFlits;
         }
+
+        EV << "-I- TaskPE[" << peId << "] CREDIT-UPDATED"
+           << " vc=" << recvVc
+           << " creditsAfter=" << credits
+           << " injectQ=" << injectQ.size()
+           << " at " << simTime() << endl;
+
         delete crd;
         sendFlitFromQ();
         return;
@@ -241,7 +266,7 @@ void TaskPE::loadMatrixMultiplyTasks() {
 // -----------------------------------------------------------------------
 void TaskPE::loadCNNInferenceTasks() {
     if (peId == 0) {
-        TaskDescriptor* t = new TaskDescriptor(0, 0, 100e-9, 256);
+        TaskDescriptor* t = new TaskDescriptor(0, 0, 100e-9, 128);
         t->successors  = {1, 2, 3, 4};
         t->successorPE = {{1,1},{2,2},{3,3},{4,4}};
         t->pendingDependencies = 0;
@@ -250,7 +275,7 @@ void TaskPE::loadCNNInferenceTasks() {
         taskMap[0] = t;
         readyQueue.push(t);
     } else if (peId >= 1 && peId <= 4) {
-        TaskDescriptor* t = new TaskDescriptor(peId, peId, 200e-9, 128);
+        TaskDescriptor* t = new TaskDescriptor(peId, peId, 200e-9, 64);
         t->predecessors = {0};
         t->successors   = {5};
         t->successorPE  = {{5, 5}};
@@ -351,7 +376,10 @@ void TaskPE::startComputation(TaskDescriptor* task) {
     }
 
     EV << "-I- TaskPE[" << peId << "] starts task " << task->taskId
-       << " at " << simTime() << endl;
+       << " at " << simTime()
+       << " computeTime=" << task->computeTime
+       << " outputDataSize=" << task->outputDataSize
+       << "B pendingDeps=" << task->pendingDependencies << endl;
 
     scheduleAt(simTime() + task->computeTime, computeCompleteMsg);
 }
@@ -379,7 +407,9 @@ void TaskPE::completeComputation() {
     }
 
     EV << "-I- TaskPE[" << peId << "] completed task " << task->taskId
-       << " at " << simTime() << endl;
+       << " at " << simTime()
+       << " outputDataSize=" << task->outputDataSize
+       << "B successors=" << task->successors.size() << endl;
 
     if (task->outputDataSize > 0) {
         sendTaskData(task);
@@ -445,9 +475,16 @@ void TaskPE::sendTaskData(TaskDescriptor* task) {
             injectQ.push(flit);
         }
 
-        EV << "-I- TaskPE[" << peId << "] queued " << numFlits
-           << " flits to PE" << dstPE << " for task " << succTaskId << endl;
+        EV << "-I- TaskPE[" << peId << "] queued packet pktId=" << pktId
+           << " for successorTask=" << succTaskId
+           << " dstPE=" << dstPE
+           << " numFlits=" << numFlits
+           << " dataSize=" << task->outputDataSize
+           << "B at " << simTime() << endl;
     }
+
+    EV << "-I- TaskPE[" << peId << "] injectQ size after enqueue=" << injectQ.size()
+       << " at " << simTime() << endl;
 
     sendFlitFromQ();
 }
@@ -456,18 +493,56 @@ void TaskPE::sendTaskData(TaskDescriptor* task) {
 // sendFlitFromQ – PktFifoSrc-like injection
 // -----------------------------------------------------------------------
 void TaskPE::sendFlitFromQ() {
-    if (injectQ.empty()) return;
-    if (credits <= 0) return;
+    if (injectQ.empty()) {
+        return;
+    }
+
+    if (credits <= 0) {
+        EV << "-I- TaskPE[" << peId << "] cannot send: no credits"
+           << " at " << simTime()
+           << " injectQ=" << injectQ.size() << endl;
+        return;
+    }
 
     cChannel* ch = gate("out$o")->getTransmissionChannel();
-    if (ch && ch->isBusy()) return;
+    if (ch && ch->isBusy()) {
+        EV << "-I- TaskPE[" << peId << "] cannot send: channel busy"
+           << " at " << simTime()
+           << " injectQ=" << injectQ.size()
+           << " credits=" << credits << endl;
+        return;
+    }
 
     TaskMsg* flit = injectQ.front();
     injectQ.pop();
 
+    int pktId = flit->getPktId();
+    int flitIdx = flit->getFlitIdx();
+
+    EV << "-I- TaskPE[" << peId << "] SEND"
+       << " pktId=" << pktId
+       << " flitIdx=" << flitIdx
+       << "/" << (flit->getFlits() - 1)
+       << " type=" << flit->getType()
+       << " srcPE=" << flit->getSrcId()
+       << " dstPE=" << flit->getDstId()
+       << " producerTask=" << flit->getProducerTaskId()
+       << " consumerTask=" << flit->getTaskId()
+       << " vc=" << flit->getVC()
+       << " creditsBefore=" << credits
+       << " injectQAfterPop=" << injectQ.size()
+       << " at " << simTime() << endl;
+
     send(flit, "out$o");
     credits--;
     totalFlitsSent++;
+
+    EV << "-I- TaskPE[" << peId << "] SEND-DONE"
+       << " pktId=" << pktId
+       << " flitIdx=" << flitIdx
+       << " creditsAfter=" << credits
+       << " totalFlitsSent=" << totalFlitsSent
+       << " at " << simTime() << endl;
 
     if (powerTrace) {
         powerTrace->recordPEEvent(peId, PE_SEND_FLIT, simTime(),
@@ -480,6 +555,18 @@ void TaskPE::sendFlitFromQ() {
 // -----------------------------------------------------------------------
 void TaskPE::handleDataArrival(TaskMsg* msg) {
     totalFlitsReceived++;
+
+    EV << "-I- TaskPE[" << peId << "] RECV"
+       << " pktId=" << msg->getPktId()
+       << " flitIdx=" << msg->getFlitIdx()
+       << "/" << (msg->getFlits() - 1)
+       << " type=" << msg->getType()
+       << " srcPE=" << msg->getSrcId()
+       << " dstPE=" << msg->getDstId()
+       << " producerTask=" << msg->getProducerTaskId()
+       << " consumerTask=" << msg->getTaskId()
+       << " vc=" << msg->getVC()
+       << " at " << simTime() << endl;
 
     if (powerTrace) {
         powerTrace->recordPEEvent(peId, PE_RECV_FLIT, simTime(),
@@ -510,12 +597,20 @@ void TaskPE::handleDataArrival(TaskMsg* msg) {
     receivedDependencies[targetTaskId]++;
     task->pendingDependencies--;
 
-    EV << "-I- TaskPE[" << peId << "] task " << targetTaskId
-       << " pending deps=" << task->pendingDependencies << endl;
+    EV << "-I- TaskPE[" << peId << "] dependency update"
+       << " targetTask=" << targetTaskId
+       << " pendingDeps=" << task->pendingDependencies
+       << " receivedCount=" << receivedDependencies[targetTaskId]
+       << " at " << simTime() << endl;
 
     if (task->pendingDependencies <= 0) {
         task->state = TASK_READY;
         readyQueue.push(task);
+
+        EV << "-I- TaskPE[" << peId << "] task " << targetTaskId
+           << " is READY at " << simTime()
+           << " readyQueueSize=" << readyQueue.size() << endl;
+
         scheduleNextTask();
     }
 }
