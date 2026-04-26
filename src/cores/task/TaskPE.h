@@ -1,20 +1,3 @@
-//
-// Copyright (C) 2024 HNOCS Project
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public License
-// along with this program.  If not, see http://www.gnu.org/licenses/.
-//
-
 #ifndef __HNOCS_TASK_PE_H_
 #define __HNOCS_TASK_PE_H_
 
@@ -29,14 +12,6 @@
 
 using namespace omnetpp;
 
-//
-// Task-driven Processing Element (PE).
-//
-// Replaces the random-traffic source+sink pair with a realistic
-// computation-communication model driven by a user-defined task graph.
-// Implements the NI_Ifc interface so that it can be plugged into any
-// topology that uses NI_Ifc cores.
-//
 class TaskPE : public cSimpleModule {
 private:
     // === Parameters ===
@@ -60,9 +35,9 @@ private:
     cMessage* powerSampleMsg;
     cMessage* injectPopMsg;
 
-    // === Injection-side state (PktFifoSrc-like) ===
-    std::queue<TaskMsg*> injectQ;   // queued flits waiting for injection
-    int credits;                    // currently available credits on VC0
+    // === Injection-side state ===
+    std::queue<TaskMsg*> injectQ;
+    int credits;   // send-side credits on VC0
 
     // === Statistics ===
     long totalTasksCompleted;
@@ -111,7 +86,10 @@ private:
     void updatePower(double newPower);
     void samplePower();
 
-    double tClk_s;   // clock period derived from output link
+    // NEW: return credits to router when TaskPE is receiver
+    void sendCredit(int vc, int numFlits);
+
+    double tClk_s;
 
 protected:
     virtual void initialize() override;

@@ -1,0 +1,61 @@
+file 2022 1777140505                                            
+version 3
+run General-0-20260426-01:54:41-46968
+attr configname General
+attr datetime 20260426-01:54:41
+attr datetimef 20260426-015441
+attr experiment General
+attr inifile omnetpp.ini
+attr iterationvars ""
+attr iterationvarsd ""
+attr iterationvarsf ""
+attr measurement ""
+attr network hnocs.topologies.TaskMesh
+attr processid 46968
+attr repetition 0
+attr replication #0
+attr resultdir results
+attr runnumber 0
+attr seedset 0
+config network hnocs.topologies.TaskMesh
+config sim-time-limit 1ms
+config record-eventlog false
+config **.vector-recording false
+config **.cmdenv-log-level debug
+config **.rows 4
+config **.columns 4
+config **.pe[*].application "\"cnn_inference\""
+config **.coreType "\"hnocs.cores.task.TaskPE\""
+config **.routerType "\"hnocs.routers.hier.Router\""
+config **.portType "\"hnocs.routers.hier.Port\""
+config **.inPortType "\"hnocs.routers.hier.inPort.InPortSync\""
+config **.OPCalcType "\"hnocs.routers.hier.opCalc.static.XYOPCalc\""
+config **.VCCalcType "\"hnocs.routers.hier.vcCalc.free.FLUVCCalc\""
+config **.schedType "\"hnocs.routers.hier.sched.wormhole.SchedSync\""
+config **.numVCs 4
+config **.flitSize 16B
+config **.statStartTime 1us
+config **.pe[*].powerIdle 0.1W
+config **.pe[*].powerCompute 2.0W
+config **.pe[*].powerSendPerFlit 1e-10J
+config **.pe[*].powerRecvPerFlit 5e-11J
+config **.pe[*].enablePowerTrace false
+config **.pe[*].powerTraceFile "\"results/cnn_power.csv\""
+config **.pe[*].hotspotTraceFile "\"results/cnn_hotspot.trace\""
+config **.pe[*].powerSampleInterval 1us
+config **.inPort.flitsPerVC 4
+config **.inPort.collectPerHopWait false
+config **.sched.arbitration_type 0
+config **.sched.freeRunningClk false
+config **.heterogeneous false
+config **.givenTclk false
+config **.tClk 1ns
+config result-dir results
+
+vector 0 TaskMesh.pe[0] power ETV
+vector 1 TaskMesh.pe[1] power ETV
+vector 2 TaskMesh.pe[2] power ETV
+vector 3 TaskMesh.pe[3] power ETV
+vector 4 TaskMesh.pe[4] power ETV
+vector 5 TaskMesh.pe[5] power ETV
+

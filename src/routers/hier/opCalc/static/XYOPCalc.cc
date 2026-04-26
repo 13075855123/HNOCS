@@ -277,10 +277,24 @@ void XYOPCalc::handlePacketMsg(NoCFlitMsg* msg)
     } else if (dx < rx) {
         swOutPortIdx = westPort;
     } else if (dy > ry) {
-        swOutPortIdx = northPort;
-    } else {
         swOutPortIdx = southPort;
+    } else {
+        swOutPortIdx = northPort;
     }
+
+    EV << "-I- " << getFullPath()
+       << " ROUTE"
+       << " pktId=" << msg->getPktId()
+       << " flitIdx=" << msg->getFlitIdx()
+       << " src=" << msg->getSrcId()
+       << " dst=" << msg->getDstId()
+       << " local=(" << rx << "," << ry << ")"
+       << " dst=(" << dx << "," << dy << ")"
+       << " choose=" << swOutPortIdx
+       << " N/W/S/E/C=" << northPort << "/"
+       << westPort << "/" << southPort << "/"
+       << eastPort << "/" << corePort
+       << endl;
 
     if (swOutPortIdx < 0) {
         throw cRuntimeError("Routing dead end at %s (%d,%d) "

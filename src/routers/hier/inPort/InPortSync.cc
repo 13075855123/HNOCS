@@ -138,99 +138,140 @@ void InPortSync::sendReq(NoCFlitMsg *msg) {
 	send(req, "ctrl$o", outPort);
 }
 
-	// when we get here it is assumed there is NO messages on the out port
 void InPortSync::sendFlit(NoCFlitMsg *msg) {
-	int inVC = getFlitInfo(msg)->inVC;
-	int outPort = getFlitInfo(msg)->outPort;
+    int inVC = getFlitInfo(msg)->inVC;
+    int outPort = getFlitInfo(msg)->outPort;
 
-	if (gate("out", outPort)->getTransmissionChannel()->isBusy()) {
-		EV << "-E-" << getFullPath() << " out port of InPort is busy! will be available in " << (gate("out", outPort)->getTransmissionChannel()->getTransmissionFinishTime()-simTime()) << endl;
-		throw cRuntimeError(
-				"-E- Out port of InPort is busy!");
-	}
+    if (gate("out", outPort)->getTransmissionChannel()->isBusy()) {
+        EV << "-E-" << getFullPath() << " out port of InPort is busy! will be available in "
+           << (gate("out", outPort)->getTransmissionChannel()->getTransmissionFinishTime()-simTime()) << endl;
+        throw cRuntimeError("-E- Out port of InPort is busy!");
+    }
 
-	EV << "-I- " << getFullPath() << " sending Flit from inVC: " << inVC
-	   << " through outPort:" << outPort << " on VC: " << msg->getVC() << endl;
+    EV << "-I- " << getFullPath()
+       << " SEND-FLIT"
+       << " pktId=" << msg->getPktId()
+       << " flitIdx=" << msg->getFlitIdx()
+       << "/" << (msg->getFlits() - 1)
+       << " inVC=" << inVC
+       << " outPort=" << outPort
+       << " outVC=" << msg->getVC()
+       << " type=" << msg->getType()
+       << " src=" << msg->getSrcId()
+       << " dst=" << msg->getDstId()
+       << " at " << simTime()
+       << endl;
 
-	// delete the info object
-	inPortFlitInfo *info = (inPortFlitInfo*) msg->removeControlInfo();
-	delete info;
+    // delete the info object
+    inPortFlitInfo *info = (inPortFlitInfo*) msg->removeControlInfo();
+    delete info;
 
-	// collect
-	if (simTime()> statStartTime) {
-		crossbarTraversal++;
-		if (collectPerHopWait) {
-			if (msg->getType() == NOC_START_FLIT) {
-				qTimeBySrcDst_head_flit[msg->getSrcId()][msg->getDstId()].collect(1e9*(simTime().dbl() - msg->getArrivalTime().dbl()));
-			} else {
-				qTimeBySrcDst_body_flits[msg->getSrcId()][msg->getDstId()].collect(1e9*(simTime().dbl() - msg->getArrivalTime().dbl()));
-			}
-		}
-	}
-	// send to Sched
-	send(msg, "out", outPort);
+    // collect
+    if (simTime()> statStartTime) {
+        crossbarTraversal++;
+        if (collectPerHopWait) {
+            if (msg->getType() == NOC_START_FLIT) {
+                qTimeBySrcDst_head_flit[msg->getSrcId()][msg->getDstId()].collect(
+                    1e9*(simTime().dbl() - msg->getArrivalTime().dbl()));
+            } else {
+                qTimeBySrcDst_body_flits[msg->getSrcId()][msg->getDstId()].collect(
+                    1e9*(simTime().dbl() - msg->getArrivalTime().dbl()));
+            }
+        }
+    }
 
-	// send the credit back on the inVC of that FLIT
-	sendCredit(inVC,1);
+    // send to Sched
+    send(msg, "out", outPort);
+
+    // send the credit back on the inVC of that FLIT
+    sendCredit(inVC,1);
 }
 
 // Handle the Packet when it is back from the VC calc
 // store the outVC in curOutVC[inVC] for next pops and Send the req
 void InPortSync::handleCalcVCResp(NoCFlitMsg *msg) {
-	// store the calc out VC in the current received packet on the inVC
-	inPortFlitInfo *info = getFlitInfo(msg);
-	int inVC = info->inVC;
-	int outVC = msg->getVC();
+    // store the calc out VC in the current received packet on the inVC
+    inPortFlitInfo *info = getFlitInfo(msg);
+    int inVC = info->inVC;
+    int outVC = msg->getVC();
 
-	curOutVC[inVC] = outVC;
+    curOutVC[inVC] = outVC;
 
-	// we queue the flits on their inVC
-	if (QByiVC[inVC].isEmpty()) {
-		QByiVC[inVC].insert(msg);
-	} else {
-		QByiVC[inVC].insertBefore(QByiVC[inVC].front(), msg);
-	}
-	if (simTime() > statStartTime) {
-		bufferWriteCount++;
-	}
+    EV << "-I- " << getFullPath()
+       << " CALC-VC-RESP"
+       << " pktId=" << msg->getPktId()
+       << " flitIdx=" << msg->getFlitIdx()
+       << "/" << (msg->getFlits() - 1)
+       << " inVC=" << inVC
+       << " outVC=" << outVC
+       << " outPort=" << info->outPort
+       << " type=" << msg->getType()
+       << " src=" << msg->getSrcId()
+       << " dst=" << msg->getDstId()
+       << " at " << simTime()
+       << endl;
 
-	// Total queue size
-	measureQlength();
+    // we queue the flits on their inVC
+    if (QByiVC[inVC].isEmpty()) {
+        QByiVC[inVC].insert(msg);
+    } else {
+        QByiVC[inVC].insertBefore(QByiVC[inVC].front(), msg);
+    }
+    if (simTime() > statStartTime) {
+        bufferWriteCount++;
+    }
 
-	EV << "-I- " << getFullPath() << " Packet:" << (msg->getPktId() >> 16)
-	   << "." << (msg->getPktId() % (1<< 16))
-	   << " will be sent on VC:" << outVC << endl;
+    // Total queue size
+    measureQlength();
 
-	sendReq(msg);
+    EV << "-I- " << getFullPath() << " Packet:" << (msg->getPktId() >> 16)
+       << "." << (msg->getPktId() % (1<< 16))
+       << " will be sent on VC:" << outVC << endl;
+
+    sendReq(msg);
 }
 
 // Handle the packet when it is back from the Out Port calc
 // Keep track of current out port per inVC
 // if the Q is empty send to calc out VC or else Q it
 void InPortSync::handleCalcOPResp(NoCFlitMsg *msg) {
-	int inVC = getFlitInfo(msg)->inVC;
+    int inVC = getFlitInfo(msg)->inVC;
 
-	curOutPort[inVC] = getFlitInfo(msg)->outPort;
-	EV << "-I- " << getFullPath() << " Packet:" << (msg->getPktId() >> 16)
-	   << "." << (msg->getPktId() % (1<< 16))
-	   << " will be sent to port:" << curOutPort[inVC] << endl;
+    curOutPort[inVC] = getFlitInfo(msg)->outPort;
 
-	// buffering is by inVC
-	if (QByiVC[inVC].getLength() >= flitsPerVC) {
-		throw cRuntimeError("-E- VC %d is already full receiving packet:%d",
-				inVC, msg->getPktId());
-	}
+    EV << "-I- " << getFullPath()
+       << " CALC-OP-RESP"
+       << " pktId=" << msg->getPktId()
+       << " flitIdx=" << msg->getFlitIdx()
+       << "/" << (msg->getFlits() - 1)
+       << " inVC=" << inVC
+       << " outPort=" << curOutPort[inVC]
+       << " type=" << msg->getType()
+       << " src=" << msg->getSrcId()
+       << " dst=" << msg->getDstId()
+       << " at " << simTime()
+       << endl;
 
-	// send it to get the out VC
-	if (QByiVC[inVC].isEmpty()) {
-		send(msg,"calcVc$o");
-	} else {
-		// we queue the flits on their inVC
-		QByiVC[inVC].insert(msg);
+    EV << "-I- " << getFullPath() << " Packet:" << (msg->getPktId() >> 16)
+       << "." << (msg->getPktId() % (1<< 16))
+       << " will be sent to port:" << curOutPort[inVC] << endl;
 
-		// Total queue size
-		measureQlength();
-	}
+    // buffering is by inVC
+    if (QByiVC[inVC].getLength() >= flitsPerVC) {
+        throw cRuntimeError("-E- VC %d is already full receiving packet:%d",
+                inVC, msg->getPktId());
+    }
+
+    // send it to get the out VC
+    if (QByiVC[inVC].isEmpty()) {
+        send(msg,"calcVc$o");
+    } else {
+        // we queue the flits on their inVC
+        QByiVC[inVC].insert(msg);
+
+        // Total queue size
+        measureQlength();
+    }
 }
 
 // handle received FLIT
