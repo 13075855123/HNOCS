@@ -26,29 +26,25 @@ package hnocs.cores.task;
 simple TaskPE like hnocs.cores.NI_Ifc
 {
     parameters:
-        int id;                                              // PE identifier (globally unique)
-        int numVCs = default(2);                             // number of virtual channels
-        int flitSize @unit(byte) = default(4B);              // flit size
-        double statStartTime @unit(s) = default(1us);        // statistics start time
+        int id;
+        int numVCs = default(2);
+        int flitSize @unit(byte) = default(4B);
+        double statStartTime @unit(s) = default(1us);
 
-        // Application selection
-        string application = default("matrix_multiply");     // matrix_multiply | cnn_inference | graph_traversal
+        string application = default("matrix_multiply");
 
-        // Power model
-        double powerIdle    @unit(W) = default(0.1W);        // idle power
-        double powerCompute @unit(W) = default(2.0W);        // compute power
-        double powerSendPerFlit @unit(J) = default(0.1e-9 J);   // energy per sent flit
-        double powerRecvPerFlit @unit(J) = default(0.05e-9 J);  // energy per received flit
+        double powerIdle    @unit(W) = default(0.1W);
+        double powerCompute @unit(W) = default(2.0W);
+        double powerSendPerFlit @unit(J) = default(0.1e-9 J);
+        double powerRecvPerFlit @unit(J) = default(0.05e-9 J);
 
-        // Power trace output
         bool   enablePowerTrace    = default(true);
         string powerTraceFile      = default("results/power_trace.csv");
         string hotspotTraceFile    = default("results/hotspot_power.trace");
         double powerSampleInterval @unit(s) = default(1us);
 
+
         @display("i=block/process");
-        //@statistic[power](title="Power Consumption (W)"; record=vector,stats; interpolationmode=sample-hold);
-        //@statistic[utilization](title="PE Utilization"; record=last);
 
     gates:
         inout in;

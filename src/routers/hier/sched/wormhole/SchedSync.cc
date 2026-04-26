@@ -239,7 +239,7 @@ void SchedSync::arbitrate() {
 	gnt->setSchedulingPriority(0);
 
 	if (simTime() > statStartTime) {
-		arbiterActivity++;
+	    arbiterActivity++;
 	}
 	send(gnt, "ctrl$o", vcCurInPort[curVC]);
 
