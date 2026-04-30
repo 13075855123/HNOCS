@@ -9,7 +9,7 @@
 #include "PowerTrace.h"
 #include "NoCs_m.h"
 #include "messages/TaskMsg_m.h"
-#include "../thermal/ThermalTrace.h"
+#include "thermal/ThermalTrace.h"
 
 
 using namespace omnetpp;
