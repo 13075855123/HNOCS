@@ -600,7 +600,7 @@ void TaskPE::sendTaskData(TaskDescriptor* task) {
             flit->setConsumerPE(dstPE);
             flit->setProducerTaskId(task->taskId);
             flit->setDataSize(task->outputDataSize);
-            flit->setComputeTime(task->computeTime);
+            flit->setComputeTime(task->computeTime.dbl());
 
             injectQ.push(flit);
         }
