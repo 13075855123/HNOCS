@@ -26,9 +26,3 @@ Each PE should complete exactly one task and record:
 - `totalTasksCompleted = 1`
 - `utilization ≈ 0.0001` (100 ns / 1 ms simulation)
 - `avgPower ≈ 0.29 W` (weighted average of compute and idle power)
-
-## Power Analysis
-```bash
-cd results
-python3 ../../power_analysis/parse_power.py matrix_power.csv
-```

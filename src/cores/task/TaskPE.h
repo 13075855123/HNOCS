@@ -23,7 +23,6 @@
 #include <map>
 #include <vector>
 #include "TaskDescriptor.h"
-#include "PowerTrace.h"
 #include "NoCs_m.h"
 
 using namespace omnetpp;
@@ -79,12 +78,6 @@ private:
     // Power model parameters
     double powerIdle;           // idle power (W)
     double powerCompute;        // compute power (W)
-    double powerSendPerFlit;    // energy per sent flit (J)
-    double powerRecvPerFlit;    // energy per received flit (J)
-
-    // Power trace
-    PowerTraceWriter* powerTrace;
-    bool enablePowerTrace;
 
     // OMNeT++ output vectors / scalars
     cOutVector powerVec;
@@ -107,8 +100,6 @@ private:
 
     void updatePower(double newPower);
     void samplePower();
-
-    double tClk_s;   // clock period derived from output link
 
 protected:
     virtual void initialize() override;

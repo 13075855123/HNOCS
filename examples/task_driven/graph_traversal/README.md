@@ -38,9 +38,3 @@ opp_run -u Cmdenv -f omnetpp.ini -n ../../../src
 - PE3–PE6 complete in the next wave
 - PE7–PE10 complete last
 - PEs 11–15 are idle (no tasks assigned in this application)
-
-## Power Analysis
-```bash
-cd results
-python3 ../../power_analysis/parse_power.py graph_power.csv
-```

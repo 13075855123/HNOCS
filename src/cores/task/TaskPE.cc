@@ -23,7 +23,7 @@
 //      every successor PE.
 //   4. When a TaskMsg arrives from the network the corresponding dependency
 //      counter is decremented; if it reaches zero the task becomes ready.
-//   5. Power is tracked continuously and optionally written to a CSV trace.
+//   5. Power is tracked continuously for vector/scalar statistics.
 //
 
 #include "TaskPE.h"
@@ -43,10 +43,6 @@ void TaskPE::initialize() {
 
     powerIdle        = par("powerIdle");
     powerCompute     = par("powerCompute");
-    powerSendPerFlit = par("powerSendPerFlit");
-    powerRecvPerFlit = par("powerRecvPerFlit");
-    enablePowerTrace = par("enablePowerTrace");
-
     currentTask   = nullptr;
     currentPower  = powerIdle;
     peakPower     = powerIdle;
@@ -62,28 +58,6 @@ void TaskPE::initialize() {
     totalIdleTime       = 0;
 
     powerVec.setName("power");
-
-    // Derive clock period from outgoing link
-    cGate* g = gate("out$o")->getNextGate();
-    if (g && g->getChannel()) {
-        cDatarateChannel* chan =
-            check_and_cast<cDatarateChannel*>(g->getChannel());
-        double dr = chan->getDatarate();
-        tClk_s = (8.0 * flitSize) / dr;
-    } else {
-        tClk_s = 2e-9; // fallback: 2 ns
-    }
-
-    // Power trace
-    powerTrace = new PowerTraceWriter();
-    if (enablePowerTrace && peId == 0) {
-        // Only PE-0 opens the shared trace file to avoid concurrent writes
-        const char* traceFile   = par("powerTraceFile").stringValue();
-        const char* hotspotFile = par("hotspotTraceFile").stringValue();
-        powerTrace->open(traceFile, hotspotFile);
-        double sampleInterval = par("powerSampleInterval");
-        powerTrace->setSamplingInterval(sampleInterval);
-    }
 
     // Self-messages
     computeCompleteMsg = new cMessage("computeComplete");
@@ -149,11 +123,6 @@ void TaskPE::finish() {
     recordScalar("peakPower",           peakPower);
     recordScalar("utilization",         getUtilization());
 
-    if (powerTrace) {
-        powerTrace->close();
-        delete powerTrace;
-        powerTrace = nullptr;
-    }
 }
 
 // -----------------------------------------------------------------------
@@ -167,9 +136,6 @@ TaskPE::~TaskPE() {
         delete t;
     }
 
-    if (powerTrace) {
-        delete powerTrace;
-    }
 }
 
 // -----------------------------------------------------------------------
@@ -333,10 +299,6 @@ void TaskPE::startComputation(TaskDescriptor* task) {
     isIdle        = false;
     updatePower(powerCompute);
 
-    if (powerTrace) {
-        powerTrace->recordPEEvent(peId, PE_COMPUTE_START, now, powerCompute);
-    }
-
     EV << "-I- TaskPE[" << peId << "] starts task " << task->taskId
        << " at " << simTime() << endl;
 
@@ -361,10 +323,6 @@ void TaskPE::completeComputation() {
     lastEventTime    = now;
     isIdle           = true;
     updatePower(powerIdle);
-
-    if (powerTrace) {
-        powerTrace->recordPEEvent(peId, PE_COMPUTE_END, now, powerIdle);
-    }
 
     EV << "-I- TaskPE[" << peId << "] completed task " << task->taskId
        << " at " << simTime() << endl;
@@ -434,10 +392,6 @@ void TaskPE::sendTaskData(TaskDescriptor* task) {
             send(flit, "out$o");
             totalFlitsSent++;
 
-            if (powerTrace) {
-                powerTrace->recordPEEvent(peId, PE_SEND_FLIT, simTime(),
-                                          powerIdle + powerSendPerFlit / tClk_s);
-            }
         }
 
         EV << "-I- TaskPE[" << peId << "] sent " << numFlits
@@ -450,11 +404,6 @@ void TaskPE::sendTaskData(TaskDescriptor* task) {
 // -----------------------------------------------------------------------
 void TaskPE::handleDataArrival(TaskMsg* msg) {
     totalFlitsReceived++;
-
-    if (powerTrace) {
-        powerTrace->recordPEEvent(peId, PE_RECV_FLIT, simTime(),
-                                  powerIdle + powerRecvPerFlit / tClk_s);
-    }
 
     // Only act on the last flit of each packet
     if (msg->getType() != NOC_END_FLIT && msg->getFlits() > 1) {
@@ -514,8 +463,4 @@ void TaskPE::updatePower(double newPower) {
 // -----------------------------------------------------------------------
 void TaskPE::samplePower() {
     powerVec.record(currentPower);
-    if (powerTrace) {
-        powerTrace->recordPEEvent(peId, isIdle ? PE_IDLE : PE_COMPUTE_START,
-                                  simTime(), currentPower);
-    }
 }

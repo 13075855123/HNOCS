@@ -30,7 +30,6 @@ OBJS = \
     $O/cores/sinks/InfiniteBWMultiVCSink.o \
     $O/cores/sinks/InfiniteBWMultiVCSinkperSrc.o \
     $O/cores/sources/PktFifoSrc.o \
-    $O/cores/task/PowerTrace.o \
     $O/cores/task/TaskPE.o \
     $O/routers/hier/inPort/InPortAsync.o \
     $O/routers/hier/inPort/InPortSync.o \

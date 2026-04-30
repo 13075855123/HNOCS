@@ -38,9 +38,3 @@ opp_run -u Cmdenv -f omnetpp.ini -n ../../../src
 - PE0 completes first (100 ns)
 - PE1–PE4 complete after receiving PE0's data + 200 ns compute
 - PE5 completes last after receiving all four layer-2 results + 150 ns compute
-
-## Power Analysis
-```bash
-cd results
-python3 ../../power_analysis/parse_power.py cnn_power.csv
-```
