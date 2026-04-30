@@ -14,5 +14,5 @@ packet TaskMsg extends NoCFlitMsg {
     int consumerPE;          // receiving PE number
     int producerTaskId;      // sending task ID
     int dataSize;            // data size (bytes)
-    simtime_t computeTime;   // compute time that produced this data
+    double computeTime;      // compute time that produced this data (seconds)
 }
