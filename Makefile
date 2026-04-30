@@ -1,13 +1,13 @@
 #
-# OMNeT++/OMNEST Makefile for HNOCS
+# OMNeT++/OMNEST Makefile for libhnocs
 #
 # This file was generated with the command:
-#  opp_makemake -f --deep -O out -d src -X.
+#  opp_makemake -f --deep -O out -o libhnocs
 #
 
 # Name of target to be created (-o option)
 TARGET_DIR = .
-TARGET_NAME = HNOCS$(D)
+TARGET_NAME = libhnocs$(D)
 TARGET = $(TARGET_NAME)$(EXE_SUFFIX)
 TARGET_FILES = $(TARGET_DIR)/$(TARGET)
 
@@ -15,6 +15,9 @@ TARGET_FILES = $(TARGET_DIR)/$(TARGET)
 USERIF_LIBS = $(ALL_ENV_LIBS) # that is, $(QTENV_LIBS) $(CMDENV_LIBS)
 #USERIF_LIBS = $(CMDENV_LIBS)
 #USERIF_LIBS = $(QTENV_LIBS)
+
+# C++ include paths (with -I)
+INCLUDE_PATH =
 
 # Additional object and library files to link with
 EXTRA_OBJS =
@@ -26,6 +29,31 @@ LIBS =
 PROJECT_OUTPUT_DIR = out
 PROJECTRELATIVE_PATH =
 O = $(PROJECT_OUTPUT_DIR)/$(CONFIGNAME)/$(PROJECTRELATIVE_PATH)
+
+# Object files for local .cc, .msg and .sm files
+OBJS = \
+    $O/src/cores/sinks/InfiniteBWMultiVCSink.o \
+    $O/src/cores/sinks/InfiniteBWMultiVCSinkperSrc.o \
+    $O/src/cores/sources/PktFifoSrc.o \
+    $O/src/cores/task/PowerTrace.o \
+    $O/src/cores/task/TaskPE.o \
+    $O/src/routers/hier/inPort/InPortAsync.o \
+    $O/src/routers/hier/inPort/InPortSync.o \
+    $O/src/routers/hier/opCalc/static/XYOPCalc.o \
+    $O/src/routers/hier/sched/wormhole/SchedAsync.o \
+    $O/src/routers/hier/sched/wormhole/SchedSync.o \
+    $O/src/routers/hier/vcCalc/free/FLUVCCalc.o \
+    $O/src/thermal/ThermalTrace.o \
+    $O/src/NoCs_m.o \
+    $O/src/messages/TaskMsg_m.o
+
+# Message files
+MSGFILES = \
+    src/NoCs.msg \
+    src/messages/TaskMsg.msg
+
+# SM files
+SMFILES =
 
 #------------------------------------------------------------------------------
 
@@ -45,6 +73,10 @@ include $(CONFIGFILE)
 
 # Simulation kernel and user interface libraries
 OMNETPP_LIBS = $(OPPMAIN_LIB) $(USERIF_LIBS) $(KERNEL_LIBS) $(SYS_LIBS)
+
+COPTS = $(CFLAGS) $(IMPORT_DEFINES)  $(INCLUDE_PATH) -I$(OMNETPP_INCL_DIR)
+MSGCOPTS = $(INCLUDE_PATH)
+SMCOPTS =
 
 # we want to recompile everything if COPTS changes,
 # so we store COPTS into $COPTS_FILE (if COPTS has changed since last build)
@@ -71,31 +103,39 @@ ifeq ($(TOOLCHAIN_NAME),clang-msabi)
 $O/$(TARGET_NAME).pdb: $O/$(TARGET)
 endif
 
-$O/$(TARGET):  submakedirs $(wildcard $(EXTRA_OBJS)) Makefile $(CONFIGFILE)
+$O/$(TARGET): $(OBJS)  $(wildcard $(EXTRA_OBJS)) Makefile $(CONFIGFILE)
 	@$(MKPATH) $O
 	@echo Creating executable: $@
-	$(Q)$(CXX) $(LDFLAGS) -o $O/$(TARGET)  $(EXTRA_OBJS) $(AS_NEEDED_OFF) $(WHOLE_ARCHIVE_ON) $(LIBS) $(WHOLE_ARCHIVE_OFF) $(OMNETPP_LIBS)
+	$(Q)$(CXX) $(LDFLAGS) -o $O/$(TARGET) $(OBJS) $(EXTRA_OBJS) $(AS_NEEDED_OFF) $(WHOLE_ARCHIVE_ON) $(LIBS) $(WHOLE_ARCHIVE_OFF) $(OMNETPP_LIBS)
 
-submakedirs:  src_dir
+.PHONY: all clean cleanall depend msgheaders smheaders
 
-.PHONY: all clean cleanall depend msgheaders smheaders  src
-src: src_dir
+# disabling all implicit rules
+.SUFFIXES :
+.PRECIOUS : %_m.h %_m.cc
 
-src_dir:
-	cd src && $(MAKE) all
+$O/%.o: %.cc $(COPTS_FILE) | msgheaders smheaders
+	@$(MKPATH) $(dir $@)
+	$(qecho) "$<"
+	$(Q)$(CXX) -c $(CXXFLAGS) $(COPTS) -o $@ $<
 
-msgheaders:
-	$(Q)cd src && $(MAKE) msgheaders
+%_m.cc %_m.h: %.msg
+	$(qecho) MSGC: $<
+	$(Q)$(MSGC) -s _m.cc -MD -MP -MF $O/$(basename $<)_m.h.d $(MSGCOPTS) $<
 
-smheaders:
-	$(Q)cd src && $(MAKE) smheaders
+%_sm.cc %_sm.h: %.sm
+	$(qecho) SMC: $<
+	$(Q)$(SMC) -c++ -suffix cc $(SMCOPTS) $<
+
+msgheaders: $(MSGFILES:.msg=_m.h)
+
+smheaders: $(SMFILES:.sm=_sm.h)
 
 clean:
 	$(qecho) Cleaning $(TARGET)
 	$(Q)-rm -rf $O
 	$(Q)-rm -f $(TARGET_FILES)
 	$(Q)-rm -f $(call opp_rwildcard, . , *_m.cc *_m.h *_sm.cc *_sm.h)
-	-$(Q)cd src && $(MAKE) clean
 
 cleanall:
 	$(Q)$(CLEANALL_COMMAND)

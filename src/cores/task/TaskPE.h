@@ -9,6 +9,8 @@
 #include "PowerTrace.h"
 #include "NoCs_m.h"
 #include "messages/TaskMsg_m.h"
+#include "../thermal/ThermalTrace.h"
+
 
 using namespace omnetpp;
 
@@ -35,6 +37,9 @@ private:
     cMessage* powerSampleMsg;
     cMessage* injectPopMsg;
 
+    // NEW: periodic energy window timer
+    cMessage* energyWindowMsg;
+
     // === Injection-side state ===
     std::queue<TaskMsg*> injectQ;
     int credits;   // send-side credits on VC0
@@ -59,12 +64,25 @@ private:
     double powerSendPerFlit;
     double powerRecvPerFlit;
 
+    // NEW: window-based energy parameters/state
+    simtime_t energyWindow;
+    simtime_t lastEnergyUpdateTime;
+    long windowSendFlits;
+    long windowRecvFlits;
+    double windowEnergyJ;
+    double totalEnergyJ;
+
     // Power trace
     PowerTraceWriter* powerTrace;
     bool enablePowerTrace;
 
     // OMNeT++ output vectors / scalars
     cOutVector powerVec;
+
+    // NEW: energy vectors
+    cOutVector windowEnergyVec;
+    cOutVector cumulativeEnergyVec;
+    cOutVector windowAvgPowerVec;
 
     // Global packet-id counter
     int pktIdCounter;
@@ -86,7 +104,11 @@ private:
     void updatePower(double newPower);
     void samplePower();
 
-    // NEW: return credits to router when TaskPE is receiver
+    // NEW: PE energy helpers
+    void accumulatePEStaticEnergy(simtime_t now);
+    void finalizeEnergyWindow(simtime_t now);
+
+    // return credits to router when TaskPE is receiver
     void sendCredit(int vc, int numFlits);
 
     double tClk_s;

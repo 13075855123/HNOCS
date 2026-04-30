@@ -18,31 +18,28 @@
 
 package hnocs.routers.hier.inPort;
 
-//
-// Sync Input Port
-//
 simple InPortSync like InPort_Ifc
 {
     parameters:
-        int numVCs;     // number of supported VCs
-        int flitsPerVC; // number of buffers available per VC
+        int numVCs;
+        int flitsPerVC;
         int rows;
         int columns;
-        bool collectPerHopWait;        // Controls per hop wait time collection
-        double statStartTime @unit(s); // start time for recording statistics [sec]
+        bool collectPerHopWait;
+        double statStartTime @unit(s);
 
-//        // energy model
-//        double energyWindow @unit(s);
-//		double eBufferWrite @unit(J);
-//		double eBufferRead  @unit(J);
-//		double eCrossbar    @unit(J);
-//		double pLeak        @unit(W);
+        // NEW: InPort energy model
+        double energyWindow @unit(s) = default(100ns);
+        double eBufferWrite @unit(J) = default(1e-12J);
+        double eBufferRead  @unit(J) = default(1e-12J);
+        double eCrossbar    @unit(J) = default(0.5e-12J);
+        double pLeak        @unit(W) = default(1e-3W);
 
         @display("i=block/subqueue");
     gates:
-        inout in;     // inport
-        output out[]; // connected to sw for sending flits
-        inout ctrl[]; // connected to sw for sending req, ack and receiving gnt
-        inout calcVc; // calculates outputVC
-        inout calcOp; // calculate out port
+        inout in;
+        output out[];
+        inout ctrl[];
+        inout calcVc;
+        inout calcOp;
 }

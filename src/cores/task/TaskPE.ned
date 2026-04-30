@@ -17,12 +17,6 @@
 
 package hnocs.cores.task;
 
-//
-// Task-driven Processing Element.
-//
-// Implements the NI_Ifc interface so that it can be used as a drop-in
-// replacement for the random-traffic source+sink pair in any topology.
-//
 simple TaskPE like hnocs.cores.NI_Ifc
 {
     parameters:
@@ -43,6 +37,8 @@ simple TaskPE like hnocs.cores.NI_Ifc
         string hotspotTraceFile    = default("results/hotspot_power.trace");
         double powerSampleInterval @unit(s) = default(1us);
 
+        // NEW
+        double energyWindow @unit(s) = default(100ns);
 
         @display("i=block/process");
 
