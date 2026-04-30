@@ -1,12 +1,15 @@
 #include "ThermalTrace.h"
 #include <algorithm>
 
-// Global singleton writer
-static ThermalTraceWriter gThermalTraceWriter;
+// Global singleton writer (lazy initialization)
+static ThermalTraceWriter* gThermalTraceWriter = nullptr;
 
 ThermalTraceWriter* getThermalTraceWriter()
 {
-    return &gThermalTraceWriter;
+    if (!gThermalTraceWriter) {
+        gThermalTraceWriter = new ThermalTraceWriter();
+    }
+    return gThermalTraceWriter;
 }
 
 ThermalTraceWriter::ThermalTraceWriter()
