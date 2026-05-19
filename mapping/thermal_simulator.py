@@ -85,7 +85,10 @@ class ThermalResult:
     schedule: list[TaskSlot]              # per-task timing
     pe_max_temp: list[float]              # K, index = PE id
     pe_avg_temp: list[float]              # K, averaged over active period
-    pe_temp_trace: Optional[list[list[float]]] = None  # optional full trace
+    pe_temp_trace: Optional[list[list[float]]] = None  # [pe_id][time_step]
+    # Per-task start-time temperatures: {task_id: {pe_id: T_K}}
+    # "At the moment task_i started, PE_j was at this temperature"
+    task_start_temps: Optional[dict[int, dict[int, float]]] = None
     sim_end_time: float = 0.0
 
 
@@ -387,12 +390,18 @@ def simulate_thermal(
         # 3. Build power trace
         pe_power_trace, router_power_trace, end_time = power.build_power_trace(schedule)
 
-        # 4. Run thermal solver
+        # 4. Run thermal solver (always record full trace for per-task temps)
         result = thermal.simulate(
             pe_power_trace, router_power_trace,
-            initial_temps=pe_temps,
+            initial_temps=pe_temps, record_trace=True,
         )
         result.schedule = schedule
+
+        # 4b. Extract per-task start-time temperatures
+        #     task_start_temps[task_id][pe_id] = T of PE_j when task_i started
+        result.task_start_temps = _extract_task_start_temps(
+            schedule, result.pe_temp_trace, params
+        )
 
         # 5. Check if DVFS changed
         max_delta = max(abs(result.pe_max_temp[i] - pe_temps[i])
@@ -411,6 +420,33 @@ def simulate_thermal(
 # ============================================================================
 # Helpers
 # ============================================================================
+def _extract_task_start_temps(
+    schedule: list[TaskSlot],
+    pe_temp_trace: Optional[list[list[float]]],
+    params: SimParams,
+) -> dict[int, dict[int, float]]:
+    """For each task, record the temperature of every PE at the moment
+    that task started computing.
+
+    Returns {task_id: {pe_id: T_K}}.
+    """
+    result: dict[int, dict[int, float]] = {}
+    if pe_temp_trace is None:
+        return result
+    n_steps = len(pe_temp_trace[0]) if pe_temp_trace else 0
+    if n_steps == 0:
+        return result
+
+    dt = params.dt
+    for slot in schedule:
+        step = min(n_steps - 1, int(slot.start_time / dt))
+        temps_at_start: dict[int, float] = {}
+        for pe in range(params.num_pes):
+            temps_at_start[pe] = pe_temp_trace[pe][step]
+        result[slot.task_id] = temps_at_start
+    return result
+
+
 def _hops(pe_a: int, pe_b: int, cols: int) -> int:
     r1, c1 = divmod(pe_a, cols)
     r2, c2 = divmod(pe_b, cols)

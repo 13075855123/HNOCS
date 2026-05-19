@@ -39,7 +39,7 @@ class CostModel:
         cols: int = 4,
     ):
         self.graph = graph
-        self.T = list(pe_temperatures)   # K, indexed by PE id
+        self.T = list(pe_temperatures)   # K, indexed by PE id (fallback)
         self.w_T = w_T
         self.w_H = w_H
         self.Tamb = float(Tambient)
@@ -47,7 +47,18 @@ class CostModel:
         self.cols = cols
         self.num_pes = rows * cols
 
+        # Per-task start-time temperatures (from previous simulation round).
+        # {task_id: {pe_id: T_K}} — "when task_i started, PE_j was T_K".
+        # If set, task_cost() uses these instead of self.T[pe].
+        self._task_start_temps: dict[int, dict[int, float]] = {}
+
         self._hops_cache: dict[tuple[int, int], int] = {}
+
+    def set_task_start_temps(self, temps: dict[int, dict[int, float]]) -> None:
+        """Set per-task start-time temperatures from a previous thermal
+        simulation.  After this, task_cost() will look up T_PE_j at the
+        moment task_i started, rather than using a static PE-wide max."""
+        self._task_start_temps = temps
 
     # ------------------------------------------------------------------
     # Manhattan distance on 2-D mesh
@@ -68,19 +79,27 @@ class CostModel:
     # ------------------------------------------------------------------
     # Per-task cost (used during greedy topological assignment)
     # ------------------------------------------------------------------
+    def _pe_temp(self, task_id: int, pe: int) -> float:
+        """Temperature of PE *pe* at the moment *task_id* starts.
+
+        Uses per-task start-time temps if available (from previous
+        simulation round); otherwise falls back to static pe_temperatures.
+        """
+        task_temps = self._task_start_temps.get(task_id)
+        if task_temps is not None and pe in task_temps:
+            return task_temps[pe]
+        if pe < len(self.T):
+            return self.T[pe]
+        return self.Tamb
+
     def task_cost(
         self,
         task_id: int,
         candidate_pe: int,
         assignment: dict[int, int],
     ) -> float:
-        """Cost of assigning *task_id* to *candidate_pe* given prior
-        assignments of its predecessors.
-        """
         node = self.graph.tasks[task_id]
-
-        # Thermal term
-        thermal = self.w_T * max(0.0, self.T[candidate_pe] - self.Tamb)
+        thermal = self.w_T * max(0.0, self._pe_temp(task_id, candidate_pe) - self.Tamb)
 
         # Communication term: sum over predecessors already assigned
         comm = 0.0
@@ -156,9 +175,8 @@ class CostModel:
             pe = assignment.get(tid)
             if pe is None:
                 continue
-            thermal += self.w_T * max(0.0, self.T[pe] - self.Tamb)
-            if pe < len(self.T):
-                max_t = max(max_t, self.T[pe])
+            thermal += self.w_T * max(0.0, self._pe_temp(tid, pe) - self.Tamb)
+            max_t = max(max_t, self._pe_temp(tid, pe))
 
             for pred_id in node.predecessor_set:
                 pred_node = self.graph.tasks.get(pred_id)

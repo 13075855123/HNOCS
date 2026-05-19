@@ -153,12 +153,15 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  Temperature converged (d < {args.temp_convergence} K) at round {rnd}")
             break
 
-        # 4f. Re-optimise with new temperatures
+        # 4f. Re-optimise with per-task start-time temperatures
         print(f"  Re-optimising...")
         cm2 = CostModel(
             graph, new_temps, w_T=args.wT, w_H=args.wH,
             Tambient=args.Tambient, rows=args.rows, cols=args.cols,
         )
+        # Use per-task start-time temps from simulation (replaces static per-PE max)
+        if sim_result.task_start_temps:
+            cm2.set_task_start_temps(sim_result.task_start_temps)
         opt2 = SAOptimizer(graph, cm2, seed=args.seed + rnd)
         result2 = opt2.optimize()
 
