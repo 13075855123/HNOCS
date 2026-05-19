@@ -10,3 +10,8 @@
 /out
 __pycache__/
 *.pyc
+# Direction B thermal snapshot (generated at simulation end)
+thermal_snapshot.json
+# OMNeT++ build artifacts
+*.anf
+src/Makefile.*

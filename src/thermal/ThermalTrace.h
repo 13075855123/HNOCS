@@ -64,6 +64,7 @@ class ThermalModel
     // ---- lifecycle -------------------------------------------------------
     void open(const char* hotspotFilename, int rows, int cols);
     void close();
+    void writeThermalSnapshot();  // dump final PE temps as JSON
 
     // ---- power submission (called from TaskPE / InPortSync windows) -------
     void submitPEPower(int peId, simtime_t t, double avgPower);

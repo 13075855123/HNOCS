@@ -85,6 +85,34 @@ void ThermalModel::close()
         traceFile.close();
     }
     opened = false;
+    writeThermalSnapshot();
+}
+
+void ThermalModel::writeThermalSnapshot()
+{
+    if (numPEs <= 0) return;
+
+    std::ofstream out("thermal_snapshot.json");
+    if (!out.is_open()) return;
+
+    out << "{\n";
+    out << "  \"pe_temperatures_K\": [";
+    for (int i = 0; i < numPEs; i++) {
+        if (i > 0) out << ", ";
+        out << peTemp[i];
+    }
+    out << "],\n";
+    out << "  \"router_temperatures_K\": [";
+    for (int i = 0; i < numRouters; i++) {
+        if (i > 0) out << ", ";
+        out << routerTemp[i];
+    }
+    out << "],\n";
+    out << "  \"Tambient_K\": " << Tambient << ",\n";
+    out << "  \"rows\": " << rows << ",\n";
+    out << "  \"cols\": " << cols << "\n";
+    out << "}\n";
+    out.close();
 }
 
 // ---- thermal parameters --------------------------------------------------
