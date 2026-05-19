@@ -1,0 +1,27 @@
+# VOPD (Video Object Plane Decoder) — 12-node Pipeline DAG
+# All peId = -2 → GB dynamic temperature-aware assignment
+0, -1, 0, 0
+# T1: VOP decode — input
+1, -2, 25000, 70, 2:0, 11:0
+# T2: VLD
+2, -2, 30000, 362, 3:0
+# T3: IDCT — forks to MC and AUX
+3, -2, 30000, 362, 4:0, 12:0
+# T4: MC
+4, -2, 30000, 357, 5:0
+# T5: RC
+5, -2, 30000, 353, 6:0
+# T6: MED CPU
+6, -2, 30000, 300, 7:0
+# T7: RAST — forks to 3 parallel
+7, -2, 30000, 313, 8:0, 9:0, 10:0
+# T8: ADSP — audio processing
+8, -2, 30000, 407, -1:-1
+# T9: SDRAM interface
+9, -2, 30000, 500, -1:-1
+# T10: SRAM1 — frame buffer
+10, -2, 25000, 160, -1:-1
+# T11: VOP reorder
+11, -2, 20000, 27, -1:-1
+# T12: AUX sync
+12, -2, 20000, 157, -1:-1

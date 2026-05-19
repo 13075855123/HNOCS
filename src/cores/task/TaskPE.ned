@@ -26,6 +26,8 @@ simple TaskPE like hnocs.cores.NI_Ifc
         double statStartTime @unit(s) = default(1us);
 
         string application = default("matrix_multiply");
+        string csvFile = default("");
+        int    bufferBaseId = default(1000);
 
         double powerIdle    @unit(W) = default(0.1W);
         double powerCompute @unit(W) = default(2.0W);
@@ -34,11 +36,17 @@ simple TaskPE like hnocs.cores.NI_Ifc
 
         bool   enablePowerTrace    = default(true);
         string powerTraceFile      = default("results/power_trace.csv");
-        string hotspotTraceFile    = default("results/hotspot_power.trace");
+        string hotspotTraceFile    = default("");
         double powerSampleInterval @unit(s) = default(1us);
 
         // NEW
         double energyWindow @unit(s) = default(100ns);
+        bool   enableEnergyWindow = default(true);
+
+        double computeDensity = default(0);
+        // >0: derive nominal computeTime from data size instead of CSV
+        bool remapToDynamic = default(false);
+        // >0: derive nominal computeTime from data size instead of CSV
 
         @display("i=block/process");
 

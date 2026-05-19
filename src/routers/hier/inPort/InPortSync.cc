@@ -3,72 +3,79 @@
 
 Define_Module(InPortSync);
 
-// NEW
 void InPortSync::finalizeEnergyWindow(simtime_t now) {
-    if (now <= statStartTime) {
-        windowBufferWriteCount = 0;
-        windowBufferReadCount = 0;
-        windowCrossbarTraversal = 0;
-        windowEnergyJ = 0.0;
-        return;
-    }
+    // Temperature-dependent leakage power (doubles ~every 10°C)
+    cModule* routerMod = getParentModule()->getParentModule();
+    int routerId = routerMod ? routerMod->getIndex() : -1;
+    double Tambient = getSystemModule()->par("Tambient");
+    double Trouter = getThermalModel()->getRouterTemperature(routerId);
+    double leakageFactor = exp((Trouter - Tambient) / 15.0);
+    double actualLeakage = pLeak * leakageFactor;
 
-    windowEnergyJ =
+    // Dynamic: buffer write/read + crossbar event energy (T-independent)
+    windowDynamicEnergyJ =
         windowBufferWriteCount * eBufferWrite +
         windowBufferReadCount  * eBufferRead +
-        windowCrossbarTraversal * eCrossbar +
-        pLeak * energyWindow.dbl();
+        windowCrossbarTraversal * eCrossbar;
 
-    totalEnergyJ += windowEnergyJ;
+    // Static: temperature-dependent leakage over this window
+    windowStaticEnergyJ = actualLeakage * energyWindow.dbl();
+    windowEnergyJ = windowStaticEnergyJ + windowDynamicEnergyJ;
 
-    windowEnergyVec.record(windowEnergyJ);
-    cumulativeEnergyVec.record(totalEnergyJ);
-
-    double windowAvgPower = 0.0;   // NEW
-    if (energyWindow.dbl() > 0) {
-        windowAvgPower = windowEnergyJ / energyWindow.dbl();
-        windowAvgPowerVec.record(windowAvgPower);
-    } else {
-        windowAvgPowerVec.record(0.0);
-    }
-
-    // NEW: only one inPort per router submits aggregated router power
-    // owner = router[x].port[0].inPort
+    // Always submit power to thermal model (thermal physics doesn't wait for statStartTime)
     if (thermalAggregationOwner) {
-        cModule* portMod = getParentModule();                 // port[i]
-        cModule* routerMod = portMod ? portMod->getParentModule() : nullptr; // router[r]
+        double routerWindowEnergy = 0.0;
 
-        if (routerMod) {
-            double routerWindowEnergy = 0.0;
-
-            for (cModule::SubmoduleIterator it(routerMod); !it.end(); ++it) {
-                cModule* sub = *it;
-                if (strcmp(sub->getName(), "port") == 0) {
-                    cModule* inPortMod = sub->getSubmodule("inPort");
-                    if (inPortMod) {
-                        InPortSync* ip = dynamic_cast<InPortSync*>(inPortMod);
-                        if (ip) {
-                            routerWindowEnergy += ip->windowEnergyJ;
-                        }
+        for (cModule::SubmoduleIterator it(routerMod); !it.end(); ++it) {
+            cModule* sub = *it;
+            if (strcmp(sub->getName(), "port") == 0) {
+                cModule* inPortMod = sub->getSubmodule("inPort");
+                if (inPortMod) {
+                    InPortSync* ip = dynamic_cast<InPortSync*>(inPortMod);
+                    if (ip) {
+                        routerWindowEnergy += ip->windowEnergyJ;
                     }
                 }
             }
+        }
 
-            double routerAvgPower = 0.0;
-            if (energyWindow.dbl() > 0) {
-                routerAvgPower = routerWindowEnergy / energyWindow.dbl();
-            }
+        double routerAvgPower = 0.0;
+        if (energyWindow.dbl() > 0) {
+            routerAvgPower = routerWindowEnergy / energyWindow.dbl();
+        }
 
-            int routerId = routerMod->getIndex();
-            getThermalTraceWriter()->submitRouterPower(routerId, now, routerAvgPower);
+        getThermalModel()->submitRouterPower(routerId, now, routerAvgPower);
 
-            EV << "-I- " << getFullPath()
-               << " ROUTER-THERMAL-SUBMIT"
-               << " routerId=" << routerId
-               << " routerWindowEnergy=" << routerWindowEnergy
-               << " routerAvgPower=" << routerAvgPower
-               << " at " << now
-               << endl;
+        EV << "-I- " << getFullPath()
+           << " ROUTER-THERMAL-SUBMIT"
+           << " routerId=" << routerId
+           << " routerWindowEnergy=" << routerWindowEnergy
+           << " routerAvgPower=" << routerAvgPower
+           << " leakageFactor=" << leakageFactor
+           << " Trouter=" << Trouter
+           << " at " << now
+           << endl;
+    }
+
+    // Statistics recording only after statStartTime
+    if (now > statStartTime) {
+        totalStaticEnergyJ  += windowStaticEnergyJ;
+        totalDynamicEnergyJ += windowDynamicEnergyJ;
+        totalEnergyJ += windowEnergyJ;
+
+        windowEnergyVec.record(windowEnergyJ);
+        windowStaticEnergyVec.record(windowStaticEnergyJ);
+        windowDynamicEnergyVec.record(windowDynamicEnergyJ);
+        cumulativeEnergyVec.record(totalEnergyJ);
+        cumulativeStaticEnergyVec.record(totalStaticEnergyJ);
+        cumulativeDynamicEnergyVec.record(totalDynamicEnergyJ);
+
+        double windowAvgPower = 0.0;
+        if (energyWindow.dbl() > 0) {
+            windowAvgPower = windowEnergyJ / energyWindow.dbl();
+            windowAvgPowerVec.record(windowAvgPower);
+        } else {
+            windowAvgPowerVec.record(0.0);
         }
     }
 
@@ -76,16 +83,36 @@ void InPortSync::finalizeEnergyWindow(simtime_t now) {
        << " ENERGY-WINDOW"
        << " at " << now
        << " windowEnergyJ=" << windowEnergyJ
-       << " totalEnergyJ=" << totalEnergyJ
-       << " windowBufferWriteCount=" << windowBufferWriteCount
-       << " windowBufferReadCount=" << windowBufferReadCount
-       << " windowCrossbarTraversal=" << windowCrossbarTraversal
+       << " staticJ=" << windowStaticEnergyJ
+       << " dynamicJ=" << windowDynamicEnergyJ
+       << " leakageFactor=" << leakageFactor
        << endl;
 
     windowBufferWriteCount = 0;
     windowBufferReadCount = 0;
     windowCrossbarTraversal = 0;
+    windowStaticEnergyJ  = 0.0;
+    windowDynamicEnergyJ = 0.0;
     windowEnergyJ = 0.0;
+
+    updateThermalDisplay();
+}
+
+void InPortSync::updateThermalDisplay() {
+    cModule* routerMod = getParentModule()->getParentModule();
+    if (!routerMod) return;
+    int routerId = routerMod->getIndex();
+    double t = getThermalModel()->getRouterTemperature(routerId);
+
+    // Record temperature vector (only port[0] has vector initialized)
+    if (thermalAggregationOwner) {
+        routerTempVec.record(t);
+    }
+
+    // Display temperature text next to router
+    char tmpText[32];
+    snprintf(tmpText, sizeof(tmpText), "%.1fC", t - 273.15);
+    routerMod->getDisplayString().setTagArg("t", 0, tmpText);
 }
 
 void InPortSync::initialize() {
@@ -124,12 +151,24 @@ void InPortSync::initialize() {
     windowEnergyJ = 0.0;
     totalEnergyJ = 0.0;
 
+    windowStaticEnergyJ  = 0.0;
+    windowDynamicEnergyJ = 0.0;
+    totalStaticEnergyJ   = 0.0;
+    totalDynamicEnergyJ  = 0.0;
+
     windowEnergyVec.setName("router-window-energy");
     cumulativeEnergyVec.setName("router-cumulative-energy");
     windowAvgPowerVec.setName("router-window-avg-power");
 
+    windowStaticEnergyVec.setName("router-window-static-energy");
+    windowDynamicEnergyVec.setName("router-window-dynamic-energy");
+    cumulativeStaticEnergyVec.setName("router-cumulative-static-energy");
+    cumulativeDynamicEnergyVec.setName("router-cumulative-dynamic-energy");
+
     energyWindowMsg = new cMessage("energyWindow");
-    scheduleAt(simTime() + energyWindow, energyWindowMsg);
+    if (par("enableEnergyWindow")) {
+        scheduleAt(simTime() + energyWindow, energyWindowMsg);
+    }
 
     if (collectPerHopWait) {
         qTimeBySrcDst_head_flit.resize(rows * columns);
@@ -153,6 +192,10 @@ void InPortSync::initialize() {
     cModule* portMod = getParentModule();
     if (portMod && strcmp(portMod->getName(), "port") == 0) {
         thermalAggregationOwner = (portMod->getIndex() == 0);
+    }
+
+    if (thermalAggregationOwner) {
+        routerTempVec.setName("router-die-temperature");
     }
 }
 
@@ -284,6 +327,8 @@ void InPortSync::handleCalcVCResp(NoCFlitMsg *msg) {
 
     if (QByiVC[inVC].isEmpty()) {
         QByiVC[inVC].insert(msg);
+    } else if (msg->getFlits() == 1) {
+        QByiVC[inVC].insert(msg);          // single-flit: FIFO order
     } else {
         QByiVC[inVC].insertBefore(QByiVC[inVC].front(), msg);
     }
@@ -361,6 +406,7 @@ void InPortSync::handleInFlitMsg(NoCFlitMsg *msg) {
            << endl;
 
         send(msg, "calcOp$o");
+        if (msg->getFlits() == 1) curPktId[inVC] = 0;
     } else {
         if (msg->getPktId() != curPktId[inVC]) {
             throw cRuntimeError("-E- got FLIT %d with packet 0x%x during packet 0x%x",
@@ -412,7 +458,8 @@ void InPortSync::handleGntMsg(NoCGntMsg *msg) {
             // NEW
             windowBufferReadCount++;
         }
-        foundFlit->setVC(curOutVC[inVC]);
+        if (foundFlit->getFlits() > 1)
+            foundFlit->setVC(curOutVC[inVC]);
 
         measureQlength();
 
@@ -522,5 +569,7 @@ void InPortSync::finish() {
 
         // NEW
         recordScalar("totalEnergyJ", totalEnergyJ);
+        recordScalar("totalStaticEnergyJ", totalStaticEnergyJ);
+        recordScalar("totalDynamicEnergyJ", totalDynamicEnergyJ);
     }
 }

@@ -52,12 +52,28 @@ private:
     double windowEnergyJ;
     double totalEnergyJ;
 
+    double windowStaticEnergyJ;
+    double windowDynamicEnergyJ;
+    double totalStaticEnergyJ;
+    double totalDynamicEnergyJ;
+
     cOutVector windowEnergyVec;
     cOutVector cumulativeEnergyVec;
     cOutVector windowAvgPowerVec;
 
+    cOutVector windowStaticEnergyVec;
+    cOutVector windowDynamicEnergyVec;
+    cOutVector cumulativeStaticEnergyVec;
+    cOutVector cumulativeDynamicEnergyVec;
+
     // NEW
     void finalizeEnergyWindow(simtime_t now);
+
+    // Temperature-based display color update
+    void updateThermalDisplay();
+
+    // Per-router temperature output vector (only port[0] records)
+    cOutVector routerTempVec;
 
     // NEW: only one inPort per router submits aggregated router power
     bool thermalAggregationOwner;

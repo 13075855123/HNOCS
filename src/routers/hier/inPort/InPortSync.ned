@@ -30,6 +30,7 @@ simple InPortSync like InPort_Ifc
 
         // NEW: InPort energy model
         double energyWindow @unit(s) = default(100ns);
+        bool   enableEnergyWindow = default(true);
         double eBufferWrite @unit(J) = default(1e-12J);
         double eBufferRead  @unit(J) = default(1e-12J);
         double eCrossbar    @unit(J) = default(0.5e-12J);

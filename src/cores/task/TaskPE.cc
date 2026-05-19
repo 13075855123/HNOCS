@@ -19,8 +19,13 @@
 
 #include "TaskPE.h"
 #include "thermal/ThermalTrace.h"   // NEW
+#include "utils/TaskGraphParser.h"
 
 Define_Module(TaskPE);
+
+int TaskPE::systemTotalTasks = 0;
+int TaskPE::systemCompletedTasks = 0;
+bool TaskPE::systemStopScheduled = false;
 
 // NEW
 void TaskPE::sendCredit(int vc, int numFlits) {
@@ -49,24 +54,41 @@ void TaskPE::accumulatePEStaticEnergy(simtime_t now) {
     if (now <= lastEnergyUpdateTime) return;
 
     simtime_t dt = now - lastEnergyUpdateTime;
-    windowEnergyJ += currentPower * dt.dbl();
+    windowStaticEnergyJ += currentPower * dt.dbl();
     lastEnergyUpdateTime = now;
 }
 
 // NEW
 void TaskPE::finalizeEnergyWindow(simtime_t now) {
+    // Refresh currentPower with latest temperature before accumulating
+    if (isIdle)
+        currentPower = getTemperatureCorrectedPower(true);
+    else
+        currentPower = getTemperatureCorrectedPower(false);
+
     accumulatePEStaticEnergy(now);
 
-    // add event energy
-    windowEnergyJ += windowSendFlits * powerSendPerFlit;
-    windowEnergyJ += windowRecvFlits * powerRecvPerFlit;
+    // Dynamic energy from flit events
+    windowDynamicEnergyJ =
+        windowSendFlits * powerSendPerFlit +
+        windowRecvFlits * powerRecvPerFlit;
 
-    totalEnergyJ += windowEnergyJ;
+    // Total window energy = static + dynamic
+    windowEnergyJ = windowStaticEnergyJ + windowDynamicEnergyJ;
 
+    totalStaticEnergyJ  += windowStaticEnergyJ;
+    totalDynamicEnergyJ += windowDynamicEnergyJ;
+    totalEnergyJ        += windowEnergyJ;
+
+    // Record combined + separated energy vectors
     windowEnergyVec.record(windowEnergyJ);
+    windowStaticEnergyVec.record(windowStaticEnergyJ);
+    windowDynamicEnergyVec.record(windowDynamicEnergyJ);
     cumulativeEnergyVec.record(totalEnergyJ);
+    cumulativeStaticEnergyVec.record(totalStaticEnergyJ);
+    cumulativeDynamicEnergyVec.record(totalDynamicEnergyJ);
 
-    double windowAvgPower = 0.0;   // NEW
+    double windowAvgPower = 0.0;
     if (energyWindow.dbl() > 0) {
         windowAvgPower = windowEnergyJ / energyWindow.dbl();
         windowAvgPowerVec.record(windowAvgPower);
@@ -74,20 +96,38 @@ void TaskPE::finalizeEnergyWindow(simtime_t now) {
         windowAvgPowerVec.record(0.0);
     }
 
-    // NEW: submit PE average power to unified HotSpot trace
-    getThermalTraceWriter()->submitPEPower(peId, now, windowAvgPower);
+    // Submit PE average power to unified HotSpot trace
+    getThermalModel()->submitPEPower(peId, now, windowAvgPower);
 
     EV << "-I- TaskPE[" << peId << "] ENERGY-WINDOW"
        << " at " << now
        << " windowEnergyJ=" << windowEnergyJ
+       << " staticJ=" << windowStaticEnergyJ
+       << " dynamicJ=" << windowDynamicEnergyJ
        << " totalEnergyJ=" << totalEnergyJ
+       << " totalStaticJ=" << totalStaticEnergyJ
+       << " totalDynamicJ=" << totalDynamicEnergyJ
        << " windowSendFlits=" << windowSendFlits
        << " windowRecvFlits=" << windowRecvFlits
-       << " currentPower=" << currentPower << endl;
+       << " currentPower=" << currentPower
+       << " isIdle=" << isIdle << endl;
 
     windowSendFlits = 0;
     windowRecvFlits = 0;
+    windowStaticEnergyJ  = 0.0;
+    windowDynamicEnergyJ = 0.0;
     windowEnergyJ = 0.0;
+
+    updateThermalDisplay();
+}
+
+void TaskPE::updateThermalDisplay() {
+    double t = getThermalModel()->getPEPerature(peId);
+    peTempVec.record(t);
+
+    char tmp[32];
+    snprintf(tmp, sizeof(tmp), "%.1fC", t - 273.15);
+    getDisplayString().setTagArg("t", 0, tmp);
 }
 
 // -----------------------------------------------------------------------
@@ -98,13 +138,15 @@ void TaskPE::initialize() {
     numVCs          = par("numVCs");
     flitSize        = par("flitSize");
     statStartTime   = par("statStartTime");
-    applicationName = par("application").stringValue();
+    bufferBaseId    = par("bufferBaseId");
+    numColumns      = getSystemModule()->par("columns");
 
     powerIdle        = par("powerIdle");
     powerCompute     = par("powerCompute");
     powerSendPerFlit = par("powerSendPerFlit");
     powerRecvPerFlit = par("powerRecvPerFlit");
     enablePowerTrace = par("enablePowerTrace");
+    computeDensity   = par("computeDensity");
 
     // NEW
     energyWindow = par("energyWindow");
@@ -120,8 +162,10 @@ void TaskPE::initialize() {
     totalTasksCompleted = 0;
     totalFlitsSent      = 0;
     totalFlitsReceived  = 0;
-    totalComputeTime    = 0;
-    totalIdleTime       = 0;
+    totalComputeTime     = 0;
+    totalIdleTime        = 0;
+    totalThrottlePenalty  = 0;
+    totalComputeTimeNominal = 0;
 
     // NEW
     lastEnergyUpdateTime = simTime();
@@ -129,6 +173,11 @@ void TaskPE::initialize() {
     windowRecvFlits = 0;
     windowEnergyJ   = 0.0;
     totalEnergyJ    = 0.0;
+
+    windowStaticEnergyJ  = 0.0;
+    windowDynamicEnergyJ = 0.0;
+    totalStaticEnergyJ   = 0.0;
+    totalDynamicEnergyJ  = 0.0;
 
     credits = 0;
 
@@ -138,6 +187,12 @@ void TaskPE::initialize() {
     windowEnergyVec.setName("pe-window-energy");
     cumulativeEnergyVec.setName("pe-cumulative-energy");
     windowAvgPowerVec.setName("pe-window-avg-power");
+    windowStaticEnergyVec.setName("pe-window-static-energy");
+    windowDynamicEnergyVec.setName("pe-window-dynamic-energy");
+    cumulativeStaticEnergyVec.setName("pe-cumulative-static-energy");
+    cumulativeDynamicEnergyVec.setName("pe-cumulative-dynamic-energy");
+
+    peTempVec.setName("pe-die-temperature");
 
     // Derive clock period from outgoing link
     cGate* g = gate("out$o")->getNextGate();
@@ -164,10 +219,22 @@ void TaskPE::initialize() {
     if (peId == 0) {
         int rows = getSystemModule()->par("rows");
         int columns = getSystemModule()->par("columns");
-        int numPEs = rows * columns;
-        int numRouters = rows * columns;
         const char* hotspotFile = par("hotspotTraceFile").stringValue();
-        getThermalTraceWriter()->open(hotspotFile, numPEs, numRouters);
+        getThermalModel()->open(hotspotFile, rows, columns);
+
+        // Configure RC thermal parameters from ini
+        cModule* net = getSystemModule();
+        double RconvPE     = net->par("RconvPE");
+        double RconvRouter = net->par("RconvRouter");
+        double RlateralPE  = net->par("RlateralPE");
+        double RlateralRtr = net->par("RlateralRouter");
+        double Rpe2router  = net->par("Rpe2router");
+        double Cpe         = net->par("Cpe");
+        double Crouter     = net->par("Crouter");
+        double Tambient    = net->par("Tambient");
+        getThermalModel()->setThermalParams(
+            RconvPE, RconvRouter, RlateralPE, RlateralRtr,
+            Rpe2router, Cpe, Crouter, Tambient);
     }
 
     // Self-messages
@@ -178,15 +245,25 @@ void TaskPE::initialize() {
     // NEW
     energyWindowMsg    = new cMessage("energyWindow");
 
-    // Load task graph
-    loadTaskGraph();
+    // Always load task graph from CSV for full successor/predecessor info
+    {
+        const char* csvPath = par("csvFile").stringValue();
+        if (csvPath && csvPath[0] != '\0') {
+            loadTaskGraphFromCSV(csvPath);
+            systemTotalTasks += taskList.size();
+        } else {
+            throw cRuntimeError("TaskPE[%d]: csvFile parameter is required", peId);
+        }
+    }
 
     // Periodic power sampling
     double sampleInterval = par("powerSampleInterval");
     scheduleAt(simTime() + sampleInterval, powerSampleMsg);
 
     // NEW
-    scheduleAt(simTime() + energyWindow, energyWindowMsg);
+    if (par("enableEnergyWindow")) {
+        scheduleAt(simTime() + energyWindow, energyWindowMsg);
+    }
 
     // Injection pop clock (similar to synchronous source pacing)
     scheduleAt(simTime() + tClk_s, injectPopMsg);
@@ -197,10 +274,7 @@ void TaskPE::initialize() {
         sendCredit(vc, initialRecvCredits);
     }
 
-    EV << "=== TASKPE_DEBUG_BUILD_ACTIVE pe=" << peId
-       << " app=" << applicationName << " ===" << endl;
-
-    EV << "-I- TaskPE[" << peId << "] init application=" << applicationName
+    EV << "-I- TaskPE[" << peId << "] init"
        << " numVCs=" << numVCs
        << " flitSize=" << flitSize
        << "B tClk=" << tClk_s
@@ -310,6 +384,16 @@ void TaskPE::finish() {
 
     // NEW
     recordScalar("totalEnergyJ",        totalEnergyJ);
+    recordScalar("totalStaticEnergyJ",  totalStaticEnergyJ);
+    recordScalar("totalDynamicEnergyJ", totalDynamicEnergyJ);
+
+    // DVFS throttling statistics
+    recordScalar("totalComputeTimeNominal", totalComputeTimeNominal);
+    recordScalar("totalThrottlePenalty",    totalThrottlePenalty);
+    double penaltyRatio = 0.0;
+    if (totalComputeTimeNominal.dbl() > 0.0)
+        penaltyRatio = totalThrottlePenalty.dbl() / totalComputeTimeNominal.dbl();
+    recordScalar("throttlePenaltyRatio",    penaltyRatio);
 
     if (powerTrace) {
         powerTrace->close();
@@ -354,118 +438,54 @@ double TaskPE::getUtilization() const {
 }
 
 // -----------------------------------------------------------------------
-// loadTaskGraph – dispatcher
+// loadTaskGraphFromCSV – load tasks assigned to this PE
 // -----------------------------------------------------------------------
-void TaskPE::loadTaskGraph() {
-    if (applicationName == "matrix_multiply") {
-        loadMatrixMultiplyTasks();
-    } else if (applicationName == "cnn_inference") {
-        loadCNNInferenceTasks();
-    } else if (applicationName == "graph_traversal") {
-        loadGraphTraversalTasks();
-    } else {
-        throw cRuntimeError("Unknown application: %s", applicationName.c_str());
-    }
-}
+void TaskPE::loadTaskGraphFromCSV(const std::string& csvPath) {
+    std::vector<TaskDescriptor*> allTasks = TaskGraphParser::parse(csvPath.c_str());
 
-// -----------------------------------------------------------------------
-// 应用 1：矩阵乘法
-// -----------------------------------------------------------------------
-void TaskPE::loadMatrixMultiplyTasks() {
-    const int blockSize   = 64;
-    const simtime_t compT = 100e-9;
+    int loaded = 0;
+    for (TaskDescriptor* t : allTasks) {
+        // Skip GB injection tasks (peId == -1) and dynamic tasks (peId == -2)
+        if (t->assignedPE == -1 || t->assignedPE == -2) {
+            delete t;
+            continue;
+        }
+        // remapToDynamic mode: GB handles all peId >= 0 tasks
+        if (par("remapToDynamic")) {
+            delete t;
+            continue;
+        }
+        if (t->assignedPE != peId) {
+            delete t;
+            continue;
+        }
 
-    TaskDescriptor* task = new TaskDescriptor(peId, peId, compT, blockSize);
-    task->pendingDependencies = 0;
-    task->state = TASK_READY;
+        // Count same-PE predecessors (dependencies resolved locally via sendTaskData)
+        int localPreds = 0;
+        for (int predId : t->predecessors) {
+            for (TaskDescriptor* other : allTasks) {
+                if (other->taskId == predId && other->assignedPE == peId) {
+                    localPreds++;
+                    break;
+                }
+            }
+        }
+        t->pendingDependencies -= localPreds;
 
-    taskList.push_back(task);
-    taskMap[peId] = task;
-    readyQueue.push(task);
-
-    EV << "-I- TaskPE[" << peId << "] loaded matrix_multiply task" << endl;
-}
-
-// -----------------------------------------------------------------------
-// Application 2: CNN Inference
-// -----------------------------------------------------------------------
-void TaskPE::loadCNNInferenceTasks() {
-    if (peId == 0) {
-        TaskDescriptor* t = new TaskDescriptor(0, 0, 100e-9, 128);
-        t->successors  = {1, 2, 3, 4};
-        t->successorPE = {{1,1},{2,2},{3,3},{4,4}};
-        t->pendingDependencies = 0;
-        t->state = TASK_READY;
-        taskList.push_back(t);
-        taskMap[0] = t;
-        readyQueue.push(t);
-    } else if (peId >= 1 && peId <= 4) {
-        TaskDescriptor* t = new TaskDescriptor(peId, peId, 200e-9, 64);
-        t->predecessors = {0};
-        t->successors   = {5};
-        t->successorPE  = {{5, 5}};
-        t->pendingDependencies = 1;
-        t->state = TASK_WAITING;
-        taskList.push_back(t);
-        taskMap[peId] = t;
-    } else if (peId == 5) {
-        TaskDescriptor* t = new TaskDescriptor(5, 5, 150e-9, 0);
-        t->predecessors = {1, 2, 3, 4};
-        t->pendingDependencies = 4;
-        t->state = TASK_WAITING;
-        taskList.push_back(t);
-        taskMap[5] = t;
-    }
-
-    EV << "-I- TaskPE[" << peId << "] loaded cnn_inference task(s)" << endl;
-}
-
-// -----------------------------------------------------------------------
-// Application 3: Graph Traversal
-// -----------------------------------------------------------------------
-void TaskPE::loadGraphTraversalTasks() {
-    struct TInfo {
-        int id;
-        int pe;
-        double compNs;
-        int dataB;
-        std::vector<int> preds;
-        std::vector<int> succs;
-        std::map<int,int> succPE;
-    };
-
-    std::vector<TInfo> table = {
-        {  0,  0,  50e-9, 64, {},    {1,2},   {{1,1},{2,2}} },
-        {  1,  1,  50e-9, 64, {0},   {3,4},   {{3,3},{4,4}} },
-        {  2,  2,  50e-9, 64, {0},   {5,6},   {{5,5},{6,6}} },
-        {  3,  3,  50e-9, 32, {1},   {7},     {{7,7}} },
-        {  4,  4,  50e-9, 32, {1},   {8},     {{8,8}} },
-        {  5,  5,  50e-9, 32, {2},   {9},     {{9,9}} },
-        {  6,  6,  50e-9, 32, {2},   {10},    {{10,10}} },
-        {  7,  7,  50e-9,  0, {3},   {},      {} },
-        {  8,  8,  50e-9,  0, {4},   {},      {} },
-        {  9,  9,  50e-9,  0, {5},   {},      {} },
-        { 10, 10,  50e-9,  0, {6},   {},      {} },
-    };
-
-    for (auto& info : table) {
-        if (info.pe != peId) continue;
-
-        TaskDescriptor* t = new TaskDescriptor(info.id, info.pe,
-                                               info.compNs, info.dataB);
-        t->predecessors        = info.preds;
-        t->successors          = info.succs;
-        t->successorPE         = info.succPE;
-        t->pendingDependencies = (int)info.preds.size();
-        t->state               = info.preds.empty() ? TASK_READY : TASK_WAITING;
-
-        taskList.push_back(t);
-        taskMap[info.id] = t;
-        if (t->state == TASK_READY)
+        if (t->pendingDependencies == 0) {
+            t->state = TASK_READY;
             readyQueue.push(t);
+        } else {
+            t->state = TASK_WAITING;
+        }
+
+        taskList.push_back(t);
+        taskMap[t->taskId] = t;
+        loaded++;
     }
 
-    EV << "-I- TaskPE[" << peId << "] loaded graph_traversal task(s)" << endl;
+    EV << "-I- TaskPE[" << peId << "] loaded " << loaded
+       << " tasks from " << csvPath << endl;
 }
 
 // -----------------------------------------------------------------------
@@ -498,7 +518,21 @@ void TaskPE::startComputation(TaskDescriptor* task) {
     }
     lastEventTime = now;
     isIdle        = false;
-    updatePower(powerCompute);
+    updatePower(false);
+
+    // Nominal compute time: derive from data size if computeDensity > 0
+    simtime_t nominalTime;
+    if (computeDensity > 0.0 && task->outputDataSize > 0) {
+        nominalTime = task->outputDataSize * computeDensity * 1e-9;
+    } else {
+        nominalTime = task->computeTime;
+    }
+
+    // DVFS thermal throttling: scale compute time by temperature
+    double dvfsScale = getDvfsScaleFactor();
+    simtime_t actualTime  = nominalTime * dvfsScale;
+    totalComputeTimeNominal += nominalTime;
+    totalThrottlePenalty    += (actualTime - nominalTime);
 
     if (powerTrace) {
         powerTrace->recordPEEvent(peId, PE_COMPUTE_START, now, powerCompute);
@@ -506,11 +540,14 @@ void TaskPE::startComputation(TaskDescriptor* task) {
 
     EV << "-I- TaskPE[" << peId << "] starts task " << task->taskId
        << " at " << simTime()
-       << " computeTime=" << task->computeTime
+       << " nominalTime=" << nominalTime
+       << " dvfsScale=" << dvfsScale
+       << " actualTime=" << actualTime
+       << " Tpe=" << getThermalModel()->getPEPerature(peId)
        << " outputDataSize=" << task->outputDataSize
        << "B pendingDeps=" << task->pendingDependencies << endl;
 
-    scheduleAt(simTime() + task->computeTime, computeCompleteMsg);
+    scheduleAt(simTime() + actualTime, computeCompleteMsg);
 }
 
 // -----------------------------------------------------------------------
@@ -533,19 +570,32 @@ void TaskPE::completeComputation() {
     totalComputeTime += now - lastEventTime;
     lastEventTime    = now;
     isIdle           = true;
-    updatePower(powerIdle);
+    updatePower(true);
 
     if (powerTrace) {
         powerTrace->recordPEEvent(peId, PE_COMPUTE_END, now, powerIdle);
     }
 
-    EV << "-I- TaskPE[" << peId << "] completed task " << task->taskId
-       << " at " << simTime()
-       << " outputDataSize=" << task->outputDataSize
-       << "B successors=" << task->successors.size() << endl;
+    printf("[PE%d] task=%d DONE computeTime=%.3fus output=%dB successors=%d at t=%.3fus\n",
+           peId, task->taskId, task->computeTime.dbl()*1e6,
+           task->outputDataSize, (int)task->successors.size(), now.dbl()*1e6);
 
-    if (task->outputDataSize > 0) {
+    if (task->outputDataSize > 0 || !task->successors.empty()) {
+        int nf = calculateNumFlits(task->outputDataSize);
+        printf("[PE%d] task=%d SENDING %d flits\n", peId, task->taskId, nf);
         sendTaskData(task);
+    }
+
+    systemCompletedTasks++;
+    if (systemTotalTasks > 0 && systemCompletedTasks >= systemTotalTasks
+        && !systemStopScheduled) {
+        systemStopScheduled = true;
+        recordScalar("allTasksCompletedAt", simTime());
+        // Self-contained task (no successors): stop now.
+        // Task returning to GB: GB's END flit counting handles endSimulation.
+        if (task->successors.empty()) {
+            endSimulation();
+        }
     }
 
     scheduleNextTask();
@@ -558,10 +608,18 @@ void TaskPE::sendTaskData(TaskDescriptor* task) {
     int numFlits = calculateNumFlits(task->outputDataSize);
 
     for (int succTaskId : task->successors) {
-        auto it = task->successorPE.find(succTaskId);
-        if (it == task->successorPE.end()) continue;
+        int dstPE;
 
-        int dstPE = it->second;
+        // succTaskId == -1: send to GlobalBuffer instead of a PE
+        if (succTaskId == -1) {
+            int row = peId / numColumns;
+            dstPE = bufferBaseId + row;   // route to GB on this row
+        } else {
+            auto it = task->successorPE.find(succTaskId);
+            if (it == task->successorPE.end()) continue;
+            dstPE = it->second;
+        }
+
         if (dstPE == peId) continue;
 
         pktIdCounter++;
@@ -690,17 +748,20 @@ void TaskPE::sendFlitFromQ() {
 void TaskPE::handleDataArrival(TaskMsg* msg) {
     totalFlitsReceived++;
 
-    // NEW: return one receive-side credit to router
+    // Return one receive-side credit to router
     sendCredit(msg->getVC(), 1);
 
-    // NEW
     windowRecvFlits++;
 
+    int pktId = msg->getPktId();
+    int flitIdx = msg->getFlitIdx();
+    int totalFlits = msg->getFlits();
+    int flitType = msg->getType();
+
     EV << "-I- TaskPE[" << peId << "] RECV"
-       << " pktId=" << msg->getPktId()
-       << " flitIdx=" << msg->getFlitIdx()
-       << "/" << (msg->getFlits() - 1)
-       << " type=" << msg->getType()
+       << " pktId=" << pktId
+       << " flitIdx=" << flitIdx << "/" << (totalFlits - 1)
+       << " type=" << flitType
        << " srcPE=" << msg->getSrcId()
        << " dstPE=" << msg->getDstId()
        << " producerTask=" << msg->getProducerTaskId()
@@ -713,23 +774,84 @@ void TaskPE::handleDataArrival(TaskMsg* msg) {
                                   powerIdle + powerRecvPerFlit / tClk_s);
     }
 
-    // Only act on last flit of a multi-flit packet
-    if (msg->getType() != NOC_END_FLIT && msg->getFlits() > 1) {
-        delete msg;
+    // Accumulate flit in receive buffer — all flits represent real data
+    recvBuffer[pktId].push_back(msg);
+
+    // Wait until the entire packet arrives
+    if (flitType != NOC_END_FLIT && totalFlits > 1) {
+        EV << "-I- TaskPE[" << peId << "] buffered flit " << flitIdx
+           << "/" << (totalFlits - 1)
+           << " pktId=" << pktId
+           << " bufferSize=" << recvBuffer[pktId].size()
+           << endl;
         return;
     }
 
+    // END flit: packet complete, assemble data from buffered flits
     int targetTaskId = msg->getTaskId();
-    delete msg;
+    int producerPE = msg->getProducerPE();
+    simtime_t compTime = msg->getComputeTime();
+    int dataSize = msg->getDataSize();
+
+    EV << "-I- TaskPE[" << peId << "] PACKET-COMPLETE"
+       << " pktId=" << pktId
+       << " totalFlits=" << recvBuffer[pktId].size()
+       << " targetTask=" << targetTaskId
+       << " producerPE=" << producerPE
+       << " at " << simTime() << endl;
+
+    // Free all buffered flits for this packet
+    for (TaskMsg* f : recvBuffer[pktId]) {
+        delete f;
+    }
+    recvBuffer.erase(pktId);
 
     auto it = taskMap.find(targetTaskId);
     if (it == taskMap.end()) {
+        // If from GlobalBuffer (producerPE == -1), the task must already
+        // exist from CSV loading. GB flit completion triggers the task.
+        if (producerPE == -1) {
+            TaskDescriptor* task = new TaskDescriptor(targetTaskId, peId,
+                                                       compTime, dataSize);
+            task->pendingDependencies = 0;
+            task->state = TASK_READY;
+            // Default: send results back to GB (successor taskId=-1, peId=-1)
+            task->successors.push_back(-1);
+            task->successorPE[-1] = -1;
+            taskList.push_back(task);
+            taskMap[targetTaskId] = task;
+            readyQueue.push(task);
+
+            EV << "-I- TaskPE[" << peId << "] created task " << targetTaskId
+               << " from GlobalBuffer (fallback) at " << simTime() << endl;
+
+            scheduleNextTask();
+            return;
+        }
+
         EV << "-W- TaskPE[" << peId << "] received data for unknown task "
            << targetTaskId << endl;
         return;
     }
 
     TaskDescriptor* task = it->second;
+
+    // GB packet complete: activate a CSV-loaded task
+    if (producerPE == -1) {
+        if (task->state == TASK_WAITING) {
+            task->state = TASK_READY;
+            readyQueue.push(task);
+
+            EV << "-I- TaskPE[" << peId << "] task " << targetTaskId
+               << " activated by GlobalBuffer at " << simTime()
+               << " readyQueueSize=" << readyQueue.size() << endl;
+
+            scheduleNextTask();
+        }
+        return;
+    }
+
+    // PE→PE dependency flit: decrement pending counter
     if (task->state == TASK_COMPLETED || task->state == TASK_COMPUTING) {
         return;
     }
@@ -759,15 +881,42 @@ void TaskPE::handleDataArrival(TaskMsg* msg) {
 // calculateNumFlits
 // -----------------------------------------------------------------------
 int TaskPE::calculateNumFlits(int dataSize) const {
-    if (dataSize <= 0 || flitSize <= 0) return 1;
-    return (dataSize + flitSize - 1) / flitSize;
+    int n = 1;
+    if (dataSize > 0 && flitSize > 0) n = (dataSize + flitSize - 1) / flitSize;
+    return (n < 2) ? 2 : n;  // minimum 2 flits for proper START→END handshake
 }
 
 // -----------------------------------------------------------------------
+// DVFS scaling: how much slower due to temperature
+// Returns 1.0 at safe temperature, >1.0 when throttling
+double TaskPE::getDvfsScaleFactor() const {
+    double Tthrottle = getSystemModule()->par("Tthrottle");
+    double beta = getSystemModule()->par("throttleBeta");
+    double Tpe = getThermalModel()->getPEPerature(peId);
+
+    if (Tpe <= Tthrottle) return 1.0;
+    return 1.0 + beta * (Tpe - Tthrottle);
+}
+
+// Temperature-corrected power (leakage ~doubles every 10°C)
+double TaskPE::getTemperatureCorrectedPower(bool idle) const {
+    double Tambient = getSystemModule()->par("Tambient");
+    double Tpe = getThermalModel()->getPEPerature(peId);
+    double leakageFactor = exp((Tpe - Tambient) / 15.0);
+    double leakageNow = powerIdle * leakageFactor;
+
+    if (idle) {
+        return leakageNow;
+    } else {
+        double dynamicSwitching = powerCompute - powerIdle;
+        return dynamicSwitching + leakageNow;
+    }
+}
+
 // updatePower
 // -----------------------------------------------------------------------
-void TaskPE::updatePower(double newPower) {
-    currentPower = newPower;
+void TaskPE::updatePower(bool isIdlePower) {
+    currentPower = getTemperatureCorrectedPower(isIdlePower);
     if (currentPower > peakPower)
         peakPower = currentPower;
     powerVec.record(currentPower);

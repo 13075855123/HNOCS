@@ -2,7 +2,7 @@
 # OMNeT++/OMNEST Makefile for libhnocs
 #
 # This file was generated with the command:
-#  opp_makemake -f --deep -O out -o libhnocs
+#  opp_makemake -f --deep -O out -o libhnocs -Isrc
 #
 
 # Name of target to be created (-o option)
@@ -17,7 +17,7 @@ USERIF_LIBS = $(ALL_ENV_LIBS) # that is, $(QTENV_LIBS) $(CMDENV_LIBS)
 #USERIF_LIBS = $(QTENV_LIBS)
 
 # C++ include paths (with -I)
-INCLUDE_PATH = -I. -Isrc
+INCLUDE_PATH = -Isrc
 
 # Additional object and library files to link with
 EXTRA_OBJS =
@@ -37,6 +37,7 @@ OBJS = \
     $O/src/cores/sources/PktFifoSrc.o \
     $O/src/cores/task/PowerTrace.o \
     $O/src/cores/task/TaskPE.o \
+    $O/src/globalbuffer/GlobalBuffer.o \
     $O/src/routers/hier/inPort/InPortAsync.o \
     $O/src/routers/hier/inPort/InPortSync.o \
     $O/src/routers/hier/opCalc/static/XYOPCalc.o \
@@ -44,6 +45,7 @@ OBJS = \
     $O/src/routers/hier/sched/wormhole/SchedSync.o \
     $O/src/routers/hier/vcCalc/free/FLUVCCalc.o \
     $O/src/thermal/ThermalTrace.o \
+    $O/src/utils/TaskGraphParser.o \
     $O/src/NoCs_m.o \
     $O/src/messages/TaskMsg_m.o
 

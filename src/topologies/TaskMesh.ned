@@ -6,35 +6,19 @@
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public License
-// along with this program.  If not, see http://www.gnu.org/licenses/.
-//
 
 package hnocs.topologies;
 
 import hnocs.routers.Router_Ifc;
 import hnocs.cores.task.TaskPE;
+import hnocs.globalbuffer.GlobalBuffer;
 
-//
-// Shared link channel for the task mesh (same parameters as Mesh.ned).
-//
 channel TaskLink extends ned.DatarateChannel
 {
     datarate = 16Gbps;
     delay    = 0us;
 }
 
-//
-// A 2-D mesh network whose processing elements are task-driven TaskPEs.
-//
-// Port numbering on routers (same as Mesh.ned):
-//   0 = north, 1 = west, 2 = south, 3 = east, 4 = PE
-//
 network TaskMesh
 {
     parameters:
@@ -43,14 +27,31 @@ network TaskMesh
         int columns = default(4);
         int rows    = default(4);
 
-        @display("bgb=800,600");
+        string bufferApplication = default("cnn_inference");
+        int    bufferBaseId      = default(1000);
+
+        // RC thermal model parameters
+        double RconvPE        = default(10);      // K/W
+        double RconvRouter    = default(10);      // K/W
+        double RlateralPE     = default(5);       // K/W
+        double RlateralRouter = default(5);       // K/W
+        double Rpe2router     = default(2);       // K/W
+        double Cpe            = default(1e-6);    // J/K
+        double Crouter        = default(1e-7);    // J/K
+        double Tambient       = default(318.15);  // K
+
+        // DVFS thermal throttling
+        double Tthrottle      = default(333.15);  // K (60°C)
+        double throttleBeta   = default(0.1);     // 1/K, slowdown per degree above threshold
+
+        @display("bgb=750,700");
 
     submodules:
         router[columns*rows]: <routerType> like Router_Ifc {
             parameters:
                 numPorts = 5;
                 id       = index;
-                @display("p=100,100,matrix,$columns,150,150");
+                @display("p=100,100,matrix,$columns,140,140");
             gates:
                 in[5];
                 out[5];
@@ -59,21 +60,29 @@ network TaskMesh
         pe[columns*rows]: TaskPE {
             parameters:
                 id = index;
-                @display("p=150,150,matrix,$columns,150,150");
+                @display("p=140,140,matrix,$columns,140,140");
+        }
+
+        globalBuffer: GlobalBuffer {
+            parameters:
+                numConnections = parent.rows;
+                application    = parent.bufferApplication;
+                baseId         = parent.bufferBaseId;
+                @display("p=40,200;i=block/buffer");
         }
 
     connections allowunconnected:
         for r=0..rows-1, for c=0..columns-1 {
-            // south–north links (ports 2 and 0)
             router[r*columns+c].in[2]  <--> TaskLink <--> router[(r+1)*columns+c].out[0] if r!=rows-1;
             router[r*columns+c].out[2] <--> TaskLink <--> router[(r+1)*columns+c].in[0]  if r!=rows-1;
 
-            // east–west links (ports 3 and 1)
             router[r*columns+c].in[3]  <--> TaskLink <--> router[r*columns+c+1].out[1] if c!=columns-1;
             router[r*columns+c].out[3] <--> TaskLink <--> router[r*columns+c+1].in[1]  if c!=columns-1;
 
-            // PE ↔ router (port 4)
             router[r*columns+c].in[4]  <--> TaskLink <--> pe[r*columns+c].out;
             router[r*columns+c].out[4] <--> TaskLink <--> pe[r*columns+c].in;
+
+            globalBuffer.out[r] <--> TaskLink <--> router[r*columns].in[1]  if c==0;
+            globalBuffer.in[r]  <--> TaskLink <--> router[r*columns].out[1] if c==0;
         }
 }

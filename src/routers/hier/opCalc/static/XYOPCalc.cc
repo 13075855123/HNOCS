@@ -247,7 +247,16 @@ void XYOPCalc::initialize()
 
     cModule *router = getParentModule()->getParentModule();
     int id = router->par("id");
-    numCols = router->getParentModule()->par("columns");
+    cModule *network = router->getParentModule();
+    numCols = network->par("columns");
+    numRows = network->par("rows");
+
+    // Read GlobalBuffer base ID; -1 if not present
+    if (network->hasPar("bufferBaseId")) {
+        bufferIdBase = network->par("bufferBaseId");
+    } else {
+        bufferIdBase = -1;
+    }
 
     rowColByID(id, rx, ry);
 
@@ -255,46 +264,79 @@ void XYOPCalc::initialize()
 
     EV << "-I- " << getFullPath() << " Found N/W/S/E/C ports:" << northPort
        << "/" << westPort << "/" << southPort << "/"
-       << eastPort << "/" << corePort << endl;
+       << eastPort << "/" << corePort
+       << " bufferIdBase=" << bufferIdBase
+       << endl;
 
     WATCH(northPort);
     WATCH(westPort);
     WATCH(eastPort);
     WATCH(southPort);
     WATCH(corePort);
+    WATCH(bufferIdBase);
 }
 
 void XYOPCalc::handlePacketMsg(NoCFlitMsg* msg)
 {
     int dx, dy;
-    rowColByID(msg->getDstId(), dx, dy);
     int swOutPortIdx;
 
-    if ((dx == rx) && (dy == ry)) {
-        swOutPortIdx = corePort;
-    } else if (dx > rx) {
-        swOutPortIdx = eastPort;
-    } else if (dx < rx) {
-        swOutPortIdx = westPort;
-    } else if (dy > ry) {
-        swOutPortIdx = southPort;
-    } else {
-        swOutPortIdx = northPort;
-    }
+    int dstId = msg->getDstId();
 
-    EV << "-I- " << getFullPath()
-       << " ROUTE"
-       << " pktId=" << msg->getPktId()
-       << " flitIdx=" << msg->getFlitIdx()
-       << " src=" << msg->getSrcId()
-       << " dst=" << msg->getDstId()
-       << " local=(" << rx << "," << ry << ")"
-       << " dst=(" << dx << "," << dy << ")"
-       << " choose=" << swOutPortIdx
-       << " N/W/S/E/C=" << northPort << "/"
-       << westPort << "/" << southPort << "/"
-       << eastPort << "/" << corePort
-       << endl;
+    // Route to GlobalBuffer if destination is in its ID range
+    if (bufferIdBase >= 0 && dstId >= bufferIdBase && dstId < bufferIdBase + numRows) {
+        int bufferRow = dstId - bufferIdBase;
+
+        if (rx == 0 && ry == bufferRow) {
+            swOutPortIdx = westPort;       // at the target router → west to GB
+        } else if (rx > 0) {
+            swOutPortIdx = westPort;       // go west toward column 0
+        } else if (ry > bufferRow) {
+            swOutPortIdx = northPort;      // go north toward buffer row
+        } else {
+            swOutPortIdx = southPort;      // go south toward buffer row
+        }
+
+        EV << "-I- " << getFullPath()
+           << " ROUTE-TO-BUFFER"
+           << " dstId=" << dstId
+           << " bufferRow=" << bufferRow
+           << " local=(" << rx << "," << ry << ")"
+           << " choose=" << swOutPortIdx
+           << " N/W/S/E/C=" << northPort << "/"
+           << westPort << "/" << southPort << "/"
+           << eastPort << "/" << corePort
+           << endl;
+    } else {
+        // Standard XY routing for normal PE destination
+        rowColByID(dstId, dx, dy);
+
+        if ((dx == rx) && (dy == ry)) {
+            swOutPortIdx = corePort;
+        } else if (dx > rx) {
+            swOutPortIdx = eastPort;
+        } else if (dx < rx) {
+            swOutPortIdx = westPort;
+        } else if (dy > ry) {
+            swOutPortIdx = southPort;
+        } else {
+            swOutPortIdx = northPort;
+        }
+
+        EV << "-I- " << getFullPath()
+           << " ROUTE"
+           << " pktId=" << msg->getPktId()
+           << " flitIdx=" << msg->getFlitIdx()
+           << " src=" << msg->getSrcId()
+           << " dst=" << msg->getDstId()
+           << " local=(" << rx << "," << ry << ")"
+           << " dst=(" << dx << "," << dy << ")"
+           << " choose=" << swOutPortIdx
+           << " N/W/S/E/C=" << northPort << "/"
+           << westPort << "/" << southPort << "/"
+           << eastPort << "/" << corePort
+           << endl;
+    }
 
     if (swOutPortIdx < 0) {
         throw cRuntimeError("Routing dead end at %s (%d,%d) "

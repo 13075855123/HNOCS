@@ -21,13 +21,17 @@ private:
     int numVCs;
     int flitSize;
     simtime_t statStartTime;
-    std::string applicationName;
+    int bufferBaseId;
+    int numColumns;
 
     // === Task management ===
     std::vector<TaskDescriptor*> taskList;
     std::queue<TaskDescriptor*> readyQueue;
     std::map<int, TaskDescriptor*> taskMap;
     TaskDescriptor* currentTask;
+
+    // === Receive buffer: accumulate flits per packet until END flit ===
+    std::map<int, std::vector<TaskMsg*>> recvBuffer;
 
     // === Dependency tracking ===
     std::map<int, int> receivedDependencies;
@@ -50,6 +54,8 @@ private:
     long totalFlitsReceived;
     simtime_t totalComputeTime;
     simtime_t totalIdleTime;
+    simtime_t totalThrottlePenalty;   // extra time due to thermal throttling
+    simtime_t totalComputeTimeNominal; // base compute time (no throttling)
     simtime_t lastEventTime;
     bool isIdle;
 
@@ -64,6 +70,8 @@ private:
     double powerSendPerFlit;
     double powerRecvPerFlit;
 
+    double computeDensity;  // ns/B, 0=use CSV computeTime
+
     // NEW: window-based energy parameters/state
     simtime_t energyWindow;
     simtime_t lastEnergyUpdateTime;
@@ -71,6 +79,12 @@ private:
     long windowRecvFlits;
     double windowEnergyJ;
     double totalEnergyJ;
+
+    // Separate static vs dynamic energy tracking
+    double windowStaticEnergyJ;
+    double windowDynamicEnergyJ;
+    double totalStaticEnergyJ;
+    double totalDynamicEnergyJ;
 
     // Power trace
     PowerTraceWriter* powerTrace;
@@ -83,15 +97,17 @@ private:
     cOutVector windowEnergyVec;
     cOutVector cumulativeEnergyVec;
     cOutVector windowAvgPowerVec;
+    // Separate static / dynamic energy vectors
+    cOutVector windowStaticEnergyVec;
+    cOutVector windowDynamicEnergyVec;
+    cOutVector cumulativeStaticEnergyVec;
+    cOutVector cumulativeDynamicEnergyVec;
 
     // Global packet-id counter
     int pktIdCounter;
 
     // === Helpers ===
-    void loadTaskGraph();
-    void loadMatrixMultiplyTasks();
-    void loadCNNInferenceTasks();
-    void loadGraphTraversalTasks();
+    void loadTaskGraphFromCSV(const std::string& csvPath);
 
     void scheduleNextTask();
     void startComputation(TaskDescriptor* task);
@@ -101,12 +117,25 @@ private:
     void handleDataArrival(TaskMsg* msg);
     int  calculateNumFlits(int dataSize) const;
 
-    void updatePower(double newPower);
+    void updatePower(bool isIdlePower);
     void samplePower();
+    double getTemperatureCorrectedPower(bool idle) const;
+    double getDvfsScaleFactor() const;   // 1.0 at safe temp, >1.0 above threshold
 
     // NEW: PE energy helpers
     void accumulatePEStaticEnergy(simtime_t now);
     void finalizeEnergyWindow(simtime_t now);
+
+    // Temperature-based display color update
+    void updateThermalDisplay();
+
+    // Per-PE temperature output vector
+    cOutVector peTempVec;
+
+    // Global task completion tracking (shared across all PEs)
+    static int systemTotalTasks;
+    static int systemCompletedTasks;
+    static bool systemStopScheduled;
 
     // return credits to router when TaskPE is receiver
     void sendCredit(int vc, int numFlits);

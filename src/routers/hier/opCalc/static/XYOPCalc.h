@@ -52,11 +52,14 @@ class XYOPCalc : public cSimpleModule
 private:
 	// parameters
 	int numCols; // the total number of columns in the simulations
+	int numRows; // the total number of rows (for GlobalBuffer routing)
 	int rx, ry;  // the local router x and y coordinates
 	int northPort, westPort, southPort, eastPort; // port indexes on the router to be used
 	int corePort; // port index where the core module connects
 	const char *portType; // the name of the actual module used for Port_Ifc
 	const char *coreType; // the name of the actual module used for Core_Ifc
+
+	int bufferIdBase; // GlobalBuffer base ID (-1 if no buffer)
 
 	// methods:
 
