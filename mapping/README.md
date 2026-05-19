@@ -4,23 +4,63 @@ Design-time optimization of task-to-PE mapping for the HNOCS 2D Mesh NoC simulat
 
 ## Quick Start
 
+### Single-round optimization (no thermal data)
 ```bash
-# First-pass: communication-only optimization (uniform temperature)
 python -m mapping.run_mapping \
     --input examples/task_driven/tasks_gemm.csv \
     --output examples/task_driven/tasks_gemm_optimized.csv \
     --rows 4 --cols 4 --wT 1.0 --wH 0.5
+```
 
-# Two-pass workflow:
-# 1. Run OMNeT++ simulation to get thermal profile
-#    → produces thermal_snapshot.json
-# 2. Re-optimize with thermal data
-python -m mapping.run_mapping \
+### Multi-round iterative optimization (recommended)
+```bash
+python -m mapping.iterative_mapping \
     --input examples/task_driven/tasks_gemm.csv \
-    --output examples/task_driven/tasks_gemm_optimized.csv \
-    --temperature thermal_snapshot.json \
-    --wT 1.0 --wH 0.5 --verbose
-# 3. Re-run OMNeT++ with the optimized static CSV
+    --output examples/task_driven/tasks_gemm_iterative.csv \
+    --rows 4 --cols 4 --wT 1.0 --wH 0.5 \
+    --max-rounds 20 --ema-alpha 0.5 --verbose
+```
+
+The iterative mapper runs a **Python-native thermal simulator** (RC network + task scheduler + power model) inside the optimization loop. It alternates between SA optimization and thermal simulation until the mapping converges (cycle detected) or max rounds reached. No OMNeT++ required during optimization.
+
+## How It Works
+
+```
+Task Graph (CSV)  →  SA initial mapping (uniform temp)
+                           ↓
+                    Python Thermal Simulator
+                    (schedule tasks → power trace → RC thermal solver)
+                           ↓
+                    PE temperature distribution
+                           ↓
+                    SA re-optimize (avoid hotspots)
+                           ↓
+                    Repeat until convergence
+                           ↓
+                    Final optimized static CSV
+                           ↓
+                    OMNeT++ verification (one run)
+```
+
+### Python Thermal Simulator (`thermal_simulator.py`)
+- **TaskScheduler**: DAG-aware event-driven scheduling with PE serialization and communication delay
+- **PowerModel**: compute/idle power per PE with DVFS thermal throttling (T > 46.85°C → slowdown)
+- **ThermalSimulator**: explicit-Euler RC thermal network solver (replicates `ThermalModel::updateTemperature()` from OMNeT++ exactly)
+
+### Convergence Criteria
+1. **Cycle detection**: assignment hash repeats → converged
+2. **Temperature stability**: all PE temps change < 1 K vs previous round
+3. **Max rounds**: stops at 20 by default
+
+### EMA Temperature Smoothing
+The `--ema-alpha` parameter (default 0.5) applies exponential moving average to PE temperatures between rounds. This damps oscillation caused by the temperature→mapping→temperature feedback loop. Alpha=1.0 disables smoothing.
+
+## OMNeT++ Verification (optional)
+```bash
+cd examples/task_driven
+opp_run_dbg -l ..\..\src\libhnocs_dbg.dll -n ..\..\src;. \
+    omnetpp.ini -u Cmdenv -c General \
+    --**.csvFile=tasks_gemm_iterative.csv --**.remapToDynamic=false
 ```
 
 ## Cost Function
@@ -50,34 +90,6 @@ Tasks are processed in topological order, so predecessors are always assigned be
 | `restarts` | 1 | Number of independent SA runs |
 
 Initial solution is generated greedily in topological order. Each perturbation moves one random task to a different PE (respecting the load cap). Metropolis criterion accepts uphill moves with probability `exp(-Δcost / T)`.
-
-## Two-Pass Workflow
-
-### Pass 1 — Get thermal profile
-```
-cd examples/task_driven
-opp_run_dbg -l ..\..\src\libhnocs_dbg.dll -n ..\..\src;. \
-    omnetpp.ini -u Cmdenv -c Dynamic
-# Produces: thermal_snapshot.json (via ThermalModel::writeThermalSnapshot)
-```
-
-### Between passes — Optimize
-```
-cd D:\HNOCS
-python -m mapping.run_mapping \
-    --input examples/task_driven/tasks_gemm.csv \
-    --output examples/task_driven/tasks_gemm_optimized.csv \
-    --temperature examples/task_driven/thermal_snapshot.json \
-    --wT 1.0 --wH 0.5
-```
-
-### Pass 2 — Run with optimized mapping
-```
-cd examples/task_driven
-opp_run_dbg -l ..\..\src\libhnocs_dbg.dll -n ..\..\src;. \
-    omnetpp.ini -u Cmdenv -c General \
-    --**.csvFile=tasks_gemm_optimized.csv --**.remapToDynamic=false
-```
 
 ## Input CSV Format
 

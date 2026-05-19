@@ -58,8 +58,8 @@ def main(argv: list[str] | None = None) -> int:
         min_t = min(pe_temps)
         max_t = max(pe_temps)
         print(
-            f"  PE temperatures: min={min_t:.2f} K ({min_t - 273.15:.1f}°C), "
-            f"max={max_t:.2f} K ({max_t - 273.15:.1f}°C), "
+            f"  PE temperatures: min={min_t:.2f} K ({min_t - 273.15:.1f}C), "
+            f"max={max_t:.2f} K ({max_t - 273.15:.1f}C), "
             f"Tambient={args.Tambient:.2f} K"
         )
 
@@ -114,7 +114,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"  Total cost:    {breakdown['total_cost']:.4f}")
     print(f"  Thermal term:  {breakdown['thermal_cost']:.4f}")
     print(f"  Comm term:     {breakdown['comm_cost']:.4f}")
-    print(f"  Max PE temp:   {breakdown['max_temp_K']:.2f} K ({breakdown['max_temp_K'] - 273.15:.1f}°C)")
+    print(f"  Max PE temp:   {breakdown['max_temp_K']:.2f} K ({breakdown['max_temp_K'] - 273.15:.1f}C)")
     print(f"  Accepted uphill moves: {result.accepted_uphill}")
     print(f"  SA converged:  {result.converged}")
 
@@ -173,7 +173,7 @@ Examples:
     p.add_argument("--wH", type=float, default=0.5, help="Hop-count weight (default: 0.5)")
 
     # Thermal
-    p.add_argument("--Tambient", type=float, default=318.15, help="Ambient temperature K (default: 318.15 = 45°C)")
+    p.add_argument("--Tambient", type=float, default=318.15, help="Ambient temperature K (default: 318.15 = 45C)")
     p.add_argument("--temperature", "-t", default=None, help="Thermal snapshot JSON or .sca file")
 
     # Algorithm
