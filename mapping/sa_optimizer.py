@@ -158,8 +158,9 @@ class SAOptimizer:
             if pe != old_pe and loads[pe] < self.max_tasks_per_pe
         ]
         if not candidates:
-            # All other PEs full — allow any PE (relax constraint)
             candidates = [pe for pe in range(self._num_pes) if pe != old_pe]
+        if not candidates:
+            return new_assign  # 1x1 mesh — no other PE exists
 
         new_pe = self._rng.choice(candidates)
         new_assign[tid] = new_pe
@@ -187,7 +188,8 @@ class SAOptimizer:
 
         assignment = self.generate_initial_solution()
         best_assignment = deepcopy(assignment)
-        best_cost = self.cost_model.total_cost(best_assignment)
+        current_cost = self.cost_model.total_cost(assignment)
+        best_cost = current_cost
 
         T = self.T_init
         idle_steps = 0
@@ -205,10 +207,11 @@ class SAOptimizer:
                 total_iters += 1
                 neighbor = self._random_neighbor(assignment)
                 new_cost = self.cost_model.total_cost(neighbor)
-                delta = new_cost - best_cost
+                delta = new_cost - current_cost
 
                 if delta <= 0 or self._rng.random() < self._acceptance_probability(delta, T):
                     assignment = neighbor
+                    current_cost = new_cost
                     if delta > 0:
                         accepted_uphill += 1
                     if new_cost < best_cost:

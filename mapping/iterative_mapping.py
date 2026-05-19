@@ -87,7 +87,7 @@ def main(argv: list[str] | None = None) -> int:
     seen_assignments: dict[int, int] = {}
     # Track best result across all rounds
     best_overall_assignment = dict(best_assignment)
-    best_overall_max_temp = max(uniform_temps)
+    best_overall_max_temp = float("inf")  # track lowest peak temp across all rounds
 
     for rnd in range(1, args.max_rounds + 1):
         print(f"\n=== Round {rnd}: thermal simulation ===")
@@ -186,17 +186,24 @@ def main(argv: list[str] | None = None) -> int:
     # ------------------------------------------------------------------
     # 5. Final simulation & report
     # ------------------------------------------------------------------
+    # Use best_overall if it captured a lower peak temp than the last round
+    final_assignment = best_assignment
+    if best_overall_max_temp < float("inf"):
+        final_assignment = best_overall_assignment
+        if args.verbose:
+            print(f"\n  Using best_overall assignment (peak {best_overall_max_temp:.2f} K)")
+
     print(f"\n{'='*60}")
     print(f"Iterative mapping complete ({elapsed:.2f}s, {rnd} rounds)")
 
-    final_sim = simulate_thermal(graph, best_assignment, sim_params)
+    final_sim = simulate_thermal(graph, final_assignment, sim_params)
     final_temps = final_sim.pe_max_temp
 
     final_cm = CostModel(
         graph, final_temps, w_T=args.wT, w_H=args.wH,
         Tambient=args.Tambient, rows=args.rows, cols=args.cols,
     )
-    final_breakdown = final_cm.cost_breakdown(best_assignment)
+    final_breakdown = final_cm.cost_breakdown(final_assignment)
 
     print(f"  Final cost: {final_breakdown['total_cost']:.4f}")
     print(f"    Thermal:  {final_breakdown['thermal_cost']:.4f}")
@@ -224,7 +231,7 @@ def main(argv: list[str] | None = None) -> int:
         f"comm={final_breakdown['comm_cost']:.4f}\n"
         f"  max PE temp: {max(final_temps):.2f} K"
     )
-    write_static_csv(graph, best_assignment, args.output, comment=comment)
+    write_static_csv(graph, final_assignment, args.output, comment=comment)
     print(f"  Output: {args.output}")
     print(f"{'='*60}")
     return 0

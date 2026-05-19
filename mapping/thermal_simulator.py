@@ -18,7 +18,6 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from .task_graph import TaskGraph
-from .cost_model import CostModel  # for hops()
 
 
 # ============================================================================
@@ -104,42 +103,59 @@ class TaskScheduler:
         self.graph = graph
         self.assignment = dict(assignment)
         self.params = params
+        self._hops_cache: dict[tuple[int, int], int] = {}
+
+    def _hops(self, pe_a: int, pe_b: int) -> int:
+        key = (pe_a, pe_b) if pe_a < pe_b else (pe_b, pe_a)
+        if key not in self._hops_cache:
+            r1, c1 = divmod(pe_a, self.params.cols)
+            r2, c2 = divmod(pe_b, self.params.cols)
+            self._hops_cache[key] = abs(r1 - r2) + abs(c1 - c2)
+        return self._hops_cache[key]
+
+    def _comm_delay(self, pred_id: int, dst_pe: int,
+                    finish_time: dict[int, float]) -> float:
+        """Communication delay for predecessor *pred_id* sending data
+        to PE *dst_pe*."""
+        pred_node = self.graph.tasks.get(pred_id)
+        if pred_node is None or pred_node.is_gb_task:
+            return 0.0
+        src_pe = self.assignment.get(pred_id)
+        if src_pe is None:
+            return 0.0
+        hops = self._hops(src_pe, dst_pe)
+        n_flits = max(2, (pred_node.output_data_size +
+                          self.params.flitSize - 1) // self.params.flitSize)
+        return hops * self.params.commDelayPerHop * n_flits
+
+    def _data_ready(self, tid: int, finish_time: dict[int, float]) -> float:
+        """Earliest time task *tid* can start (all predecessor data arrived)."""
+        node = self.graph.tasks[tid]
+        dst_pe = self.assignment[tid]
+        t = 0.0
+        for pred_id in node.predecessor_set:
+            pred_finish = finish_time.get(pred_id, 0.0)
+            delay = self._comm_delay(pred_id, dst_pe, finish_time)
+            t = max(t, pred_finish + delay)
+        return t
 
     def schedule(self) -> list[TaskSlot]:
-        """Return ordered list of TaskSlot."""
         slots: list[TaskSlot] = []
-        # When each task finishes
         finish_time: dict[int, float] = {}
-        # When each PE becomes free
         pe_free: dict[int, float] = {p: 0.0 for p in range(self.params.num_pes)}
-        # Remaining dependency count (copy)
         pending: dict[int, int] = {
             tid: len(node.predecessor_set) for tid, node in self.graph.tasks.items()
         }
-        # Ready queue
         ready: list[int] = [tid for tid, n in pending.items() if n == 0 and
                             self.graph.tasks[tid].is_mappable]
 
         while ready:
-            # Pick the task that can start earliest (greedy)
+            # Pick the task that can start earliest
             best_tid = -1
             best_start = float("inf")
             for tid in ready:
-                node = self.graph.tasks[tid]
-                pe = self.assignment.get(tid, 0)
-                # Data ready time = max of (finish + comm_delay) over predecessors
-                data_ready = 0.0
-                for pred_id in node.predecessor_set:
-                    pred_node = self.graph.tasks.get(pred_id)
-                    if pred_node is None or pred_node.is_gb_task:
-                        continue
-                    pred_pe = self.assignment.get(pred_id, 0)
-                    hops = _hops(pred_pe, pe, self.params.cols)
-                    n_flits = max(2, (pred_node.output_data_size +
-                                      self.params.flitSize - 1) // self.params.flitSize)
-                    comm_delay = hops * self.params.commDelayPerHop * n_flits
-                    pred_finish = finish_time.get(pred_id, 0.0)
-                    data_ready = max(data_ready, pred_finish + comm_delay)
+                data_ready = self._data_ready(tid, finish_time)
+                pe = self.assignment[tid]
                 start = max(data_ready, pe_free[pe])
                 if start < best_start:
                     best_start = start
@@ -148,23 +164,11 @@ class TaskScheduler:
             tid = best_tid
             ready.remove(tid)
             node = self.graph.tasks[tid]
-            pe = self.assignment.get(tid, 0)
+            pe = self.assignment[tid]
 
-            data_ready = 0.0
-            for pred_id in node.predecessor_set:
-                pred_node = self.graph.tasks.get(pred_id)
-                if pred_node is None or pred_node.is_gb_task:
-                    continue
-                pred_pe = self.assignment.get(pred_id, 0)
-                hops = _hops(pred_pe, pe, self.params.cols)
-                n_flits = max(2, (pred_node.output_data_size +
-                                  self.params.flitSize - 1) // self.params.flitSize)
-                comm_delay = hops * self.params.commDelayPerHop * n_flits
-                pred_finish = finish_time.get(pred_id, 0.0)
-                data_ready = max(data_ready, pred_finish + comm_delay)
-
+            data_ready = self._data_ready(tid, finish_time)
             start = max(data_ready, pe_free[pe])
-            comp_s = node.compute_time_ns * 1e-9  # ns → seconds
+            comp_s = node.compute_time_ns * 1e-9
             finish = start + comp_s
 
             slots.append(TaskSlot(
@@ -175,7 +179,6 @@ class TaskScheduler:
             finish_time[tid] = finish
             pe_free[pe] = finish
 
-            # Release successors
             for succ_id in node.successors:
                 if succ_id == -1:
                     continue
@@ -447,7 +450,3 @@ def _extract_task_start_temps(
     return result
 
 
-def _hops(pe_a: int, pe_b: int, cols: int) -> int:
-    r1, c1 = divmod(pe_a, cols)
-    r2, c2 = divmod(pe_b, cols)
-    return abs(r1 - r2) + abs(c1 - c2)

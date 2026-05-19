@@ -45,8 +45,7 @@ def write_static_csv(
         f"# Optimized static mapping — {graph.num_mappable} mappable tasks"
     )
 
-    # Write tasks in topological order (matching input CSV structure)
-    # But preserve the original task order from the input for readability
+    # Write tasks in topological order
     for tid in graph.topological_order():
         node = graph.tasks[tid]
         pe = node.assigned_pe if node.is_gb_task else assignment.get(tid, node.assigned_pe)
@@ -63,8 +62,12 @@ def write_static_csv(
                 succ_pe = -1
             elif succ_id in graph.tasks and graph.tasks[succ_id].is_gb_task:
                 succ_pe = -1
+            elif succ_id in assignment:
+                succ_pe = assignment[succ_id]
+            elif succ_id in graph.tasks:
+                succ_pe = graph.tasks[succ_id].assigned_pe  # static task
             else:
-                succ_pe = assignment.get(succ_id, -1)
+                succ_pe = -1
             fields.append(f"{succ_id}:{succ_pe}")
 
         lines.append(", ".join(fields))
