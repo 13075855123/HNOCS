@@ -538,6 +538,10 @@ void TaskPE::startComputation(TaskDescriptor* task) {
         powerTrace->recordPEEvent(peId, PE_COMPUTE_START, now, powerCompute);
     }
 
+    printf("[PE%d] task=%d START at t=%.3fus nominalTime=%.3fus dvfs=%.3f Tpe=%.1fC\n",
+           peId, task->taskId, now.dbl()*1e6, nominalTime.dbl()*1e6,
+           dvfsScale, getThermalModel()->getPEPerature(peId) - 273.15);
+
     EV << "-I- TaskPE[" << peId << "] starts task " << task->taskId
        << " at " << simTime()
        << " nominalTime=" << nominalTime
@@ -576,9 +580,10 @@ void TaskPE::completeComputation() {
         powerTrace->recordPEEvent(peId, PE_COMPUTE_END, now, powerIdle);
     }
 
-    printf("[PE%d] task=%d DONE computeTime=%.3fus output=%dB successors=%d at t=%.3fus\n",
-           peId, task->taskId, task->computeTime.dbl()*1e6,
-           task->outputDataSize, (int)task->successors.size(), now.dbl()*1e6);
+    printf("[PE%d] task=%d DONE at t=%.3fus actualCompute=%.3fus output=%dB successors=%d\n",
+           peId, task->taskId, now.dbl()*1e6,
+           (task->finishTime - task->startTime).dbl()*1e6,
+           task->outputDataSize, (int)task->successors.size());
 
     if (task->outputDataSize > 0 || !task->successors.empty()) {
         int nf = calculateNumFlits(task->outputDataSize);
