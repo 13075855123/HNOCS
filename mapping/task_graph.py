@@ -65,7 +65,7 @@ class TaskGraph:
         graph = cls()
         filepath = Path(filepath)
 
-        with open(filepath, "r", encoding="utf-8") as f:
+        with open(filepath, "r", encoding="utf-8", errors="replace") as f:
             for line_num, raw in enumerate(f, 1):
                 line = raw.strip()
                 if not line or line.startswith("#"):

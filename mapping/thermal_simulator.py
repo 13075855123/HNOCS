@@ -51,9 +51,17 @@ class SimParams:
     # Time discretisation
     dt:             float = 100e-9   # 100 ns
 
-    # Communication
+    # Communication — matching OMNeT++ TaskMesh.ned + SchedSync.cc
     flitSize:       int = 16         # bytes
-    commDelayPerHop: float = 1e-9    # 1 ns per hop (router pipeline)
+    linkDatarate:   float = 16e9     # 16 Gbps (TaskLink)
+    # Derived: flitTxTime = flitSize*8 / linkDatarate = 8 ns
+    # Router pipeline per hop (head flit):
+    #   Req 2ns (SwCtrlLink) + Sched wait 0-8ns + Gnt 2ns +
+    #   Crossbar 8ns (SwLink) = 12-20 ns (avg 16 ns, worst 20 ns)
+    #   + output link = 8 ns → total per-hop ≈ 24-28 ns
+    routerPipeline: float = 20e-9    # 20 ns router internals (Req+Gnt+Xbar)
+    initialCredits: int = 4          # flits per VC (InPortSync/GlobalBuffer)
+    schedClk:       float = 8e-9     # scheduler clock = flitTxTime
 
     @property
     def num_pes(self) -> int:
@@ -113,10 +121,15 @@ class TaskScheduler:
             self._hops_cache[key] = abs(r1 - r2) + abs(c1 - c2)
         return self._hops_cache[key]
 
-    def _comm_delay(self, pred_id: int, dst_pe: int,
-                    finish_time: dict[int, float]) -> float:
-        """Communication delay for predecessor *pred_id* sending data
-        to PE *dst_pe*."""
+    def _comm_delay(self, pred_id: int, dst_pe: int) -> float:
+        """Communication delay matching OMNeT++ wormhole switching.
+
+        Head flit: H * (routerPipeline + flitTxTime) per hop.
+        Body flits: follow at flitTxTime intervals after head.
+        Injection: N * flitTxTime to clock all flits out of source PE.
+
+        Total = H*(routerPipeline + flitTxTime) + N*flitTxTime
+        """
         pred_node = self.graph.tasks.get(pred_id)
         if pred_node is None or pred_node.is_gb_task:
             return 0.0
@@ -124,9 +137,12 @@ class TaskScheduler:
         if src_pe is None:
             return 0.0
         hops = self._hops(src_pe, dst_pe)
+        p = self.params
+        flit_tx = (8.0 * p.flitSize) / p.linkDatarate  # 8 ns
         n_flits = max(2, (pred_node.output_data_size +
-                          self.params.flitSize - 1) // self.params.flitSize)
-        return hops * self.params.commDelayPerHop * n_flits
+                          p.flitSize - 1) // p.flitSize)
+        per_hop = p.routerPipeline + flit_tx               # ~28 ns
+        return hops * per_hop + n_flits * flit_tx
 
     def _data_ready(self, tid: int, finish_time: dict[int, float]) -> float:
         """Earliest time task *tid* can start (all predecessor data arrived)."""
@@ -135,7 +151,7 @@ class TaskScheduler:
         t = 0.0
         for pred_id in node.predecessor_set:
             pred_finish = finish_time.get(pred_id, 0.0)
-            delay = self._comm_delay(pred_id, dst_pe, finish_time)
+            delay = self._comm_delay(pred_id, dst_pe)
             t = max(t, pred_finish + delay)
         return t
 
@@ -143,11 +159,14 @@ class TaskScheduler:
         slots: list[TaskSlot] = []
         finish_time: dict[int, float] = {}
         pe_free: dict[int, float] = {p: 0.0 for p in range(self.params.num_pes)}
-        pending: dict[int, int] = {
-            tid: len(node.predecessor_set) for tid, node in self.graph.tasks.items()
-        }
+        # Count only data-producing (non-GB) predecessors
+        pending: dict[int, int] = {}
+        for tid, node in self.graph.tasks.items():
+            n = sum(1 for p in node.predecessor_set
+                    if not self.graph.tasks[p].is_gb_task)
+            pending[tid] = n
         ready: list[int] = [tid for tid, n in pending.items() if n == 0 and
-                            self.graph.tasks[tid].is_mappable]
+                            tid in self.assignment]
 
         while ready:
             # Pick the task that can start earliest
