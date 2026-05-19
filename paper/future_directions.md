@@ -10,6 +10,20 @@
 
 ---
 
+## 公共基础设施：Python 热仿真器
+
+方向 B-1、B-2、C 共同依赖一个**与 OMNeT++ 解耦的 Python 热仿真器**（`mapping/thermal_simulator.py`），精确复现 OMNeT++ 的 RC 热模型（显式欧拉法，32 节点，100ns 步长）。包含三个组件：
+
+| 组件 | 功能 |
+|------|------|
+| **TaskScheduler** | DAG 感知事件驱动调度，PE 串行化，通信延迟建模 |
+| **PowerModel** | 计算/空闲功耗追踪 + DVFS 热降频（T > 46.85°C → 5%/°C 减速） |
+| **ThermalSimulator** | RC 热网络求解器，逐时间步记录所有 PE 的完整温度曲线 |
+
+优化在 Python 内完成（毫秒级/轮），OMNeT++ 仅用于最终验证（跑一次）。
+
+---
+
 ## 方向 A：控制与数据分离（Lookup-Based Thermal-Aware Placement）
 
 ### 核心思想
@@ -66,77 +80,149 @@
 
 ## 方向 B：离线热感知静态映射（Design-Time Thermal-Aware Mapping）
 
-### 核心思想
+### 整体定位
 
-**在 t=0 时一次性完成所有 task 的 PE 分配，利用初始温度信息 + 任务图通信模式进行静态优化。** task 之间的数据仍走 PE→PE 直连（static CSV 模式），无需运行时调度。
+**在 t=0 时一次性完成所有 task 的 PE 分配。** task 之间的数据走 PE→PE 直连（static CSV 模式），仿真期间无需运行时调度。
 
-```
-t=0：GB 加载全部 task
-    → 扫描任务图（有向无环图 DAG）
-    → 用代价函数 cost(PE,T,H) 一次性算出每个 task 的最优 PE
-    → 分配完毕后，task 按 static.csv 模式 PE→PE 直连执行
-    → GB 不参与后续数据中转
-```
+核心挑战：温度是映射的"副作用"（task A 放 PE0 → PE0 发热 → 影响后续 task B 的 PE 选择），而映射又应该避开热点——这是鸡和蛋的循环依赖。
 
-这本质上是将 NoC 文献中经典的**静态应用映射（Application Mapping）** 问题用**温度感知代价函数**重新求解。
+方向 B 拆分为两个子方向，用不同的方法解决这个循环依赖：
 
-### 实现要点
-
-1. **t=0 的拓扑排序遍历**：按 DAG 拓扑序依次分配 task
-2. 分配 task[i] 时，已知 task[i] 的前驱已分配的 PE 位置 → 可计算通信距离
-3. 代价函数增加通信量项：
-
-   $$\text{cost}(PE_j) = w_T \cdot T_j + w_H \cdot \sum_{p \in pred(i)} \text{hops}(PE_{p}, PE_j) \cdot \text{dataSize}(p,i)$$
-
-4. 分配完毕后注入到各自 PE，后续全 static 模式执行
-
-### 论文依据
-
-| 引用 | 关联点 |
-|------|--------|
-| **Kaur et al., "Survey on mapping and scheduling for 3D NoC"** (J. Systems Architecture, 2024) | 全面综述静态与动态映射技术，其中静态映射使用 ILP/MILP/GA/SA 等优化方法 |
-| **TTNNM: Thermal- and Traffic-Aware NN Mapping** (Li & Fan, GLSVLSI 2024) | 热+流量感知的神经网络映射到 3D NoC，层次化映射算法 |
-| **Mo et al., "Contention and Reliability-Aware Energy Efficiency Task Mapping"** (IEEE Trans. Reliability, 2024) | 使用 MILP 联合优化竞争、可靠性和能耗的任务映射 |
-| **Reza, "High-performance application mapping in NoC-based multicore"** (J. Supercomputing, 2024) | MILP + SA + GA 的静态应用映射对比，SA 和 GA 在 MILP 最优解 10% 以内 |
-| **SpecMap: Spectral Partitioning-Based Mapping** (Raj et al., CCPE, 2023) | 基于谱图分割的静态映射，通信密集型任务聚类到 mesh 中心 |
-| **Reshadi et al., "Thermal-aware application mapping using GA and fuzzy logic"** (J. Supercomputing, 2024) | 遗传算法 + 模糊逻辑的热感知应用映射 |
-
-### 论文表述建议
-
-> We formulate the thermal-aware task mapping as a design-time optimization problem. Given a task DAG with communication weights and an initial thermal profile, we assign each task to a PE to minimize a weighted cost function of temperature and communication distance. This approach leverages the well-studied static application mapping framework, replacing traditional communication-cost-only objectives with our joint thermal-communication cost metric.
-
-### 优缺点
-
-| 优点 | 缺点 |
-|------|------|
-| 实现简单（t=0 一次性算完） | 无运行时的温度反馈（初始 T=45°C 全等，温度感知退化为通信感知） |
-| PE→PE 直连，零额外通信开销 | 无法应对运行时温度变化 |
-| 大量静态映射论文作为理论基础 | 需要**第二次迭代**（先跑一遍获得温度分布，再优化映射，再跑）来体现温度感知 |
-| 适合作为 Baseline | 创新性不如方向 A |
+| | B-1：增量贪心 + 多轮迭代 | B-2：遗传算法（GA） |
+|---|---|---|
+| **方法类型** | 解析方法（规则驱动） | 元启发式搜索 |
+| **论文定位** | Baseline | Baseline |
+| **自洽性** | 每步注入真实热效应 | 每个个体独立仿真 |
+| **全局搜索** | 无（贪心不可回溯），靠多轮弥补 | 有（种群多样性） |
 
 ---
 
-## 方向 C：GNN + RL 智能映射（RA-Map 复现 + 温度代价）
+### 方向 B-1：增量贪心 + 多轮迭代
+
+#### 核心思想
+
+**按 DAG 拓扑序逐个分配 task，每分配完一个 task 就立刻跑热仿真把它的热效应注入进去——下一个 task 评估 PE 时看到的是"前面所有 task 已经烧热了的芯片"。** 单轮贪心不能回溯（T1 选错 → 后面全错），用多轮迭代弥补：每轮重新贪心构建，用上一轮的温度经验指导本轮决策。
+
+```
+单轮内部（增量贪心构建）:
+  T=0，所有 PE=45°C
+  分配 T1 → 选代价最低的 PE → 跑热仿真到 T1 结束 → PE 温度更新
+  分配 T2 → 候选 PE 有不同的实时温度 → 选 PE_j → 跑热仿真注入 T2 的热
+  分配 T3 → 芯片已经被 T1、T2 加热 → 看到真实的温度梯度 → 选 PE_k
+  ...直到所有 task 分配完毕
+  → 产出映射 A + 完整温度时间曲线
+
+轮间迭代:
+  Round 1: 贪心构建（无历史经验，初始分配近似随机）
+  Round 2: 贪心构建（用 Round 1 的温度经验重选，纠正 Round 1 的错误）
+  Round 3: ...直到映射不再变化
+```
+
+#### 代价函数
+
+task_i 选 PE_j 时的代价：
+
+$$\text{cost}(PE_j, task_i) = w_T \cdot (T_{PE_j}(t_{start}) - T_{amb}) + w_H \cdot \sum_{p \in pred(i)} \text{hops}(PE_{p}, PE_j) \cdot \text{dataSize}(p,i)$$
+
+其中 $T_{PE_j}(t_{start})$ 是**task_i 开始时刻 PE_j 的真实温度**（来自已注入热效应的当前热状态），不是 PE 的峰值或平均温度。
+
+#### 实现要点
+
+1. 按拓扑序遍历 task，维护一个"当前芯片热状态"（所有 PE 的实时温度）
+2. 每分配一个 task：评估所有候选 PE → 选代价最小的 → 调度该 task（计算开始/结束时间）→ 跑热仿真到该 task 结束 → 更新芯片热状态
+3. 多轮迭代：每轮从 45°C 重新开始贪心构建，但代价函数可参考上一轮的完整温度时间曲线（task_start_temps）
+4. 收敛条件：映射不变，或温度分布变化 < 阈值
+
+#### 优缺点
+
+| 优点 | 缺点 |
+|------|------|
+| 每一步的评估完全自洽（温度来自已注入的热效应） | 单轮贪心无回溯能力 |
+| 概念直观，实现简单 | 需要多轮才能收敛 |
+| 热状态是连续时间函数，精度最高 | 最终结果可能不如全局优化 |
+
+#### 论文依据
+
+贪心拓扑调度 + 热感知的文献依据同方向 B-2（见下方）。增量式热注入是本方向的独特贡献，现有文献中未见类似方法。
+
+---
+
+### 方向 B-2：遗传算法（GA）
+
+#### 核心思想
+
+**每个"个体"是一个完整映射（所有 task→PE 的分配）。评估个体 = 用 Python 热仿真器跑一次该映射的完整仿真 → 得到真实温度分布 → 计算真实代价。** 种群通过选择、交叉、变异迭代进化。
+
+```
+GA 流程:
+  初始化: 随机生成 50 个完整映射（个体）
+
+  每代:
+    对每个个体跑 Python 热仿真 → 真实温度 + 真实代价
+    选择: 保留代价最低的 20 个
+    交叉: 两个父代交换部分 task 的 PE 分配 → 新个体
+    变异: 随机修改一个 task 的 PE
+    → 新一代 50 个个体
+
+  20-30 代后收敛 → 最优映射
+```
+
+#### 为什么 GA 天然自洽
+
+SA 的问题是"挪动一个 task 后用旧温度表评估"——内外不一致。GA 不同：**每个个体是从头跑完整仿真，映射和温度天然自洽。** 个体 #17 说 T2→PE8，那么仿真里 T2 就在 PE8 跑，PE8 的温度就是 T2 造成的。评估个体 #17 的代价时，用的是个体 #17 自己仿真出来的温度——没有近似。
+
+#### 并行化
+
+50 个体 × 20 代 = 1000 次仿真。每次仿真 ~0.05s。单线程 ~50 秒，8 线程并行 ~6 秒。
+
+#### 染色体编码
+
+```
+染色体: [PE_T1, PE_T2, PE_T3, ..., PE_Tn]  （每个 task 的 PE 编号）
+例:     [0, 8, 12, 4, 1, 4, 8, 12, 1, 0]  （GEMM 10 个 task）
+```
+
+#### 优缺点
+
+| 优点 | 缺点 |
+|------|------|
+| 每个评估完全自洽（映射→仿真→温度→代价，闭环） | 仿真次数多（但可并行） |
+| 种群多样性防止局部最优 | 实现比 B-1 复杂 |
+| 可输出帕累托前沿（温度最优 vs 通信最优的多个解） | 超参调优（种群大小、交叉率、变异率） |
+
+#### 论文依据
+
+| 引用 | 关联点 |
+|------|--------|
+| **Reza, "High-performance application mapping in NoC-based multicore"** (J. Supercomputing, 2024) | MILP + SA + GA 对比，GA 在 MILP 最优解 10% 以内 |
+| **Reshadi et al., "Thermal-aware application mapping using GA and fuzzy logic"** (J. Supercomputing, 2024) | GA + 模糊逻辑的热感知应用映射，与方向 B-2 直接对应 |
+| **Kaur et al., "Survey on mapping and scheduling for 3D NoC"** (J. Systems Architecture, 2024) | 静态映射综述，GA 是主流方法之一 |
+| **TTNNM: Thermal- and Traffic-Aware NN Mapping** (Li & Fan, GLSVLSI 2024) | 热+流量感知映射，层次化优化 |
+| **Mo et al., "Contention and Reliability-Aware Energy Efficiency Task Mapping"** (IEEE Trans. Reliability, 2024) | MILP 联合优化竞争、可靠性和能耗 |
+| **SpecMap: Spectral Partitioning-Based Mapping** (Raj et al., CCPE, 2023) | 谱图分割静态映射，通信密集型任务聚类 |
+
+---
+
+## 方向 C：GNN + RL 智能映射
 
 ### 核心思想
 
-**将 task graph 和 mesh 拓扑视为两个图，用图神经网络（GNN）联合编码，强化学习（RL）学习最优 PE 分配策略，代价函数加入温度项。**
-
-这是方向 B（离线静态映射）的 AI 增强版——不再用 GA/SA 穷举搜索，而是训练一个神经网络直接输出映射结果。
+**将 task graph 和 mesh 拓扑视为两个图，用图神经网络（GNN）联合编码，强化学习（RL）学习最优 PE 分配策略。** 与方向 B 的关键区别：B-1/B-2 对每个新 benchmark 都需要重新搜索；方向 C 训练一次后，换一个新的 task graph 可直接推理输出映射。
 
 ```
-输入层：
-  任务图 G_task（节点=task, 边=依赖+通信量）
-      ↓
-  GCN 编码（图卷积网络）→每个 task 的 embedding 向量
-      ↓
-  注意力机制 → 聚焦高通信量的关键 task
-      ↓
-  RL 策略网络（PPO/A2C）→ 依次输出每个 task 的目标 PE
-      ↓
-  代价函数 = w_comm × 通信跳数 + w_T × T(PE)
-      ↓
-  奖励 → 更新策略网络
+训练阶段（Python 内完成）:
+  GNN 输入 task graph → 输出映射
+    ↓
+  Python 热仿真器跑该映射 → 得到真实温度 + 通信代价
+    ↓
+  reward = -(w_H × 通信代价 + w_T × 温度代价)
+    ↓
+  PPO 更新策略网络
+    ↓
+  下一个 task graph...
+
+推理阶段:
+  新 task graph → GNN → 映射 → OMNeT++ 验证一次
 ```
 
 ### 参考论文：RA-Map (2024)
@@ -158,16 +244,18 @@ RA-Map 的实验结果：通信成本比 DPSO 降 6.5%、比 SA 降 8.5%。
 
 ### 我们的差异化
 
-**RA-Map 的代价函数只有通信成本。我们加入温度项：**
+**RA-Map 的代价函数只有通信成本。我们的创新：**
 
-```
-原始 RA-Map:
-  reward = -Σ hops(task_i, task_j) × dataSize_ij
+1. **温度项融入**：将 Python 热仿真器作为 RL 训练环境，reward 加入温度代价
+   ```
+   原始 RA-Map:
+     reward = -Σ hops(task_i, task_j) × dataSize_ij
 
-我们的改进:
-  reward = -Σ [ w_H × hops + w_T × (T(PE_i) - T_amb) + w_comm × dataSize ]
-  即论文的通信+温度联合代价函数，直接嵌入 RL 的 reward 函数
-```
+   我们的改进:
+     reward = -[ w_H × Σ hops × dataSize + w_T × Σ max(0, T_PE_i - T_amb) ]
+   ```
+2. **训练环境解耦 OMNeT++**：RL 训练全程在 Python 热仿真器内完成，无需反复调 OMNeT++
+3. **可泛化性**：训练好的模型直接用于新 benchmark，无需重新搜索
 
 ### 为什么 GNN 天然适合这个任务
 
@@ -186,9 +274,9 @@ GNN 的核心优势：**学一次，可泛化**。训练好的模型换一个 ta
 - 实现 PPO RL 策略网络
 - 在标准 task graph（VOPD/MPEG4/GEMM）上复现 RA-Map 的通信成本结果
 
-**Phase 2（温度项融入）**：
-- 将温度代价加入 reward 函数
-- 从 OMNeT++ 仿真提取 PE 温度分布作为训练数据
+**Phase 2（温度项融入 + Python 热仿真器对接）**：
+- 将 Python 热仿真器包装为 RL 环境（`step(action) → (reward, done)`）
+- reward 函数加入温度代价
 - 对比：纯通信代价 vs 通信+温度联合代价的映射质量
 
 **Phase 3（在线/离线混合）**：
@@ -212,32 +300,41 @@ GNN 的核心优势：**学一次，可泛化**。训练好的模型换一个 ta
 
 | 优点 | 缺点 |
 |------|------|
-| **最前沿**：GNN+RL 是 2024-2025 最热门组合 | 实现复杂度高于 GA/SA |
-| **可泛化**：训练一次可用不同 task graph | 需要大量训练数据（可从 OMNeT++ 生成） |
-| **论文故事强**：复现 + 创新（温度项）+ 对比充分 | PyTorch/OMNeT++ 跨框架集成有工程挑战 |
+| **最前沿**：GNN+RL 是 2024-2025 最热门组合 | 实现复杂度高于 B-1/B-2 |
+| **可泛化**：训练一次可用不同 task graph | 需要大量训练数据（可从 Python 热仿真器生成） |
+| **论文故事强**：复现 + 创新（温度项）+ 对比充分 | PyTorch/OMNeT++ 跨框架集成有工程挑战（已解耦） |
 | **可直接投稿顶会/顶刊** | 训练超参调优需经验 |
 
 ---
 
-## 三个方向的定位
+## 四个方向的定位与关系
 
-| | 方向 A（控制数据分离） | 方向 B（离线静态映射） | 方向 C（GNN+RL 智能映射） |
-|---|---|---|---|
-| **调度时机** | 运行时 | 设计时（t=0） | 设计时（t=0）+ 可扩展在线 |
-| **决策方式** | GB 查温度表 + 代价函数 | 代价函数 + GA/SA 优化 | GCN 编码 + RL 策略网络 |
-| **温度信息来源** | 实时 | 离线 | 混合（离线训练 + 在线推理） |
-| **论文定位** | **Proposed**（控制创新） | Baseline | **Proposed**（算法创新） |
-| **创新程度** | 高（架构创新） | 中 | **最高**（AI+架构交叉） |
-| **可投稿会议** | DATE/NoCArc | J. Supercomputing | **DAC/ICCAD/NeurIPS** |
-| **实现工作量** | 中 | 低 | 高（PyTorch + OMNeT++） |
+| | 方向 A（控制数据分离） | 方向 B-1（增量贪心+迭代） | 方向 B-2（GA） | 方向 C（GNN+RL） |
+|---|---|---|---|---|
+| **调度时机** | 运行时 | 设计时（t=0） | 设计时（t=0） | 设计时（t=0）+ 可扩展在线 |
+| **决策方式** | GB 查温度表 + 代价函数 | 贪心规则 + 实时热注入 | 种群进化 + 完整仿真 | GCN 编码 + RL 策略网络 |
+| **温度信息来源** | 实时（OMNeT++ 内） | Python 热仿真器 | Python 热仿真器 | Python 热仿真器（训练） |
+| **自洽性** | ✅ 运行时实时温度 | ✅ 每步注入热效应 | ✅ 每个体独立仿真 | ✅ 训练环境提供真实代价 |
+| **全局搜索能力** | N/A（运行时动态） | ❌（靠多轮弥补） | ✅ 种群多样性 | ✅ RL 探索策略 |
+| **可泛化到新 benchmark** | ✅ | ❌（需重跑） | ❌（需重跑） | ✅ 训练一次直接推理 |
+| **论文定位** | **Proposed**（架构创新） | Baseline | Baseline | **Proposed**（算法创新） |
+| **实现工作量** | 中 | 低 | 中 | 高（PyTorch + 热仿真器） |
+
+### 共同基础
+
+B-1、B-2、C 共用 `mapping/thermal_simulator.py`（Python 热仿真器）和 `mapping/cost_model.py`（代价函数）。优化全程在 Python 内完成，OMNeT++ 仅用于各方向的最终验证跑一次。
+
+---
 
 ## 建议的论文实验设计
 
 1. **Baseline 1**：传统 XY 路由 + **固定映射**（当前 `tasks_*_static.csv`）
-2. **Baseline 2**：传统 XY 路由 + **方向 B 离线热感知静态映射**（GA/SA 优化）
-3. **Proposed A**：传统 XY 路由 + **方向 A 运行时热感知动态放置**（控制数据分离）
-4. **Proposed C**：**方向 C GNN+RL 智能映射** — 离线训练、在线推理，通信+温度联合代价
-5. **未来工作**：方向 A + 方向 C 融合（RL 预分配 + 运行时微调 + 热感知路由）
+2. **Baseline 2**：方向 B-1 **增量贪心 + 多轮迭代**（解析方法）
+3. **Baseline 3**：方向 B-2 **GA 优化**（元启发式方法）
+4. **Proposed A**：传统 XY 路由 + **方向 A 运行时热感知动态放置**（控制数据分离）
+5. **Proposed C**：**方向 C GNN+RL 智能映射** — 离线训练、在线推理，通信+温度联合代价
+
+对比维度：温度（峰值/梯度）、通信代价（总跳数×数据量）、完成时间、能耗。
 
 ---
 
@@ -288,24 +385,26 @@ VOPD (长流水线):            Optic Calib (全并行):
     └──────────────────────────→ 并行度
 ```
 
-四个 benchmark 覆盖从 "完全串行" 到 "完全并行" 的完整范围，可证明热感知方法**不依赖任务图特征**。
-
 ---
 
 ## 关键参考文献
 
+### 方向 A
 1. Vanderbauwhede W. "A Formal Semantics for Control and Data flow in the Gannet Service-based System-on-Chip Architecture." 2008.
 2. SK hynix. "Task mapping method of network-on-chip semiconductor device." US Patent 11,113,116, 2020.
-3. Kaur S, et al. "A survey on mapping and scheduling techniques for 3D Network-on-chip." Journal of Systems Architecture, 2024.
-4. Li Z, Fan H, et al. "TTNNM: Thermal- and Traffic-Aware Neural Network Mapping on 3D-NoC-based Accelerator." GLSVLSI, 2024.
-5. Mo L, Li X, et al. "Contention and Reliability-Aware Energy Efficiency Task Mapping on NoC-Based MPSoCs." IEEE Trans. Reliability, 2024.
-6. Reza MF. "High-performance application mapping in network-on-chip-based multicore systems." J. Supercomputing, 2024.
-7. He O, Dong Y. "UNISM: Unified Scheduling and Mapping for General Networks on Chip." IEEE TVLSI, 2013.
-8. Reshadi M, et al. "Thermal-aware application mapping using genetic and fuzzy logic for 3D NoC." J. Supercomputing, 2024.
+3. He O, Dong Y. "UNISM: Unified Scheduling and Mapping for General Networks on Chip." IEEE TVLSI, 2013.
 
-**方向 C 专用参考文献**：
-9. Xu C, Shi X, Yang H, Wang Y. "RA-Map: 3D Network-on-Chip Data Acquisition System Mapping Based on Reinforcement Learning and Improved Attention Mechanism." Microelectronics Journal, Vol. 151, 2024. — 直接复现基准
-10. Duan S, Ping Y, et al. "HSDAG: A Structure-Aware Framework for Learning Device Placements on Computation Graphs." NeurIPS, 2024. — GNN+RL 设备放置，数学同构
-11. "Reinforcement Learning and CNN for Generalized Multi-Objective Mapping of DNN Workloads in NoCs." IEEE, 2025. — RL+CNN 映射 DNN 到 NoC
-12. "RL-Based NoC Autonomous Optimal Mapping Exploration System and Method." CN115470889A, 中国专利. — PPO/A2C 用于 NoC 映射
-13. Yasin AS, et al. "A comprehensive study and holistic review of empowering network-on-chip application mapping through machine learning techniques." Discover Electronics, Vol. 1, 2024. — ML+NoC 映射综述
+### 方向 B（B-1 + B-2）
+4. Kaur S, et al. "A survey on mapping and scheduling techniques for 3D Network-on-chip." Journal of Systems Architecture, 2024.
+5. Li Z, Fan H, et al. "TTNNM: Thermal- and Traffic-Aware Neural Network Mapping on 3D-NoC-based Accelerator." GLSVLSI, 2024.
+6. Mo L, Li X, et al. "Contention and Reliability-Aware Energy Efficiency Task Mapping on NoC-Based MPSoCs." IEEE Trans. Reliability, 2024.
+7. Reza MF. "High-performance application mapping in network-on-chip-based multicore systems." J. Supercomputing, 2024.
+8. Reshadi M, et al. "Thermal-aware application mapping using genetic and fuzzy logic for 3D NoC." J. Supercomputing, 2024.
+9. Raj et al. "SpecMap: Spectral Partitioning-Based Mapping." CCPE, 2023.
+
+### 方向 C
+10. Xu C, Shi X, Yang H, Wang Y. "RA-Map: 3D Network-on-Chip Data Acquisition System Mapping Based on Reinforcement Learning and Improved Attention Mechanism." Microelectronics Journal, Vol. 151, 2024. — 直接复现基准
+11. Duan S, Ping Y, et al. "HSDAG: A Structure-Aware Framework for Learning Device Placements on Computation Graphs." NeurIPS, 2024. — GNN+RL 设备放置，数学同构
+12. "Reinforcement Learning and CNN for Generalized Multi-Objective Mapping of DNN Workloads in NoCs." IEEE, 2025. — RL+CNN 映射 DNN 到 NoC
+13. "RL-Based NoC Autonomous Optimal Mapping Exploration System and Method." CN115470889A, 中国专利. — PPO/A2C 用于 NoC 映射
+14. Yasin AS, et al. "A comprehensive study and holistic review of empowering network-on-chip application mapping through machine learning techniques." Discover Electronics, Vol. 1, 2024. — ML+NoC 映射综述
