@@ -10,11 +10,13 @@
 #include "NoCs_m.h"
 #include "messages/TaskMsg_m.h"
 #include "thermal/ThermalTrace.h"
-
+#include "onoc/common/ControlPlaneEvents.h"
 
 using namespace omnetpp;
 
-class TaskPE : public cSimpleModule {
+class LogicalTopologyManager;
+
+class TaskPE : public cSimpleModule, public cListener {
 private:
     // === Parameters ===
     int peId;
@@ -23,6 +25,38 @@ private:
     simtime_t statStartTime;
     int bufferBaseId;
     int numColumns;
+    int numRows;
+
+    // === Optical bypass parameters ===
+    bool enableSetupHandshake;
+    bool enableOpticalBypass;
+    simtime_t setupRetryDelay;
+    simtime_t setupPendingTimeout;
+    int opticalRequiredWavelengths;
+    double opticalWavelengthBitrate;
+    simtime_t opticalBasePropagationDelay;
+    simtime_t opticalPerHopDelay;
+    int opticalBurstSize;
+
+    // === Optical state ===
+    int numNodes;
+    LogicalTopologyManager *topologyManager;
+    std::vector<unsigned char> circuitReadyByDst;
+    std::vector<unsigned char> setupPendingByDst;
+    std::vector<simtime_t> nextSetupAttemptByDst;
+    std::vector<simtime_t> setupPendingExpiryByDst;
+    std::vector<int> pendingSetupTokenByDst;
+    std::vector<int> activeCircuitTokenByDst;
+    long setupReqRxCount;
+    long setupAckRxCount;
+    long opticalPacketsSent;
+    simtime_t lastOpticalSendTime;
+    long setupAckAcceptedCount;
+    long setupAckStaleCount;
+    long setupReserveFailCount;
+    long setupPendingTimeoutCount;
+    simsignal_t setupReqEventSignal;
+    simsignal_t setupAckEventSignal;
 
     // === Task management ===
     std::vector<TaskDescriptor*> taskList;
@@ -40,13 +74,16 @@ private:
     cMessage* computeCompleteMsg;
     cMessage* powerSampleMsg;
     cMessage* injectPopMsg;
-
-    // NEW: periodic energy window timer
     cMessage* energyWindowMsg;
+    cMessage* controlPopMsg;   // drives controlQ (SETUP_REQ/ACK)
+    cMessage* opticalPopMsg;   // drives opticalDataQ (sendDirect)
 
     // === Injection-side state ===
-    std::queue<TaskMsg*> injectQ;
-    int credits;   // send-side credits on VC0
+    std::queue<TaskMsg*> injectQ;       // regular data via router (GB)
+    cQueue controlQ;                     // SETUP_REQ/ACK via router
+    cQueue opticalDataQ;                 // PE→PE data via sendDirect (circuit ready)
+    std::vector<std::vector<TaskMsg*>> pendingDataQ; // per-dst pending data (wait ACK)
+    int credits;   // send-side credits on VC0 (shared: injectQ + controlQ)
 
     // === Statistics ===
     long totalTasksCompleted;
@@ -106,6 +143,19 @@ private:
     // Global packet-id counter
     int pktIdCounter;
 
+    // === Optical helpers ===
+    void ensureOpticalStateSize(int dst);
+    bool tryReserveSetupPath(int dst, int &token);
+    void sendControlFlitFromQ();
+    void sendOpticalFlitFromQ();
+    void flushPendingData(int dst);
+    int  meshHopDistance(int src, int dst) const;
+    simtime_t computeOpticalPropagationDelay(int src, int dst) const;
+    simtime_t computeOpticalTxDuration(const TaskMsg *flit) const;
+    bool sendFlitDirectToSink(TaskMsg *flit);
+    cSimpleModule *getDestinationPEModule(int dst) const;
+    void handleControlEvent(int eventType, int requesterId, int targetId, int token);
+
     // === Helpers ===
     void loadTaskGraphFromCSV(const std::string& csvPath);
 
@@ -120,24 +170,18 @@ private:
     void updatePower(bool isIdlePower);
     void samplePower();
     double getTemperatureCorrectedPower(bool idle) const;
-    double getDvfsScaleFactor() const;   // 1.0 at safe temp, >1.0 above threshold
+    double getDvfsScaleFactor() const;
 
-    // NEW: PE energy helpers
     void accumulatePEStaticEnergy(simtime_t now);
     void finalizeEnergyWindow(simtime_t now);
-
-    // Temperature-based display color update
     void updateThermalDisplay();
 
-    // Per-PE temperature output vector
     cOutVector peTempVec;
 
-    // Global task completion tracking (shared across all PEs)
     static int systemTotalTasks;
     static int systemCompletedTasks;
     static bool systemStopScheduled;
 
-    // return credits to router when TaskPE is receiver
     void sendCredit(int vc, int numFlits);
 
     double tClk_s;
@@ -146,12 +190,25 @@ protected:
     virtual void initialize() override;
     virtual void handleMessage(cMessage* msg) override;
     virtual void finish() override;
+    virtual void receiveSignal(cComponent *source, simsignal_t signalID, intval_t value, cObject *details) override;
 
 public:
     virtual ~TaskPE();
 
     double getCurrentPower()  const { return currentPower; }
     double getUtilization()   const;
+    bool isAllDataSent() const {
+        // All send queues must be drained
+        if (!injectQ.empty() || !controlQ.isEmpty() || !opticalDataQ.isEmpty())
+            return false;
+        for (int d = 0; d < (int)pendingDataQ.size(); d++)
+            if (!pendingDataQ[d].empty()) return false;
+        // No in-flight sendDirect transmission
+        if (opticalPopMsg && opticalPopMsg->isScheduled()) return false;
+        // Allow 500ns grace for last sendDirect to reach GB
+        if (simTime() - lastOpticalSendTime < SimTime(500, SIMTIME_NS)) return false;
+        return true;
+    }
 };
 
 #endif // __HNOCS_TASK_PE_H_

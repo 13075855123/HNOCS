@@ -20,15 +20,18 @@
 #define __HNOCS_INF_BW_MULTI_VC_SINK_H_
 
 #include <omnetpp.h>
+#include <map>
 using namespace omnetpp;
 
 #include "NoCs_m.h"
+#include "onoc/common/ControlPlaneEvents.h"
 //
 // The InfiniteBWMultiVCSink is consuming FLITs
 //
 class InfiniteBWMultiVCSink: public cSimpleModule {
 private:
 	int numVCs;
+	int coreId;
 	simtime_t statStartTime; // in sec
 	int numRecPkt; // number of received packets, assume that onlt single source is transmitting
 	// statistics
@@ -50,10 +53,11 @@ private:
 	cHistogram SoPEnd2EndLatencyHist; // source queuing + network-latency (for Head flit only)
 
 	std::vector<int> vcFLITs;
-	std::vector<int> vcFlitIdx; // for checking receiving order of flits from each vc
-	std::vector<int> curPktId; // Current PktId per vc
-
-	std::vector<simtime_t> SoPFirstNetTime; // save the SoP First Trans time until EoP arrive
+	std::map<int, int> expectedFlitIdxByPktId;
+	std::map<int, simtime_t> firstNetTimeByPktId;
+	simsignal_t setupReqEventSignal;
+	simsignal_t setupAckEventSignal;
+	simsignal_t dataReleaseEventSignal;
 
 	void sendCredit(int vc, int num);
 protected:

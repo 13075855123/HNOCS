@@ -31,6 +31,7 @@ simple InfiniteBWMultiVCSink like Sink_Ifc
     @display("i=block/sink");
     gates:
         inout in;
+        input opticalIn @directIn; // dedicated direct optical ingress for bypass traffic
 }
 
 // For details about statistics, please refer to InfiniteBWMultiVCSink.h & InfiniteBWMultiVCSink.cc

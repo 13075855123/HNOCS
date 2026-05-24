@@ -44,13 +44,22 @@ simple TaskPE like hnocs.cores.NI_Ifc
         bool   enableEnergyWindow = default(true);
 
         double computeDensity = default(0);
-        // >0: derive nominal computeTime from data size instead of CSV
-        bool remapToDynamic = default(false);
-        // >0: derive nominal computeTime from data size instead of CSV
+
+        // Optical bypass parameters
+        bool enableSetupHandshake = default(false);
+        bool enableOpticalBypass = default(false);
+        double setupRetryDelay @unit(s) = default(50ns);
+        double setupPendingTimeout @unit(s) = default(200ns);
+        int opticalRequiredWavelengths = default(2);
+        double opticalWavelengthBitrate @unit(bps) = default(256Gbps);
+        double opticalBasePropagationDelay @unit(s) = default(0.5ns);
+        double opticalPerHopDelay @unit(s) = default(0.1ns);
+        int opticalBurstSize = default(1);
 
         @display("i=block/process");
 
     gates:
         inout in;
         inout out;
+        input opticalIn @directIn;
 }

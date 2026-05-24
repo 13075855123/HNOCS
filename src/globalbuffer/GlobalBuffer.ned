@@ -17,13 +17,19 @@ simple GlobalBuffer
         int flitSize @unit(byte) = default(16B);
         string application = default("cnn_inference");
         int baseId = default(1000);
-        int initialCredits = default(4);
+        int initialCredits = default(8);
         string csvFile = default("");
-        double wTemperature = default(1.0);
-        double wHopCount    = default(0.5);
-        bool remapToDynamic = default(false);
+        bool enableSetupHandshake = default(false);
+        bool enableOpticalBypass = default(false);
+        double setupRetryDelay @unit(s) = default(50ns);
+        double setupPendingTimeout @unit(s) = default(2us);
+        int opticalRequiredWavelengths = default(2);
+        double opticalWavelengthBitrate @unit(bps) = default(256Gbps);
+        double opticalBasePropagationDelay @unit(s) = default(0.5ns);
+        double opticalPerHopDelay @unit(s) = default(0.1ns);
         @display("i=block/buffer");
     gates:
         inout in[numConnections];
         inout out[numConnections];
+        input opticalIn @directIn;
 }

@@ -36,6 +36,20 @@ simple PktFifoSrc like Source_Ifc
         bool            isSynchronous;               // If true will send on clock (defived link BW)
         bool			isTrace; 					 // If true uses a trace file for flitArrivalDelay
         string 			fileName;					 // trace filename
+        bool            enableSetupHandshake = default(false); // when true, send setup request and wait for ACK before data
+        bool            singlePacketPerMessage = default(false); // when true, force msgLen=1
+        int             setupControlPktLen = default(2); // setup/ack control packet size in flits
+        int             dataPktLenWhenHandshake = default(2); // data packet size while handshake mode is enabled
+        double          setupRetryDelay @unit(s) = default(20ns); // retry period for setup request
+        double          setupPendingTimeout @unit(s) = default(2us); // timeout before abandoning a pending setup and retrying
+        bool            enableOpticalBypass = default(false); // when true, data packets bypass routers via direct optical path
+        bool            enableTrafficVisualization = default(true); // visualize setup/ack(data bypass) traffic in QtEnv
+        double          visualLinkHoldTime @unit(s) = default(50ns); // transient visualization line lifetime
+        int             opticalRequiredWavelengths = default(2); // required wavelengths per optical data transfer
+        double          opticalWavelengthBitrate @unit(bps) = default(256Gbps); // bitrate per wavelength
+        double          opticalBasePropagationDelay @unit(s) = default(100ps); // fixed optical propagation latency
+        double          opticalPerTorusHopDelay @unit(s) = default(20ps); // extra propagation delay per torus hop of physical span
+        int             opticalBurstSize = default(1); // number of data packets per circuit setup (1=legacy, >1=burst)
            
     @display("i=block/source");
     gates: 

@@ -15,11 +15,14 @@
 
 using namespace omnetpp;
 
+class LogicalTopologyManager;
+
 class GlobalBuffer : public cSimpleModule {
 private:
     int numConnections;
     int flitSize;
     int baseId;
+    int numColumns;
 
     std::vector<TaskDescriptor*> taskList;
     std::map<int, TaskDescriptor*> taskMap;
@@ -33,19 +36,34 @@ private:
     int pktIdCounter;
     double tClk_s;
 
-    // Dynamic temperature-aware PE assignment
-    double wTemperature;
-    double wHopCount;
+    // ── Optical bypass for GB→PE ──
+    bool enableSetupHandshake;
+    bool enableOpticalBypass;
+    int numPEs;
+    LogicalTopologyManager *topologyManager;
+    std::vector<unsigned char> circuitReadyByDst;
+    std::vector<unsigned char> setupPendingByDst;
+    std::vector<simtime_t> nextSetupAttemptByDst;
+    std::vector<simtime_t> setupPendingExpiryByDst;
+    std::vector<int> pendingSetupTokenByDst;
+    std::vector<int> activeCircuitTokenByDst;
+    std::vector<std::vector<TaskMsg*>> pendingDataQ;
+    cQueue opticalDataQ;                // data flits for sendDirect
+    cMessage* opticalPopMsg;            // paces optical send
+    std::vector<cQueue> controlQ;       // per-connector ACK queue
+    cMessage* optPopMsg;
+    simtime_t setupRetryDelay;
+    simtime_t setupPendingTimeout;
+    int opticalRequiredWavelengths;
+    double opticalWavelengthBitrate;
+    simtime_t opticalBasePropagationDelay;
+    simtime_t opticalPerHopDelay;
 
-    // Scheduling state
-    std::vector<int> peCurrentTask;   // taskId or -1 (idle)
-    int totalDynamicTasks;            // count of peId=-2 tasks from CSV
-    int resultPacketsExpected;        // tasks that send results back to GB
-    int resultPacketsReceived;        // END flits received for those tasks
-
-    int pickBestIdlePE(TaskDescriptor* task);
-    void injectTask(TaskDescriptor* task, int dstPE);
-    void injectReadyTasks();          // inject all ready (deps satisfied) peId=-2 tasks
+    void sendOpticalControlFlit();
+    void sendFlitOptical();             // send from opticalDataQ via sendDirect
+    bool sendFlitDirectToPE(TaskMsg *flit);
+    bool tryReserveSetupPath(int dstPE, int &token);
+    void flushPendingData(int peId);
 
     void loadTaskGraphFromCSV(const std::string& csvPath);
     void distributeTasks();

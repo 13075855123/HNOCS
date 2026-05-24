@@ -44,6 +44,11 @@ OBJS = \
     $O/src/routers/hier/sched/wormhole/SchedAsync.o \
     $O/src/routers/hier/sched/wormhole/SchedSync.o \
     $O/src/routers/hier/vcCalc/free/FLUVCCalc.o \
+    $O/src/onoc/common/OpticalDeviceModel.o \
+    $O/src/onoc/common/OpticalParamLoader.o \
+    $O/src/onoc/control/LogicalTopologyManager.o \
+    $O/src/onoc/optical/OpticalCircuitController.o \
+    $O/src/onoc/routing/ReconfigurableOPCalc.o \
     $O/src/thermal/ThermalTrace.o \
     $O/src/utils/TaskGraphParser.o \
     $O/src/NoCs_m.o \

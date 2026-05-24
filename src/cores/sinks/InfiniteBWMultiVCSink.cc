@@ -29,6 +29,10 @@ Define_Module(InfiniteBWMultiVCSink)
 
 void InfiniteBWMultiVCSink::initialize() {
 	numVCs = par("numVCs");
+	coreId = getParentModule()->par("id").intValue();
+	setupReqEventSignal = registerSignal("onoc-setup-req-event");
+	setupAckEventSignal = registerSignal("onoc-setup-ack-event");
+	dataReleaseEventSignal = registerSignal("onoc-data-release-event");
 
 	end2EndLatency.setName("end-to-end-latency-ns"); // end-to-end latency per flit
 	networkLatency.setName("network-latency-ns"); // network-latency per flit
@@ -52,10 +56,6 @@ void InfiniteBWMultiVCSink::initialize() {
 	numRecPkt = 0;
 
 	vcFLITs.resize(numVCs, 0);
-	vcFlitIdx.resize(numVCs, 0);
-	curPktId.resize(numVCs, -1);
-
-	SoPFirstNetTime.resize(numVCs, 0);
 	statStartTime = par("statStartTime");
 
 	// send the credits to the other size
@@ -78,11 +78,78 @@ void InfiniteBWMultiVCSink::sendCredit(int vc, int num) {
 
 void InfiniteBWMultiVCSink::handleMessage(cMessage *msg) {
 	NoCFlitMsg *flit = dynamic_cast<NoCFlitMsg*> (msg);
+	if (!flit) {
+		throw cRuntimeError("InfiniteBWMultiVCSink expects NoCFlitMsg, got kind=%d", msg->getKind());
+	}
+
 	int vc = flit->getVC();
+	int pktClass = 0;
+	int spatialChannel = 0;
+	int wavelengthMask = 0;
+	onocDecodePacketTag(flit->getSL(), pktClass, spatialChannel, wavelengthMask);
+	bool isDataPacket = (pktClass == ONOC_PKT_DATA);
+	int token = flit->getPktId();
+
+	if (flit->getType() == NOC_START_FLIT && pktClass == ONOC_PKT_SETUP_REQ) {
+		emit(setupReqEventSignal,
+				onocEncodeControlEvent(ONOC_EVT_SETUP_REQ,
+						flit->getSrcId(),
+						coreId,
+						token,
+						spatialChannel,
+						wavelengthMask));
+	}
+	if (flit->getType() == NOC_START_FLIT && pktClass == ONOC_PKT_SETUP_ACK) {
+		emit(setupAckEventSignal,
+				onocEncodeControlEvent(ONOC_EVT_SETUP_ACK,
+						coreId,
+						flit->getSrcId(),
+						token,
+						spatialChannel,
+						wavelengthMask));
+	}
+	if (flit->getType() == NOC_END_FLIT && isDataPacket && token > 0) {
+		emit(dataReleaseEventSignal,
+				onocEncodeControlEvent(ONOC_EVT_DATA_EOP_RELEASE,
+						flit->getSrcId(),
+						coreId,
+						token,
+						spatialChannel,
+						wavelengthMask));
+	}
+
+	if (isDataPacket && flit->getType() == NOC_START_FLIT) {
+		auto inserted = expectedFlitIdxByPktId.emplace(flit->getPktId(), 0);
+		if (!inserted.second) {
+			throw cRuntimeError(
+					"-E- BUG - duplicate SoP for pktId %d at sink %s",
+					flit->getPktId(), getFullPath().c_str());
+		}
+	}
+
+	if (isDataPacket) {
+		int pktId = flit->getPktId();
+		auto expectedIt = expectedFlitIdxByPktId.find(pktId);
+		if (expectedIt == expectedFlitIdxByPktId.end()) {
+			throw cRuntimeError(
+					"-E- BUG - received non-start flit for unknown pktId %d at sink %s",
+					pktId, getFullPath().c_str());
+		}
+		if (expectedIt->second != flit->getFlitIdx()) {
+			throw cRuntimeError(
+					"-E- BUG - Received flit Index %d but expecting flit index %d for pktId %d",
+					flit->getFlitIdx(), expectedIt->second, pktId);
+		}
+		expectedIt->second++;
+		if (flit->getType() == NOC_END_FLIT) {
+			expectedFlitIdxByPktId.erase(pktId);
+		}
+	}
+
 	sendCredit(vc, 1);
 
-	// some statistics
-	if (simTime() > statStartTime) {
+	// some statistics, now tracked per packet id so optical bypass can interleave packets safely
+	if (isDataPacket && simTime() > statStartTime) {
 		vcFLITs[vc]++;
 
 		if (flit->getFirstNet()) {
@@ -100,81 +167,30 @@ void InfiniteBWMultiVCSink::handleMessage(cMessage *msg) {
 		networkLatency.collect(d_ns);
 		end2EndLatencyVec.record(eed_ns);
 
+		int pktId = flit->getPktId();
 		if (flit->getType() == NOC_START_FLIT) {
-			SoPEnd2EndLatency.collect(eed_ns);
-			SoPEnd2EndLatencyHist.collect(eed_ns);
+			if (simTime() > statStartTime) {
+				SoPEnd2EndLatency.collect(eed_ns);
+				SoPEnd2EndLatencyHist.collect(eed_ns);
+				SoPLatency.collect(d_ns);
+				SoPQTime.collect(1e9 * (flit->getInjectTime().dbl() - msg->getCreationTime().dbl()));
 
-			SoPLatency.collect(d_ns);
-			SoPQTime.collect(1e9 * (flit->getInjectTime().dbl()
-					- msg->getCreationTime().dbl()));
-
-			if (SoPFirstNetTime[vc] == 0) {
-				SoPFirstNetTime[vc] = flit->getFirstNetTime();
-				EV<< "-I- " << getFullPath() << "Assign SoPFirstNetTime[" << vc <<"]=" <<SoPFirstNetTime[vc] << endl;
-			} else {
-				throw cRuntimeError(
-						"-E- BUG - SoPFirstNetTime[%d] != 0 at SoP statistics procedure ",
-						vc);
+				firstNetTimeByPktId[pktId] = flit->getFirstNetTime();
+				numRecPkt++;
 			}
-			numRecPkt++;
 		}
 
 		if (flit->getType() == NOC_END_FLIT) {
 			EoPEnd2EndLatency.collect(eed_ns);
 			EoPLatency.collect(d_ns);
-			EoPQTime.collect(1e9 * (flit->getInjectTime().dbl() - msg->getCreationTime()).dbl());
-			if (SoPFirstNetTime[vc] != 0) { // avoid collecting statistics when statStartTime is between SoP and EoP
-				packetLatency.collect(1e9 * (simTime().dbl() - SoPFirstNetTime[vc].dbl()));
+			EoPQTime.collect(1e9 * (flit->getInjectTime().dbl() - msg->getCreationTime().dbl()));
+			auto firstNetIt = firstNetTimeByPktId.find(pktId);
+			if (firstNetIt != firstNetTimeByPktId.end()) {
+				packetLatency.collect(1e9 * (simTime().dbl() - firstNetIt->second.dbl()));
 			}
-			SoPFirstNetTime[vc] = 0;
-			EV<< "-I- " << getFullPath() << "Assign statistics to [" << vc <<"]" << endl;
-
+			firstNetTimeByPktId.erase(pktId);
+			expectedFlitIdxByPktId.erase(pktId);
 		}
-
-	}
-
-	// Some checking...
-	// PktId check ...
-	if (flit->getType() == NOC_START_FLIT) {
-		if (curPktId[vc] == -1) {
-			curPktId[vc] = flit->getPktId();
-		} else {
-			throw cRuntimeError(
-					"-E- BUG - Received SoP Index %d but expecting Pkt index %d on vc %d",
-					flit->getPktId(), curPktId[vc], vc);
-		}
-	} else {
-
-		if (flit->getPktId() != curPktId[vc]) {
-			throw cRuntimeError(
-					"-E- BUG - Received Pkt Index %d but expecting Pkt index %d on vc %d",
-					flit->getPktId(), curPktId[vc], vc);
-		}
-
-	}
-
-	if (flit->getType() == NOC_END_FLIT) {
-		curPktId[vc] = -1;
-	}
-
-	// flit Idx check ...
-	if (vcFlitIdx[vc] != flit->getFlitIdx()) {
-		throw cRuntimeError(
-				"-E- BUG - Received flit Index %d but expecting flit index %d on vc %d",
-				flit->getFlitIdx(), vcFlitIdx[vc], vc);
-	}
-
-	if (flit->getType() == NOC_END_FLIT) {
-		if (vcFlitIdx[vc] == (flit->getFlits() - 1)) {
-			vcFlitIdx[vc] = 0;
-		} else {
-			throw cRuntimeError(
-					"-E- BUG - Received flit EoP but expecting flit index %d on vc %d",
-					vcFlitIdx[vc], vc);
-		}
-
-	} else {
-		vcFlitIdx[vc]++;
 	}
 
 	delete msg;

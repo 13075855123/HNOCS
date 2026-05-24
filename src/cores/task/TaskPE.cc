@@ -18,8 +18,9 @@
 //
 
 #include "TaskPE.h"
-#include "thermal/ThermalTrace.h"   // NEW
+#include "thermal/ThermalTrace.h"
 #include "utils/TaskGraphParser.h"
+#include "onoc/control/LogicalTopologyManager.h"
 
 Define_Module(TaskPE);
 
@@ -274,6 +275,63 @@ void TaskPE::initialize() {
         sendCredit(vc, initialRecvCredits);
     }
 
+    // Optical bypass initialization
+    enableSetupHandshake = par("enableSetupHandshake");
+    enableOpticalBypass = par("enableOpticalBypass");
+    if (enableSetupHandshake) {
+        cModule *managerModule = getSystemModule()->getSubmodule("topologyManager");
+        topologyManager = dynamic_cast<LogicalTopologyManager *>(managerModule);
+        if (!topologyManager) {
+            throw cRuntimeError("TaskPE[%d]: topologyManager not found with setup handshake enabled", peId);
+        }
+        numRows = getSystemModule()->par("rows").intValue();
+        numNodes = numRows * numColumns + numRows; // PEs + GB connector rows
+        setupRetryDelay = par("setupRetryDelay");
+        setupPendingTimeout = par("setupPendingTimeout");
+        opticalRequiredWavelengths = par("opticalRequiredWavelengths");
+        opticalWavelengthBitrate = par("opticalWavelengthBitrate");
+        opticalBasePropagationDelay = par("opticalBasePropagationDelay");
+        opticalPerHopDelay = par("opticalPerHopDelay");
+        opticalBurstSize = par("opticalBurstSize");
+
+        circuitReadyByDst.assign(numNodes, 0);
+        setupPendingByDst.assign(numNodes, 0);
+        pendingDataQ.assign(numNodes, std::vector<TaskMsg*>());
+        nextSetupAttemptByDst.assign(numNodes, SIMTIME_ZERO);
+        setupPendingExpiryByDst.assign(numNodes, SIMTIME_ZERO);
+        pendingSetupTokenByDst.assign(numNodes, 0);
+        activeCircuitTokenByDst.assign(numNodes, 0);
+        setupReqRxCount = 0;
+        setupAckRxCount = 0;
+        opticalPacketsSent = 0;
+        lastOpticalSendTime = SIMTIME_ZERO;
+        setupAckAcceptedCount = 0;
+        setupAckStaleCount = 0;
+        setupReserveFailCount = 0;
+        setupPendingTimeoutCount = 0;
+
+        setupReqEventSignal = registerSignal("onoc-setup-req-event");
+        setupAckEventSignal = registerSignal("onoc-setup-ack-event");
+        getSimulation()->getSystemModule()->subscribe("onoc-setup-req-event", this);
+        getSimulation()->getSystemModule()->subscribe("onoc-setup-ack-event", this);
+
+        char controlPopName[32];
+        sprintf(controlPopName, "control-pop-pe%d", peId);
+        controlPopMsg = new cMessage(controlPopName);
+        controlPopMsg->setKind(NOC_POP_MSG);
+        scheduleAt(simTime() + tClk_s * 0.5, controlPopMsg);
+
+        char opticalPopName[32];
+        sprintf(opticalPopName, "optical-pop-pe%d", peId);
+        opticalPopMsg = new cMessage(opticalPopName);
+        opticalPopMsg->setKind(NOC_CLK_MSG);
+
+    } else {
+        numRows = 0;
+        numNodes = 0;
+        topologyManager = nullptr;
+    }
+
     EV << "-I- TaskPE[" << peId << "] init"
        << " numVCs=" << numVCs
        << " flitSize=" << flitSize
@@ -309,6 +367,17 @@ void TaskPE::handleMessage(cMessage* msg) {
         return;
     }
 
+    if (msg == controlPopMsg) {
+        sendControlFlitFromQ();
+        scheduleAt(simTime() + tClk_s, controlPopMsg);
+        return;
+    }
+
+    if (msg == opticalPopMsg) {
+        sendOpticalFlitFromQ();
+        return;
+    }
+
     if (msg == injectPopMsg) {
         sendFlitFromQ();
         scheduleAt(simTime() + tClk_s, injectPopMsg);
@@ -330,14 +399,31 @@ void TaskPE::handleMessage(cMessage* msg) {
             credits += recvFlits;
         }
 
-        EV << "-I- TaskPE[" << peId << "] CREDIT-UPDATED"
-           << " vc=" << recvVc
-           << " creditsAfter=" << credits
-           << " injectQ=" << injectQ.size()
-           << " at " << simTime() << endl;
-
         delete crd;
+        // Try controlQ first (priority), then regular injectQ
+        sendControlFlitFromQ();
         sendFlitFromQ();
+        return;
+    }
+
+    if (strcmp(msg->getName(), "checkStop") == 0) {
+        // Check if all PEs have finished flushing pending data
+        bool allDone = true;
+        int numPEs = getSystemModule()->par("rows").intValue()
+                   * getSystemModule()->par("columns").intValue();
+        for (int pid = 0; pid < numPEs; pid++) {
+            cModule *pe = getSystemModule()->getSubmodule("pe", pid);
+            if (!pe) continue;
+            TaskPE *tpe = dynamic_cast<TaskPE *>(pe);
+            if (!tpe) continue;
+            if (!tpe->isAllDataSent()) { allDone = false; break; }
+        }
+        if (allDone) {
+            cancelAndDelete(msg);
+            endSimulation();
+            return;
+        }
+        scheduleAt(simTime() + SimTime(50, SIMTIME_NS), msg);
         return;
     }
 
@@ -387,6 +473,19 @@ void TaskPE::finish() {
     recordScalar("totalStaticEnergyJ",  totalStaticEnergyJ);
     recordScalar("totalDynamicEnergyJ", totalDynamicEnergyJ);
 
+    // Optical statistics
+    if (enableSetupHandshake) {
+        getSimulation()->getSystemModule()->unsubscribe(setupReqEventSignal, this);
+        getSimulation()->getSystemModule()->unsubscribe(setupAckEventSignal, this);
+        recordScalar("pe-setup-req-rx", static_cast<double>(setupReqRxCount));
+        recordScalar("pe-setup-ack-rx", static_cast<double>(setupAckRxCount));
+        recordScalar("pe-setup-ack-accepted", static_cast<double>(setupAckAcceptedCount));
+        recordScalar("pe-setup-ack-stale", static_cast<double>(setupAckStaleCount));
+        recordScalar("pe-setup-reserve-fail", static_cast<double>(setupReserveFailCount));
+        recordScalar("pe-setup-pending-timeout", static_cast<double>(setupPendingTimeoutCount));
+        recordScalar("pe-optical-packets-sent", static_cast<double>(opticalPacketsSent));
+    }
+
     // DVFS throttling statistics
     recordScalar("totalComputeTimeNominal", totalComputeTimeNominal);
     recordScalar("totalThrottlePenalty",    totalThrottlePenalty);
@@ -409,9 +508,9 @@ TaskPE::~TaskPE() {
     cancelAndDelete(computeCompleteMsg);
     cancelAndDelete(powerSampleMsg);
     cancelAndDelete(injectPopMsg);
-
-    // NEW
     cancelAndDelete(energyWindowMsg);
+    if (controlPopMsg) cancelAndDelete(controlPopMsg);
+    if (opticalPopMsg) cancelAndDelete(opticalPopMsg);
 
     for (TaskDescriptor* t : taskList) {
         delete t;
@@ -420,6 +519,16 @@ TaskPE::~TaskPE() {
     while (!injectQ.empty()) {
         delete injectQ.front();
         injectQ.pop();
+    }
+    while (!controlQ.isEmpty()) {
+        delete controlQ.pop();
+    }
+    while (!opticalDataQ.isEmpty()) {
+        delete opticalDataQ.pop();
+    }
+    for (int d = 0; d < (int)pendingDataQ.size(); d++) {
+        for (TaskMsg* f : pendingDataQ[d]) delete f;
+        pendingDataQ[d].clear();
     }
 
     if (powerTrace) {
@@ -437,6 +546,258 @@ double TaskPE::getUtilization() const {
     return totalComputeTime.dbl() / total;
 }
 
+// =======================================================================
+// Optical bypass helpers
+// =======================================================================
+void TaskPE::ensureOpticalStateSize(int dst) {
+    if (dst < 0 || dst >= numNodes) return;
+    (void)dst;
+}
+
+bool TaskPE::tryReserveSetupPath(int dst, int &token) {
+    token = 0;
+    if (!enableSetupHandshake || !topologyManager) return false;
+    // Map GB ID to column-0 router node for path computation
+    int numPEs_try = numRows * numColumns;
+    int mappedDst = dst;
+    if (dst >= bufferBaseId && dst < bufferBaseId + numRows) {
+        int gbRow = dst - bufferBaseId;
+        mappedDst = gbRow * numColumns;
+    } else if (dst >= numPEs_try && dst < numPEs_try + numRows) {
+        int gbRow = dst - numPEs_try;
+        mappedDst = gbRow * numColumns;
+    }
+    int spatial = 0, wlMask = 0;
+    bool insufficient = false;
+    std::string reason;
+    bool ok = topologyManager->reserveOpticalPathForSetup(peId, mappedDst,
+            token, spatial, wlMask, insufficient, reason);
+    if (!ok) {
+        EV_WARN << "TaskPE[" << peId << "] setup reserve FAIL "
+                << peId << "->" << dst << ": " << reason << endl;
+        return false;
+    }
+    return true;
+}
+
+// -----------------------------------------------------------------------
+// sendControlFlitFromQ — sends SETUP_REQ/ACK flits via electrical network
+// -----------------------------------------------------------------------
+void TaskPE::sendControlFlitFromQ() {
+    // Periodic: retry timed-out setups (matches PktFifoSrc — no electrical fallback)
+    if (enableSetupHandshake && numNodes > 0) {
+        for (int d = 0; d < numNodes; d++) {
+            if (setupPendingByDst[d] && simTime() >= setupPendingExpiryByDst[d]) {
+                setupPendingTimeoutCount++;
+                int pt = pendingSetupTokenByDst[d];
+                if (pt > 0 && topologyManager)
+                    topologyManager->releaseOpticalPathByToken(pt);
+                setupPendingByDst[d] = 0;
+                setupPendingExpiryByDst[d] = SIMTIME_ZERO;
+                pendingSetupTokenByDst[d] = 0;
+                nextSetupAttemptByDst[d] = simTime();
+            }
+        }
+        // Retry handshakes for destinations with pending data but no circuit/setup
+        for (int d = 0; d < numNodes; d++) {
+            if (pendingDataQ[d].empty()) continue;
+            if (circuitReadyByDst[d] || setupPendingByDst[d]) continue;
+            if (simTime() < nextSetupAttemptByDst[d]) continue;
+            int setupToken = 0;
+            if (tryReserveSetupPath(d, setupToken)) {
+                int setupPktId = setupToken;
+                // Map internal GB index back to raw GB ID for network routing
+                int numPEs_r = numRows * numColumns;
+                int netDst = (d >= numPEs_r) ? (bufferBaseId + (d - numPEs_r)) : d;
+                for (int fi = 0; fi < 2; fi++) {
+                    char sname[64];
+                    snprintf(sname, sizeof(sname), "retry-s%d-d%d-f%d", peId, netDst, fi);
+                    TaskMsg* sflit = new TaskMsg(sname);
+                    sflit->setKind(NOC_FLIT_MSG);
+                    sflit->setByteLength(flitSize);
+                    sflit->setBitLength(8 * flitSize);
+                    sflit->setVC(0);
+                    sflit->setSrcId(peId); sflit->setDstId(netDst);
+                    sflit->setPktId(setupPktId);
+                    sflit->setFlitIdx(fi); sflit->setFlits(2);
+                    sflit->setFirstNet(true); sflit->setSchedulingPriority(0);
+                    sflit->setType(fi == 0 ? NOC_START_FLIT : NOC_END_FLIT);
+                    sflit->setTaskId(-1); sflit->setProducerPE(peId);
+                    sflit->setConsumerPE(d); sflit->setProducerTaskId(-1);
+                    sflit->setDataSize(0); sflit->setComputeTime(0);
+                    controlQ.insert(sflit);
+                }
+                setupPendingByDst[d] = 1;
+                setupPendingExpiryByDst[d] = simTime() + setupPendingTimeout;
+                pendingSetupTokenByDst[d] = setupToken;
+                nextSetupAttemptByDst[d] = simTime() + setupRetryDelay;
+                // Flit will be sent on next periodic controlPopMsg — no recursive call
+            } else {
+                setupReserveFailCount++;
+                nextSetupAttemptByDst[d] = simTime() + setupRetryDelay;
+            }
+        }
+    }
+
+    if (controlQ.isEmpty()) return;
+    if (credits <= 0) return;
+
+    cChannel* ch = gate("out$o")->getTransmissionChannel();
+    if (ch && ch->isBusy()) return;
+
+    TaskMsg *flit = check_and_cast<TaskMsg *>(controlQ.pop());
+    send(flit, "out$o");
+    credits--;
+}
+
+// -----------------------------------------------------------------------
+// sendOpticalFlitFromQ — sends data flits via optical bypass (sendDirect)
+// -----------------------------------------------------------------------
+void TaskPE::sendOpticalFlitFromQ() {
+    if (opticalDataQ.isEmpty()) return;
+    if (opticalPopMsg->isScheduled()) return;
+
+    // Find the first flit whose circuit is ready
+    TaskMsg *flit = nullptr;
+    int foundIdx = -1;
+    for (int i = 0; i < opticalDataQ.getLength(); i++) {
+        TaskMsg *candidate = check_and_cast<TaskMsg *>(opticalDataQ.get(i));
+        int rawDst = candidate->getDstId();
+        int dstPE = rawDst;
+        int numPEs_opt = numRows * numColumns;
+        if (rawDst >= bufferBaseId && rawDst < bufferBaseId + numRows) {
+            dstPE = numPEs_opt + (rawDst - bufferBaseId);
+        }
+        if (dstPE >= 0 && dstPE < numNodes && circuitReadyByDst[dstPE]) {
+            flit = candidate;
+            foundIdx = i;
+            break;
+        }
+    }
+    if (!flit) return;  // no ready circuit for any queued packet
+
+    opticalDataQ.remove(flit);
+
+    int dstPE = flit->getDstId();
+    int numPEs_release = numRows * numColumns;
+    int dstIdx = dstPE;
+    if (dstPE >= bufferBaseId && dstPE < bufferBaseId + numRows) {
+        dstIdx = numPEs_release + (dstPE - bufferBaseId);
+    }
+
+    EV << "-I- TaskPE[" << peId << "] SEND-OPTICAL"
+       << " pktId=" << flit->getPktId()
+       << " flitIdx=" << flit->getFlitIdx()
+       << "/" << (flit->getFlits() - 1)
+       << " dstPE=" << dstPE
+       << " at " << simTime() << endl;
+
+    flit->setInjectTime(simTime());
+    lastOpticalSendTime = simTime();
+
+    if (!sendFlitDirectToSink(flit)) {
+        throw cRuntimeError("TaskPE[%d] optical sendDirect failed to PE%d", peId, dstPE);
+    }
+
+    totalFlitsSent++;
+    windowSendFlits++;
+    opticalPacketsSent++;
+
+    // On END flit, release circuit
+    if (flit->getType() == NOC_END_FLIT) {
+        int token = activeCircuitTokenByDst[dstIdx];
+        if (token > 0 && topologyManager) {
+            topologyManager->releaseOpticalPathByToken(token);
+        }
+        circuitReadyByDst[dstIdx] = 0;
+        activeCircuitTokenByDst[dstIdx] = 0;
+    }
+
+    simtime_t txFinish = simTime() + computeOpticalTxDuration(flit);
+    scheduleAt(txFinish, opticalPopMsg);
+}
+
+void TaskPE::flushPendingData(int dst) {
+    if (pendingDataQ[dst].empty()) return;
+    if (circuitReadyByDst[dst]) {
+        for (TaskMsg* flit : pendingDataQ[dst]) {
+            opticalDataQ.insert(flit);
+        }
+        EV << "-I- TaskPE[" << peId << "] flushed " << pendingDataQ[dst].size()
+           << " pending flits to opticalDataQ for dst=" << dst
+           << " at " << simTime() << endl;
+        pendingDataQ[dst].clear();
+        sendOpticalFlitFromQ();
+    }
+    // Else: keep waiting for circuit (matching PktFifoSrc — no electrical fallback)
+}
+
+int TaskPE::meshHopDistance(int src, int dst) const {
+    if (numRows <= 0 || numColumns <= 0) return 0;
+    int srcRow = src / numColumns, srcCol = src % numColumns;
+    int dstRow = dst / numColumns, dstCol = dst % numColumns;
+    return abs(srcRow - dstRow) + abs(srcCol - dstCol);
+}
+
+simtime_t TaskPE::computeOpticalPropagationDelay(int src, int dst) const {
+    return opticalBasePropagationDelay + opticalPerHopDelay * meshHopDistance(src, dst);
+}
+
+simtime_t TaskPE::computeOpticalTxDuration(const TaskMsg *flit) const {
+    if (!flit) return SIMTIME_ZERO;
+    int wlCount = opticalRequiredWavelengths;
+    if (wlCount <= 0) wlCount = 1;
+    double effRate = opticalWavelengthBitrate * wlCount;
+    double txSec = (8.0 * flit->getByteLength()) / effRate;
+    int64_t txPs = static_cast<int64_t>(txSec * 1e12 + 0.5);
+    if (txPs < 1) txPs = 1;
+    return SimTime(txPs, SIMTIME_PS);
+}
+
+bool TaskPE::sendFlitDirectToSink(TaskMsg *flit) {
+    if (!flit) return false;
+    int dst = flit->getDstId();
+    cSimpleModule *targetMod = nullptr;
+    if (dst >= bufferBaseId && dst < bufferBaseId + numRows) {
+        targetMod = check_and_cast<cSimpleModule *>(
+                getSystemModule()->getSubmodule("globalBuffer"));
+    } else {
+        targetMod = check_and_cast<cSimpleModule *>(
+                getSystemModule()->getSubmodule("pe", dst));
+    }
+    flit->setFirstNet(false);
+    flit->setFirstNetTime(simTime());
+    simtime_t propDelay = computeOpticalPropagationDelay(flit->getSrcId(), flit->getDstId());
+    simtime_t txDuration = computeOpticalTxDuration(flit);
+    sendDirect(flit, propDelay, txDuration, targetMod->gate("opticalIn"));
+    return true;
+}
+
+cSimpleModule *TaskPE::getDestinationPEModule(int dst) const {
+    cModule *peMod = getSystemModule()->getSubmodule("pe", dst);
+    if (!peMod) {
+        throw cRuntimeError("TaskPE[%d]: pe[%d] not found for optical", peId, dst);
+    }
+    return check_and_cast<cSimpleModule *>(peMod);
+}
+
+void TaskPE::handleControlEvent(int eventType, int requesterId,
+        int targetId, int token) {
+    // Handled via handleDataArrival for TaskPE (SETUP_REQ/ACK are flits)
+    (void)eventType; (void)requesterId; (void)targetId; (void)token;
+}
+
+void TaskPE::receiveSignal(cComponent *source, simsignal_t signalID,
+        intval_t value, cObject *details) {
+    (void)source; (void)details;
+    Enter_Method_Silent("TaskPE::receiveSignal()");
+    if (!enableSetupHandshake) return;
+    if (signalID != setupReqEventSignal && signalID != setupAckEventSignal) return;
+    int eventType = 0, requesterId = -1, targetId = -1, token = 0, spatial = 0, wlMask = 0;
+    onocDecodeControlEvent(value, eventType, requesterId, targetId, token, spatial, wlMask);
+    handleControlEvent(eventType, requesterId, targetId, token);
+}
+
 // -----------------------------------------------------------------------
 // loadTaskGraphFromCSV – load tasks assigned to this PE
 // -----------------------------------------------------------------------
@@ -447,11 +808,6 @@ void TaskPE::loadTaskGraphFromCSV(const std::string& csvPath) {
     for (TaskDescriptor* t : allTasks) {
         // Skip GB injection tasks (peId == -1) and dynamic tasks (peId == -2)
         if (t->assignedPE == -1 || t->assignedPE == -2) {
-            delete t;
-            continue;
-        }
-        // remapToDynamic mode: GB handles all peId >= 0 tasks
-        if (par("remapToDynamic")) {
             delete t;
             continue;
         }
@@ -596,11 +952,8 @@ void TaskPE::completeComputation() {
         && !systemStopScheduled) {
         systemStopScheduled = true;
         recordScalar("allTasksCompletedAt", simTime());
-        // Self-contained task (no successors): stop now.
-        // Task returning to GB: GB's END flit counting handles endSimulation.
-        if (task->successors.empty()) {
-            endSimulation();
-        }
+        // Start a periodic check: wait until all pending data is flushed
+        scheduleAt(simTime(), new cMessage("checkStop"));
     }
 
     scheduleNextTask();
@@ -626,6 +979,68 @@ void TaskPE::sendTaskData(TaskDescriptor* task) {
         }
 
         if (dstPE == peId) continue;
+
+        bool toGB = (succTaskId == -1);
+        int numPEs = numRows * numColumns;
+        int optIdx = toGB ? (numPEs + (dstPE - bufferBaseId)) : dstPE;
+
+        if (enableSetupHandshake && enableOpticalBypass && optIdx >= 0 && optIdx < numNodes) {
+            ensureOpticalStateSize(optIdx);
+
+            // Check for pending timeout
+            if (setupPendingByDst[optIdx] && simTime() >= setupPendingExpiryByDst[optIdx]) {
+                setupPendingTimeoutCount++;
+                int pendingToken = pendingSetupTokenByDst[optIdx];
+                if (pendingToken > 0 && topologyManager) {
+                    topologyManager->releaseOpticalPathByToken(pendingToken);
+                }
+                setupPendingByDst[optIdx] = 0;
+                setupPendingExpiryByDst[optIdx] = SIMTIME_ZERO;
+                pendingSetupTokenByDst[optIdx] = 0;
+                nextSetupAttemptByDst[optIdx] = simTime();
+            }
+
+            // Initiate optical circuit with SETUP_REQ/ACK handshake
+            if (!circuitReadyByDst[optIdx] && !setupPendingByDst[optIdx]
+                    && simTime() >= nextSetupAttemptByDst[optIdx]) {
+                int setupToken = 0;
+                if (tryReserveSetupPath(dstPE, setupToken)) {
+                    // Enqueue SETUP_REQ 2-flit packet in controlQ (electrical)
+                    int setupPktId = setupToken; // use circuit token as pktId for ACK matching
+                    for (int fi = 0; fi < 2; fi++) {
+                        char sname[64];
+                        snprintf(sname, sizeof(sname), "setup-s%d-d%d-f%d", peId, dstPE, fi);
+                        TaskMsg* sflit = new TaskMsg(sname);
+                        sflit->setKind(NOC_FLIT_MSG);
+                        sflit->setByteLength(flitSize);
+                        sflit->setBitLength(8 * flitSize);
+                        sflit->setVC(0);
+                        sflit->setSrcId(peId);
+                        sflit->setDstId(dstPE);
+                        sflit->setPktId(setupPktId);
+                        sflit->setFlitIdx(fi); sflit->setFlits(2);
+                        sflit->setFirstNet(true);
+                        sflit->setSchedulingPriority(0);
+                        sflit->setType(fi == 0 ? NOC_START_FLIT : NOC_END_FLIT);
+                        sflit->setTaskId(-1);
+                        sflit->setProducerPE(peId);
+                        sflit->setConsumerPE(dstPE);
+                        sflit->setProducerTaskId(-1);
+                        sflit->setDataSize(0); sflit->setComputeTime(0);
+                        controlQ.insert(sflit);
+                    }
+                    setupPendingByDst[optIdx] = 1;
+                    setupPendingExpiryByDst[optIdx] = simTime() + setupPendingTimeout;
+                    pendingSetupTokenByDst[optIdx] = setupToken;
+                    nextSetupAttemptByDst[optIdx] = simTime() + setupRetryDelay;
+                    sendControlFlitFromQ();
+                } else {
+                    setupReserveFailCount++;
+                    nextSetupAttemptByDst[optIdx] = simTime() + setupRetryDelay;
+                }
+            }
+
+        }
 
         pktIdCounter++;
         int pktId = pktIdCounter;
@@ -665,21 +1080,22 @@ void TaskPE::sendTaskData(TaskDescriptor* task) {
             flit->setDataSize(task->outputDataSize);
             flit->setComputeTime(task->computeTime.dbl());
 
-            injectQ.push(flit);
+            // Put data in pending buffer — flushed when circuit ready (optical) or timeout (electrical)
+            pendingDataQ[optIdx].push_back(flit);
         }
 
-        EV << "-I- TaskPE[" << peId << "] queued packet pktId=" << pktId
-           << " for successorTask=" << succTaskId
-           << " dstPE=" << dstPE
-           << " numFlits=" << numFlits
-           << " dataSize=" << task->outputDataSize
-           << "B at " << simTime() << endl;
+        EV << "-I- TaskPE[" << peId << "] queued PENDING packet pktId=" << pktId
+           << " dstPE=" << dstPE << " numFlits=" << numFlits
+           << " pendingSize=" << pendingDataQ[optIdx].size() << endl;
+
+        // Flush if circuit already ready
+        if (circuitReadyByDst[optIdx]) {
+            flushPendingData(optIdx);
+        }
     }
 
-    EV << "-I- TaskPE[" << peId << "] injectQ size after enqueue=" << injectQ.size()
-       << " at " << simTime() << endl;
-
     sendFlitFromQ();
+    sendOpticalFlitFromQ();
 }
 
 // -----------------------------------------------------------------------
@@ -687,6 +1103,11 @@ void TaskPE::sendTaskData(TaskDescriptor* task) {
 // -----------------------------------------------------------------------
 void TaskPE::sendFlitFromQ() {
     if (injectQ.empty()) {
+        return;
+    }
+
+    // Don't interleave: wait until all control flits are sent
+    if (!controlQ.isEmpty()) {
         return;
     }
 
@@ -712,34 +1133,16 @@ void TaskPE::sendFlitFromQ() {
     int pktId = flit->getPktId();
     int flitIdx = flit->getFlitIdx();
 
-    EV << "-I- TaskPE[" << peId << "] SEND"
-       << " pktId=" << pktId
-       << " flitIdx=" << flitIdx
+    EV << "-I- TaskPE[" << peId << "] SEND-ELECTRICAL"
+       << " pktId=" << pktId << " flitIdx=" << flitIdx
        << "/" << (flit->getFlits() - 1)
-       << " type=" << flit->getType()
-       << " srcPE=" << flit->getSrcId()
        << " dstPE=" << flit->getDstId()
-       << " producerTask=" << flit->getProducerTaskId()
-       << " consumerTask=" << flit->getTaskId()
-       << " vc=" << flit->getVC()
-       << " creditsBefore=" << credits
-       << " injectQAfterPop=" << injectQ.size()
        << " at " << simTime() << endl;
 
     send(flit, "out$o");
     credits--;
     totalFlitsSent++;
-
-    // NEW
     windowSendFlits++;
-
-    EV << "-I- TaskPE[" << peId << "] SEND-DONE"
-       << " pktId=" << pktId
-       << " flitIdx=" << flitIdx
-       << " creditsAfter=" << credits
-       << " totalFlitsSent=" << totalFlitsSent
-       << " windowSendFlits=" << windowSendFlits
-       << " at " << simTime() << endl;
 
     if (powerTrace) {
         powerTrace->recordPEEvent(peId, PE_SEND_FLIT, simTime(),
@@ -751,6 +1154,72 @@ void TaskPE::sendFlitFromQ() {
 // handleDataArrival
 // -----------------------------------------------------------------------
 void TaskPE::handleDataArrival(TaskMsg* msg) {
+    // ── Handle SETUP control flits (taskId == -1) ──
+    if (msg->getTaskId() == -1 && enableSetupHandshake) {
+        int srcPE = msg->getSrcId();
+        int pktId = msg->getPktId();
+        sendCredit(msg->getVC(), 1);
+
+        // SETUP_REQ from another PE → reply ACK only on END flit (1 response per circuit)
+        if (msg->getProducerPE() >= 0 && srcPE != peId && msg->getType() == NOC_END_FLIT) {
+            setupReqRxCount++;
+            ensureOpticalStateSize(srcPE);
+            intval_t eventVal = onocEncodeControlEvent(ONOC_EVT_SETUP_REQ,
+                    srcPE, peId, pktId, 0, 0);
+            emit(setupReqEventSignal, eventVal);
+
+            // Send SETUP_ACK back through controlQ
+            if (topologyManager) {
+                for (int fi = 0; fi < 2; fi++) {
+                    char ackName[64];
+                    snprintf(ackName, sizeof(ackName), "ack-s%d-d%d-f%d", peId, srcPE, fi);
+                    TaskMsg* ack = new TaskMsg(ackName);
+                    ack->setKind(NOC_FLIT_MSG);
+                    ack->setByteLength(flitSize);
+                    ack->setBitLength(8 * flitSize);
+                    ack->setVC(0); ack->setSrcId(peId); ack->setDstId(srcPE);
+                    ack->setPktId(pktId); ack->setFlitIdx(fi); ack->setFlits(2);
+                    ack->setFirstNet(true); ack->setSchedulingPriority(0);
+                    ack->setType(fi == 0 ? NOC_START_FLIT : NOC_END_FLIT);
+                    ack->setTaskId(-1); ack->setProducerPE(-1);
+                    ack->setConsumerPE(srcPE); ack->setProducerTaskId(-1);
+                    ack->setDataSize(0); ack->setComputeTime(0);
+                    controlQ.insert(ack);
+                }
+                sendControlFlitFromQ();
+            }
+        }
+
+        // SETUP_ACK from another PE or GB (response to our SETUP_REQ)
+        if (msg->getProducerPE() < 0 && srcPE != peId) {
+            setupAckRxCount++;
+            // Map GB ID to internal index
+            int numPEs_ack = numRows * numColumns;
+            int srcIdx = srcPE;
+            if (srcPE >= bufferBaseId && srcPE < bufferBaseId + numRows) {
+                srcIdx = numPEs_ack + (srcPE - bufferBaseId);
+            }
+            ensureOpticalStateSize(srcIdx);
+            if (!circuitReadyByDst[srcIdx] && setupPendingByDst[srcIdx]) {
+                setupAckAcceptedCount++;
+                circuitReadyByDst[srcIdx] = 1;
+                setupPendingByDst[srcIdx] = 0;
+                setupPendingExpiryByDst[srcIdx] = SIMTIME_ZERO;
+                activeCircuitTokenByDst[srcIdx] = pktId;
+                flushPendingData(srcIdx);
+            } else if (!circuitReadyByDst[srcIdx]) {
+                setupAckStaleCount++;
+            }
+            // Release old token if this ACK carries one
+            if (pktId > 0 && pktId != activeCircuitTokenByDst[srcIdx] && topologyManager) {
+                topologyManager->releaseOpticalPathByToken(pktId);
+            }
+        }
+
+        delete msg;
+        return;
+    }
+
     totalFlitsReceived++;
 
     // Return one receive-side credit to router
