@@ -40,7 +40,7 @@ module Router like hnocs.routers.Router_Ifc
         int numPorts; // number of ports on this router
         int id; // serve as a global identifier for routing etc
         @display("i=block/broadcast");
-    gates:
+            bool remapToDynamic = default(false); // deprecated, IDE compat            double wTemperature = default(1.0);   // deprecated            double wHopCount = default(0.5);      // deprecated    gates:
         inout in[];
         inout out[];
     submodules:

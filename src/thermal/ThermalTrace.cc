@@ -60,6 +60,7 @@ void ThermalModel::open(const char* filename, int r, int c)
 
     pePower.assign(numPEs, 0.0);
     routerPower.assign(numRouters, 0.0);
+    routerOpticalPower.assign(numRouters, 0.0);
     peReady.assign(numPEs, false);
     routerReady.assign(numRouters, false);
 
@@ -195,13 +196,36 @@ void ThermalModel::submitRouterPower(int routerId, simtime_t t, double avgPower)
     tryFlush(t);
 }
 
+// ---- optical device power on routers --------------------------------------
+void ThermalModel::addRouterOpticalPower(int routerId, double power_W)
+{
+    if (routerId < 0 || routerId >= numRouters)
+        return;
+    routerOpticalPower[routerId] += power_W;
+}
+
+void ThermalModel::removeRouterOpticalPower(int routerId, double power_W)
+{
+    if (routerId < 0 || routerId >= numRouters)
+        return;
+    routerOpticalPower[routerId] -= power_W;
+    if (routerOpticalPower[routerId] < 0.0)
+        routerOpticalPower[routerId] = 0.0;
+}
+
 // ---- flush + thermal update ----------------------------------------------
 void ThermalModel::tryFlush(simtime_t t)
 {
     if (!opened) return;
     if (!allReady()) return;
 
-    // 1) Update temperatures BEFORE writing trace
+    // 1) Incorporate persistent optical device power into router power
+    //    (electrical router power is overwritten each window; optical power
+    //     persists across windows and is added on top each flush)
+    for (int i = 0; i < numRouters; i++)
+        routerPower[i] += routerOpticalPower[i];
+
+    // 2) Update temperatures BEFORE writing trace
     //    (temperature always reflects "just computed" state after this window)
     if (currentWindowTime > 0.0) {
         simtime_t dt = t - lastTempTime;
@@ -210,7 +234,7 @@ void ThermalModel::tryFlush(simtime_t t)
     }
     lastTempTime = t;
 
-    // 2) Write power trace line (HotSpot format)
+    // 3) Write power trace line (HotSpot format)
     writeHeader();
 
     bool first = true;

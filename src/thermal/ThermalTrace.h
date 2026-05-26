@@ -34,6 +34,9 @@ class ThermalModel
     std::vector<bool>   peReady;
     std::vector<bool>   routerReady;
 
+    // --- optical device power superimposed onto routers (persistent) ---
+    std::vector<double> routerOpticalPower;  // W
+
     // --- temperature state (K) ---
     std::vector<double> peTemp;
     std::vector<double> routerTemp;
@@ -69,6 +72,10 @@ class ThermalModel
     // ---- power submission (called from TaskPE / InPortSync windows) -------
     void submitPEPower(int peId, simtime_t t, double avgPower);
     void submitRouterPower(int routerId, simtime_t t, double avgPower);
+
+    // ---- optical device power on routers ---------------------------------
+    void addRouterOpticalPower(int routerId, double power_W);
+    void removeRouterOpticalPower(int routerId, double power_W);
 
     // ---- temperature queries (called by routing / display) ---------------
     double getPEPerature(int peId) const;

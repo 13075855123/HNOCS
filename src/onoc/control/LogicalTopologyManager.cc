@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cmath>
 #include <cstdlib>
 #include <limits>
 #include <queue>
@@ -25,6 +26,9 @@ LogicalTopologyManager::LogicalTopologyManager() {
     maxOpticalWavelengths = 16;
     numOpticalSpatialChannels = 1;
     opticalLaunchPower_dBm = 0.0;
+    opticalNumSplitBranches = 16;
+    opticalSplitterExcessLoss_dB = 1.0;
+    opticalCouplingLoss_dB = 3.0;
     opticalReceiverSensitivity_dBm = -18.0;
     opticalSourceModulatorLoss_dB = 0.0;
     opticalHopInsertionLoss_dB = 0.0;
@@ -48,7 +52,10 @@ LogicalTopologyManager::LogicalTopologyManager() {
     ringMode = "snake";
     physicalTopology = "mesh";
     totalOpticalTuningPower_mW = 0.0;
+    opticalSoaPumpPower_mW = 15.0;
     opticalBudgetComputations = 0;
+    opticalWavelengthEvaluations = 0;
+    opticalWavelengthStrategy = "lowest";
 }
 
 // Cancel and delete all scheduled topology switch messages.
@@ -777,6 +784,9 @@ void LogicalTopologyManager::initialize() {
     maxOpticalWavelengths = par("maxOpticalWavelengths");
     numOpticalSpatialChannels = par("numOpticalSpatialChannels");
     opticalLaunchPower_dBm = par("opticalLaunchPower_dBm");
+    opticalNumSplitBranches = par("opticalNumSplitBranches");
+    opticalSplitterExcessLoss_dB = par("opticalSplitterExcessLoss_dB");
+    opticalCouplingLoss_dB = par("opticalCouplingLoss_dB");
     opticalReceiverSensitivity_dBm = par("opticalReceiverSensitivity_dBm");
     opticalSourceModulatorLoss_dB = par("opticalSourceModulatorLoss_dB");
     opticalHopInsertionLoss_dB = par("opticalHopInsertionLoss_dB");
@@ -795,9 +805,11 @@ void LogicalTopologyManager::initialize() {
     opticalTambient_K = par("opticalTambient_K");
     opticalThermoOpticCoeff_nm_per_K = par("opticalThermoOpticCoeff_nm_per_K");
     opticalTuningEfficiency_mW_per_nm = par("opticalTuningEfficiency_mW_per_nm");
+    opticalSoaPumpPower_mW = par("opticalSoaPumpPower_mW");
     opticalRingIL_TempCoeff_dB_per_K = par("opticalRingIL_TempCoeff_dB_per_K");
     opticalSoaGain_TempCoeff_dB_per_K = par("opticalSoaGain_TempCoeff_dB_per_K");
     opticalWaveguideLoss_TempCoeff_dB_per_cm_per_K = par("opticalWaveguideLoss_TempCoeff_dB_per_cm_per_K");
+    opticalWavelengthStrategy = par("opticalWavelengthStrategy").stringValue();
     wgDistances.modulatorToRouter_cm = par("opticalWaveguideNItoRouter_cm");
     wgDistances.routerToRouter_cm = par("opticalWaveguideRouterToRouter_cm");
     wgDistances.sourceToModulator_cm = par("opticalWaveguideSourceToMod_cm");
@@ -829,8 +841,12 @@ void LogicalTopologyManager::initialize() {
                 defaultOpticalWavelengths, maxOpticalWavelengths);
     }
     if (opticalSourceModulatorLoss_dB < 0.0 || opticalHopInsertionLoss_dB < 0.0
-            || opticalHopCrosstalkLoss_dB < 0.0 || opticalReceiverDemodulatorLoss_dB < 0.0) {
+            || opticalHopCrosstalkLoss_dB < 0.0 || opticalReceiverDemodulatorLoss_dB < 0.0
+            || opticalCouplingLoss_dB < 0.0 || opticalSplitterExcessLoss_dB < 0.0) {
         throw cRuntimeError("optical loss parameters must be >= 0");
+    }
+    if (opticalNumSplitBranches <= 0) {
+        throw cRuntimeError("opticalNumSplitBranches must be > 0 (got %d)", opticalNumSplitBranches);
     }
 
     numNodes = rows * columns;
@@ -921,6 +937,10 @@ void LogicalTopologyManager::finish() {
     // Active optical circuits snapshot
     recordScalar("onoc-optical-active-circuits",
             static_cast<double>(opticalPacketAllocations.size()));
+
+    // Wavelength selection strategy stats
+    recordScalar("onoc-optical-wavelength-evaluations",
+            static_cast<double>(opticalWavelengthEvaluations));
 
     // Temperature-aware optical statistics
     if (opticalEnableThermalEffects) {
@@ -1251,9 +1271,18 @@ bool LogicalTopologyManager::getDeviceLevelPathMetrics(int srcId, int dstId,
 
     metrics.hopCount = static_cast<int>(pathEdges.size());
 
+    // ── Compute per-branch launch power with splitter loss ──
+    double perBranchPower_dBm = opticalLaunchPower_dBm;
+    if (opticalNumSplitBranches > 1) {
+        perBranchPower_dBm = opticalLaunchPower_dBm
+                           - opticalCouplingLoss_dB
+                           - 10.0 * std::log10(static_cast<double>(opticalNumSplitBranches))
+                           - opticalSplitterExcessLoss_dB;
+    }
+
     // ── Compute budget ──
     OpticalBudgetConstraints constraints;
-    constraints.launchPower_dBm = opticalLaunchPower_dBm;
+    constraints.launchPower_dBm = perBranchPower_dBm;
     constraints.waveguideMaxPower_dBm = opticalWaveguideMaxPower_dBm;
     constraints.receiverSensitivity_dBm = opticalReceiverSensitivity_dBm;
     constraints.thermalNoiseFloor_dBm = opticalThermalNoiseFloor_dBm;
@@ -1488,28 +1517,50 @@ bool LogicalTopologyManager::tryAllocateOpticalPathForPacket(int srcId,
         required = maxOpticalWavelengths;
     }
 
-    // Choose best-fit wavelengths: prefer lowest-indexed (fewest through-rings → least loss,
-    // plus thermal tuning penalty per ring increases with wavelength index)
+    // Select wavelengths: "lowest" = lowest-index first, "thermal" = best tuning power
+    bool useThermal = (opticalWavelengthStrategy == "thermal");
+
     for (int spatial = 0; spatial < numOpticalSpatialChannels; ++spatial) {
-        // Collect ALL free wavelengths, then pick the lowest-indexed `required` ones
-        std::vector<int> candidateWls;
+        // Collect ALL free wavelengths on this spatial channel
+        std::vector<int> freeWls;
         for (int wlIdx = 0; wlIdx < maxOpticalWavelengths; ++wlIdx) {
             if (isWavelengthFreeOnPath(pathEdges, spatial, wlIdx)) {
-                candidateWls.push_back(wlIdx + 1);
-                if (static_cast<int>(candidateWls.size()) == required * 4) break; // check up to 4× needed
+                freeWls.push_back(wlIdx + 1);
             }
         }
 
-        if (static_cast<int>(candidateWls.size()) < required) {
-            continue;
-        }
-        // Trim to `required` lowest-indexed wavelengths (best-fit)
-        candidateWls.resize(required);
+        if (static_cast<int>(freeWls.size()) < required) continue;
 
+        std::vector<int> bestWls;
+        if (!useThermal) {
+            // Lowest-index first: pick first `required` free wavelengths
+            bestWls.assign(freeWls.begin(), freeWls.begin() + required);
+        } else {
+            // Thermal-aware: evaluate combinations, pick minimum tuning power
+            double bestCost = 1e99;
+            int maxEval = std::min(static_cast<int>(freeWls.size()) * 4, 200);
+            int evaluated = 0;
+            for (size_t start = 0; start + required <= freeWls.size() && evaluated < maxEval; ++start) {
+                std::vector<int> trial;
+                for (int r = 0; r < required; ++r) trial.push_back(freeWls[start + r]);
+                OpticalPathMetrics trialMetrics;
+                getDeviceLevelPathMetrics(srcId, dstId, trial, trialMetrics);
+                double cost = trialMetrics.totalTuningPower_mW + trialMetrics.totalLoss_dB * 0.05;
+                evaluated++;
+                if (cost < bestCost) {
+                    bestCost = cost;
+                    bestWls = trial;
+                }
+            }
+            opticalWavelengthEvaluations += evaluated;
+            if (bestWls.empty()) bestWls.assign(freeWls.begin(), freeWls.begin() + required);
+        }
+
+        // Occupy selected wavelengths
         for (size_t e = 0; e < pathEdges.size(); ++e) {
             std::vector<std::vector<int> > &edgeOcc = getOrCreateEdgeOccupancy(pathEdges[e]);
-            for (size_t w = 0; w < candidateWls.size(); ++w) {
-                int wlIdx = candidateWls[w] - 1;
+            for (size_t w = 0; w < bestWls.size(); ++w) {
+                int wlIdx = bestWls[w] - 1;
                 edgeOcc[spatial][wlIdx] = pktId;
             }
         }
@@ -1519,26 +1570,65 @@ bool LogicalTopologyManager::tryAllocateOpticalPathForPacket(int srcId,
         alloc.dstId = dstId;
         alloc.pktId = pktId;
         alloc.spatialChannel = spatial;
-        alloc.wavelengths = candidateWls;
+        alloc.wavelengths = bestWls;
         alloc.pathEdges = pathEdges;
         opticalPacketAllocations[pktId] = alloc;
 
         selectedSpatialChannel = spatial;
-        selectedWavelengths = candidateWls;
+        selectedWavelengths = bestWls;
 
         if (logOpticalAllocDecisions) {
             EV_INFO << "Allocated optical path for pkt=" << pktId
                     << " pair " << srcId << "->" << dstId
                     << " spatial=" << spatial
-                    << " wavelengths=" << candidateWls.size()
+                    << " wavelengths=" << bestWls.size()
                     << " (required=" << required << ")" << endl;
         }
 
-        // Pre-compute budget at reservation time (temperature ≈ same as send time)
+        // Pre-compute budget at reservation time
         OpticalPathMetrics budgetMetrics;
-        getDeviceLevelPathMetrics(srcId, dstId, candidateWls, budgetMetrics);
+        getDeviceLevelPathMetrics(srcId, dstId, bestWls, budgetMetrics);
         cachedBudgets[pktId] = budgetMetrics;
+
+        // Build ordered router list from path edges
+        std::vector<int> routers;
+        routers.push_back(srcId);
+        int prev = srcId;
+        for (size_t e = 0; e < pathEdges.size(); ++e) {
+            int a = static_cast<int>(pathEdges[e] >> 32);
+            int b = static_cast<int>(pathEdges[e] & 0xFFFFFFFFLL);
+            int next = (a == prev) ? b : a;
+            routers.push_back(next);
+            prev = next;
+        }
+
+        // Distribute optical device power to routers
+        int numRouters = static_cast<int>(routers.size());
+        double tuningPerRouter_mW = 0.0;
+        double soaPerRouter_mW = 0.0;
+        if (numRouters > 0) {
+            tuningPerRouter_mW = budgetMetrics.totalTuningPower_mW / numRouters;
+            if (opticalEnableSOA && pathEdges.size() > 0) {
+                soaPerRouter_mW = opticalSoaPumpPower_mW * pathEdges.size() / numRouters;
+            }
+        }
+
+        ThermalModel *tm = getThermalModel();
+        if (tm) {
+            for (size_t i = 0; i < routers.size(); ++i) {
+                double total = tuningPerRouter_mW + soaPerRouter_mW;
+                if (total > 0.0)
+                    tm->addRouterOpticalPower(routers[i], total * 1e-3); // mW → W
+            }
+        }
+
+        // Store in allocation for release
+        opticalPacketAllocations[pktId].pathRouters = routers;
+        opticalPacketAllocations[pktId].tuningPowerPerRouter_mW = tuningPerRouter_mW;
+        opticalPacketAllocations[pktId].soaPowerPerRouter_mW = soaPerRouter_mW;
+
         return true;
+
     }
 
     std::ostringstream oss;
@@ -1588,6 +1678,16 @@ void LogicalTopologyManager::releaseOpticalPathForPacket(int pktId) {
         EV_INFO << "Released optical path for pkt=" << pktId
                 << " pair " << alloc.srcId << "->" << alloc.dstId
                 << " spatial=" << alloc.spatialChannel << endl;
+    }
+
+    // Remove optical device power from routers
+    double totalPower_mW = alloc.tuningPowerPerRouter_mW + alloc.soaPowerPerRouter_mW;
+    if (totalPower_mW > 0.0 && !alloc.pathRouters.empty()) {
+        ThermalModel *tm = getThermalModel();
+        if (tm) {
+            for (size_t i = 0; i < alloc.pathRouters.size(); ++i)
+                tm->removeRouterOpticalPower(alloc.pathRouters[i], totalPower_mW * 1e-3);
+        }
     }
 
     opticalPacketAllocations.erase(it);

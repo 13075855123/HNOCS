@@ -29,7 +29,7 @@ simple InfiniteBWMultiVCSink like Sink_Ifc
         int flitSize @unit(byte);      // the flit size in bytes
          
     @display("i=block/sink");
-    gates:
+            bool remapToDynamic = default(false); // deprecated, IDE compat            double wTemperature = default(1.0);   // deprecated            double wHopCount = default(0.5);      // deprecated    gates:
         inout in;
         input opticalIn @directIn; // dedicated direct optical ingress for bypass traffic
 }

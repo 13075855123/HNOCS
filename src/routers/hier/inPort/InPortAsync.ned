@@ -29,7 +29,7 @@ simple InPortAsync like InPort_Ifc
         bool collectPerHopWait;        // Controls per hop wait time collection
         double statStartTime @unit(s); // start time for recording statistics [sec]
         @display("i=block/subqueue");
-    gates:
+            bool remapToDynamic = default(false); // deprecated, IDE compat            double wTemperature = default(1.0);   // deprecated            double wHopCount = default(0.5);      // deprecated    gates:
         inout in;		// inport
         output out[];  	// connected to sw for sending flits
         inout ctrl[]; 	// connected to sw for sending req, ack and receiving gnt 

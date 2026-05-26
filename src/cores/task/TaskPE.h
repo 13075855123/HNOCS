@@ -106,6 +106,8 @@ private:
     double powerCompute;
     double powerSendPerFlit;
     double powerRecvPerFlit;
+    double opticalModulatorEnergyPerFlit;
+    double opticalReceiverEnergyPerFlit;
 
     double computeDensity;  // ns/B, 0=use CSV computeTime
 

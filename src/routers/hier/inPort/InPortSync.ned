@@ -37,7 +37,7 @@ simple InPortSync like InPort_Ifc
         double pLeak        @unit(W) = default(1e-3W);
 
         @display("i=block/subqueue");
-    gates:
+            bool remapToDynamic = default(false); // deprecated, IDE compat            double wTemperature = default(1.0);   // deprecated            double wHopCount = default(0.5);      // deprecated    gates:
         inout in;
         output out[];
         inout ctrl[];

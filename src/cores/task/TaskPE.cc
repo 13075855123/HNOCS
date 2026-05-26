@@ -69,8 +69,9 @@ void TaskPE::finalizeEnergyWindow(simtime_t now) {
 
     accumulatePEStaticEnergy(now);
 
-    // Dynamic energy from flit events
-    windowDynamicEnergyJ =
+    // Dynamic energy from electrical flit events
+    // (optical energy added directly in sendOpticalFlitFromQ / handleDataArrival)
+    windowDynamicEnergyJ +=
         windowSendFlits * powerSendPerFlit +
         windowRecvFlits * powerRecvPerFlit;
 
@@ -146,6 +147,8 @@ void TaskPE::initialize() {
     powerCompute     = par("powerCompute");
     powerSendPerFlit = par("powerSendPerFlit");
     powerRecvPerFlit = par("powerRecvPerFlit");
+    opticalModulatorEnergyPerFlit = par("opticalModulatorEnergyPerFlit");
+    opticalReceiverEnergyPerFlit  = par("opticalReceiverEnergyPerFlit");
     enablePowerTrace = par("enablePowerTrace");
     computeDensity   = par("computeDensity");
 
@@ -700,7 +703,7 @@ void TaskPE::sendOpticalFlitFromQ() {
     }
 
     totalFlitsSent++;
-    windowSendFlits++;
+    windowDynamicEnergyJ += opticalModulatorEnergyPerFlit;
     opticalPacketsSent++;
 
     // On END flit, release circuit
@@ -1225,7 +1228,12 @@ void TaskPE::handleDataArrival(TaskMsg* msg) {
     // Return one receive-side credit to router
     sendCredit(msg->getVC(), 1);
 
-    windowRecvFlits++;
+    // Optical flits: PD+TIA energy; electrical flits: standard recv energy
+    if (!msg->getFirstNet()) {
+        windowDynamicEnergyJ += opticalReceiverEnergyPerFlit;
+    } else {
+        windowRecvFlits++;
+    }
 
     int pktId = msg->getPktId();
     int flitIdx = msg->getFlitIdx();

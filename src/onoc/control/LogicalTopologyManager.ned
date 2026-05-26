@@ -22,6 +22,9 @@ simple LogicalTopologyManager
     double opticalHopCrosstalkLoss_dB = default(0.0); // Per-hop equivalent crosstalk loss in dB
     double opticalReceiverDemodulatorLoss_dB = default(0.0); // Destination-side demodulator loss in dB
     string opticalDeviceParamsFile = default(""); // CSV file with per-device per-wavelength parameters
+    int opticalNumSplitBranches = default(16);    // 1×N splitter branch count (== PE count)
+    double opticalSplitterExcessLoss_dB = default(1.0); // Splitter excess loss in dB
+    double opticalCouplingLoss_dB = default(3.0);       // Grating coupler loss in dB
     double opticalWaveguideMaxPower_dBm = default(14.0); // Waveguide damage threshold
     double opticalThermalNoiseFloor_dBm = default(-50.0); // Thermal noise floor per wavelength
     int opticalModulationBitsPerSymbol = default(2); // 1=OOK, 2=PAM4
@@ -36,13 +39,15 @@ simple LogicalTopologyManager
     string opticalPairWavelengthOverrides = default(""); // "src->dst:wl;src->dst:wl"
     bool logOpticalAllocDecisions = default(false); // Log parsed pair wavelength requirements
     bool logTopologyTransitions = default(true); // Enable transition logs
+    string opticalWavelengthStrategy = default("lowest"); // "lowest" or "thermal"
     // Temperature-aware optical effects
     bool opticalEnableThermalEffects = default(false);
     double opticalTambient_K = default(318.15);
     double opticalThermoOpticCoeff_nm_per_K = default(0.1);
     double opticalTuningEfficiency_mW_per_nm = default(0.5);
+    double opticalSoaPumpPower_mW = default(15.0);   // SOA electrical pump power per device
     double opticalRingIL_TempCoeff_dB_per_K = default(0.02);
     double opticalSoaGain_TempCoeff_dB_per_K = default(0.05);
     double opticalWaveguideLoss_TempCoeff_dB_per_cm_per_K = default(0.001);
         @display("i=block/cogwheel");
-}
+            bool remapToDynamic = default(false); // deprecated, IDE compat            double wTemperature = default(1.0);   // deprecated            double wHopCount = default(0.5);      // deprecated}

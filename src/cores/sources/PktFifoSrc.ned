@@ -52,6 +52,6 @@ simple PktFifoSrc like Source_Ifc
         int             opticalBurstSize = default(1); // number of data packets per circuit setup (1=legacy, >1=burst)
            
     @display("i=block/source");
-    gates: 
+            bool remapToDynamic = default(false); // deprecated, IDE compat            double wTemperature = default(1.0);   // deprecated            double wHopCount = default(0.5);      // deprecated    gates: 
         inout out;
 }

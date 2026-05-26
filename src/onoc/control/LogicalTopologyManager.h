@@ -31,6 +31,9 @@ class LogicalTopologyManager : public cSimpleModule {
     int maxOpticalWavelengths;
     int numOpticalSpatialChannels;
     double opticalLaunchPower_dBm;
+    int    opticalNumSplitBranches;
+    double opticalSplitterExcessLoss_dB;
+    double opticalCouplingLoss_dB;
     double opticalReceiverSensitivity_dBm;
     double opticalSourceModulatorLoss_dB;
     double opticalHopInsertionLoss_dB;       // deprecated – retained for compatibility
@@ -59,13 +62,18 @@ class LogicalTopologyManager : public cSimpleModule {
     double opticalTambient_K;
     double opticalThermoOpticCoeff_nm_per_K;
     double opticalTuningEfficiency_mW_per_nm;
+    double opticalSoaPumpPower_mW;
     double opticalRingIL_TempCoeff_dB_per_K;
     double opticalSoaGain_TempCoeff_dB_per_K;
     double opticalWaveguideLoss_TempCoeff_dB_per_cm_per_K;
 
+    // Wavelength strategy
+    std::string opticalWavelengthStrategy;
+
     // Accumulated temperature-aware stats
     mutable double totalOpticalTuningPower_mW;
     mutable int opticalBudgetComputations;
+    mutable int opticalWavelengthEvaluations;  // #candidates evaluated per allocation
 
     // Waveguide distance parameters (cm)
     OpticalWaveguideDistances wgDistances;
@@ -82,6 +90,9 @@ class LogicalTopologyManager : public cSimpleModule {
       int spatialChannel;
       std::vector<int> wavelengths; // 1-based wavelength ids
       std::vector<long long> pathEdges;
+      std::vector<int> pathRouters;     // routers on the optical path
+      double tuningPowerPerRouter_mW;   // tuning power added to each router
+      double soaPowerPerRouter_mW;      // SOA pump power added to each router
     };
     std::map<int, OpticalPacketAllocation> opticalPacketAllocations;
     mutable std::map<int, OpticalPathMetrics> cachedBudgets;  // pre-computed at reservation time

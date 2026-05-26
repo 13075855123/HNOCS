@@ -39,7 +39,7 @@ network Mesh
         string coreType;
         int columns = default(4);
         int rows = default(4);
-    submodules:
+            bool remapToDynamic = default(false); // deprecated, IDE compat            double wTemperature = default(1.0);   // deprecated            double wHopCount = default(0.5);      // deprecated    submodules:
         router[columns*rows]: <routerType> like Router_Ifc {
             parameters:
                 numPorts = 5;

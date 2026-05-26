@@ -46,6 +46,9 @@ network ONoCMesh
         int maxOpticalWavelengths = default(16);
         int numOpticalSpatialChannels = default(1);
         double opticalLaunchPower_dBm = default(0.0);
+        int opticalNumSplitBranches = default(16);
+        double opticalSplitterExcessLoss_dB = default(1.0);
+        double opticalCouplingLoss_dB = default(3.0);
         double opticalReceiverSensitivity_dBm = default(-18.0);
         double opticalSourceModulatorLoss_dB = default(0.0);
         double opticalHopInsertionLoss_dB = default(0.0);
@@ -86,6 +89,11 @@ network ONoCMesh
         string csvFile = default("tasks_mpeg4_static.csv");
         int bufferBaseId = default(1000);
 
+        // ── Deprecated (IDE cache compatibility) ──
+        bool remapToDynamic = default(false);
+        double wTemperature = default(1.0);
+        double wHopCount = default(0.5);
+
     submodules:
         // Central manager that owns the logical adjacency graph A(t).
         topologyManager: LogicalTopologyManager {
@@ -102,6 +110,9 @@ network ONoCMesh
                 maxOpticalWavelengths = parent.maxOpticalWavelengths;
                 numOpticalSpatialChannels = parent.numOpticalSpatialChannels;
                 opticalLaunchPower_dBm = parent.opticalLaunchPower_dBm;
+                opticalNumSplitBranches = parent.opticalNumSplitBranches;
+                opticalSplitterExcessLoss_dB = parent.opticalSplitterExcessLoss_dB;
+                opticalCouplingLoss_dB = parent.opticalCouplingLoss_dB;
                 opticalReceiverSensitivity_dBm = parent.opticalReceiverSensitivity_dBm;
                 opticalSourceModulatorLoss_dB = parent.opticalSourceModulatorLoss_dB;
                 opticalHopInsertionLoss_dB = parent.opticalHopInsertionLoss_dB;

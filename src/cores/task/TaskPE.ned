@@ -45,6 +45,10 @@ simple TaskPE like hnocs.cores.NI_Ifc
 
         double computeDensity = default(0);
 
+        bool remapToDynamic = default(false); // deprecated, kept for IDE compatibility
+        double wTemperature = default(1.0);   // deprecated
+        double wHopCount = default(0.5);      // deprecated
+
         // Optical bypass parameters
         bool enableSetupHandshake = default(false);
         bool enableOpticalBypass = default(false);
@@ -55,7 +59,11 @@ simple TaskPE like hnocs.cores.NI_Ifc
         double opticalBasePropagationDelay @unit(s) = default(0.5ns);
         double opticalPerHopDelay @unit(s) = default(0.1ns);
         int opticalBurstSize = default(1);
+        double opticalModulatorEnergyPerFlit @unit(J) = default(2e-12 J);
+        double opticalReceiverEnergyPerFlit  @unit(J) = default(1e-12 J);
 
+        @signal[onoc-setup-req-event](type=long);
+        @signal[onoc-setup-ack-event](type=long);
         @display("i=block/process");
 
     gates:

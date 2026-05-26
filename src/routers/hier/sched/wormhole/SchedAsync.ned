@@ -28,7 +28,7 @@ simple SchedAsync like hnocs.routers.hier.sched.Sched_Ifc
         int arbitration_type; 		// 0 - winner takes all arbitration ;  1 - round robin arbitration
         double statStartTime @unit(s); // start time for recording statistics [sec]
         @display("i=block/join");
-    gates:
+            bool remapToDynamic = default(false); // deprecated, IDE compat            double wTemperature = default(1.0);   // deprecated            double wHopCount = default(0.5);      // deprecated    gates:
         inout ctrl[]; // connected to sw - send gnt, receive req, ack
         input in[];   // connected to sw - receiving flits
         inout out[];  // drives the links between routers
