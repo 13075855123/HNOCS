@@ -468,6 +468,13 @@ void TaskPE::refreshDisplay() const {
         if (getDisplayString().containsTag("bc"))
             getDisplayString().removeTag("bc");
     }
+
+    // Show optical flit count on module label
+    if (opticalPacketsSent > 0) {
+        char buf[32];
+        snprintf(buf, sizeof(buf), "opt:%ld", opticalPacketsSent);
+        getDisplayString().setTagArg("t", 0, buf);
+    }
 }
 
 // -----------------------------------------------------------------------

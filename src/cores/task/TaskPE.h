@@ -49,8 +49,8 @@ private:
     std::vector<int> activeCircuitTokenByDst;
     long setupReqRxCount;
     long setupAckRxCount;
-    long opticalPacketsSent;
-    simtime_t lastOpticalSendTime;
+    mutable long opticalPacketsSent;
+    mutable simtime_t lastOpticalSendTime;
     long setupAckAcceptedCount;
     long setupAckStaleCount;
     long setupReserveFailCount;
