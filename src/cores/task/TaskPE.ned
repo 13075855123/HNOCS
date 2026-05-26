@@ -62,6 +62,11 @@ simple TaskPE like hnocs.cores.NI_Ifc
         @signal[onoc-setup-ack-event](type=long);
         @display("i=block/process");
 
+        // Deprecated (retained for IDE compat)
+        bool remapToDynamic = default(false);
+        double wTemperature = default(1.0);
+        double wHopCount = default(0.5);
+
     gates:
         inout in;
         inout out;

@@ -24,6 +24,11 @@ simple XYOPCalc like hnocs.routers.hier.opCalc.OPCalc_Ifc
         string portType; // actual Port_Ifc module required to tell a port from a Core
         string coreType; // actual Core_Ifc required to tell a port from a Core
     @display("i=block/fork");
+        // Deprecated (retained for IDE compat)
+        bool remapToDynamic = default(false);
+        double wTemperature = default(1.0);
+        double wHopCount = default(0.5);
+
     gates:
         inout calc;
 }

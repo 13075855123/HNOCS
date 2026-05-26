@@ -29,6 +29,11 @@ module NI like NI_Ifc
         string sourceType;
         string sinkType;
     @display("i=block/square");
+        // Deprecated (retained for IDE compat)
+        bool remapToDynamic = default(false);
+        double wTemperature = default(1.0);
+        double wHopCount = default(0.5);
+
     gates:
         inout in;
         inout out;

@@ -89,6 +89,11 @@ network ONoCMesh
         string csvFile = default("tasks_mpeg4_static.csv");
         int bufferBaseId = default(1000);
 
+        // Deprecated (retained for IDE compat)
+        bool remapToDynamic = default(false);
+        double wTemperature = default(1.0);
+        double wHopCount = default(0.5);
+
     submodules:
         // Central manager that owns the logical adjacency graph A(t).
         topologyManager: LogicalTopologyManager {

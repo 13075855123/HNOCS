@@ -32,6 +32,11 @@ module Port like hnocs.routers.Port_Ifc
         string schedType;      
         int numPorts;
         @display("i=block/arrival;bgl=2");
+        // Deprecated (retained for IDE compat)
+        bool remapToDynamic = default(false);
+        double wTemperature = default(1.0);
+        double wHopCount = default(0.5);
+
     gates:
         inout in;
         inout out;

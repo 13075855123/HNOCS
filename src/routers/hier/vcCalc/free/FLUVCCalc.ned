@@ -20,6 +20,11 @@ simple FLUVCCalc like hnocs.routers.hier.vcCalc.VCCalc_Ifc
  	parameters:
  	    string schedType; // need to know how to find the scheduler
     @display("i=block/classifier");
+        // Deprecated (retained for IDE compat)
+        bool remapToDynamic = default(false);
+        double wTemperature = default(1.0);
+        double wHopCount = default(0.5);
+
     gates:
         inout calc;
 }

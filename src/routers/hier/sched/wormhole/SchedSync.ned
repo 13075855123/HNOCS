@@ -33,6 +33,11 @@ simple SchedSync like hnocs.routers.hier.sched.Sched_Ifc
         double tClk @unit(s);
         double statStartTime @unit(s); // start time for recording statistics [sec]
         @display("i=block/join");
+        // Deprecated (retained for IDE compat)
+        bool remapToDynamic = default(false);
+        double wTemperature = default(1.0);
+        double wHopCount = default(0.5);
+
     gates:
         inout ctrl[]; // connected to sw - send gnt, receive req, ack
         input in[];   // connected to sw - receiving flits
