@@ -132,6 +132,10 @@ void TaskPE::updateThermalDisplay() {
     getDisplayString().setTagArg("t", 0, tmp);
 }
 
+// File-scope optical statistics accumulator
+static long globalOpticalTotal = 0;
+static int  globalFinishCount = 0;
+
 // -----------------------------------------------------------------------
 // initialize
 // -----------------------------------------------------------------------
@@ -345,12 +349,6 @@ void TaskPE::initialize() {
 
     // Try first task immediately
     scheduleNextTask();
-
-    // ── DIAGNOSTIC: verify code is loaded ──
-    if (enableSetupHandshake && peId == 0) {
-        bubble("PE0 OPT INIT");
-        getDisplayString().setTagArg("t", 0, "PE0-OPT-READY");
-    }
 }
 
 // -----------------------------------------------------------------------
@@ -547,6 +545,21 @@ void TaskPE::finish() {
     if (totalComputeTimeNominal.dbl() > 0.0)
         penaltyRatio = totalThrottlePenalty.dbl() / totalComputeTimeNominal.dbl();
     recordScalar("throttlePenaltyRatio",    penaltyRatio);
+
+    // ── Optical bypass statistics (printf to console) ──
+    if (enableSetupHandshake && opticalPacketsSent > 0) {
+        printf("[OPTICAL-STATS] PE%d  optical-flits=%ld  setup-req-rx=%ld  setup-ack-rx=%ld  setup-ack-ok=%ld\n",
+               peId, opticalPacketsSent, setupReqRxCount, setupAckRxCount, setupAckAcceptedCount);
+        fflush(stdout);
+    }
+    globalOpticalTotal += opticalPacketsSent;
+    globalFinishCount++;
+    // Print grand total when the last PE finishes (16 PEs in 4x4 mesh)
+    if (enableSetupHandshake && globalFinishCount >= 16) {
+        printf("[OPTICAL-STATS] ===== GRAND TOTAL: %ld optical flits sent via sendDirect =====\n",
+               globalOpticalTotal);
+        fflush(stdout);
+    }
 
     if (powerTrace) {
         powerTrace->close();
