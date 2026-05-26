@@ -455,13 +455,18 @@ void TaskPE::refreshDisplay() const {
         if (setupPendingByDst[d]) nPending++;
     }
 
-    // Change module icon color: green=active circuit, gold=pending, ""=default
+    // Colored border: green=active circuit, gold=SETUP pending, none=idle
     if (nReady > 0) {
-        getDisplayString().setTagArg("i", 1, "green");
+        getDisplayString().setTagArg("b", 0, "3");
+        getDisplayString().setTagArg("bc", 0, "green");
     } else if (nPending > 0) {
-        getDisplayString().setTagArg("i", 1, "gold");
+        getDisplayString().setTagArg("b", 0, "3");
+        getDisplayString().setTagArg("bc", 0, "gold");
     } else {
-        getDisplayString().setTagArg("i", 1, "");
+        if (getDisplayString().containsTag("b"))
+            getDisplayString().removeTag("b");
+        if (getDisplayString().containsTag("bc"))
+            getDisplayString().removeTag("bc");
     }
 }
 

@@ -65,7 +65,7 @@ network TaskMesh
         pe[columns*rows]: TaskPE {
             parameters:
                 id = index;
-                @display("p=140,140,matrix,$columns,140,140;i=block/processor");
+                @display("p=140,140,matrix,$columns,140,140");
         }
 
         globalBuffer: GlobalBuffer {
