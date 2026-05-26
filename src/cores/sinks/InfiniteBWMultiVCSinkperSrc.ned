@@ -29,7 +29,7 @@ simple InfiniteBWMultiVCSinkperSrc like Sink_Ifc
         int flitSize @unit(byte);      // the flit size in bytes
          
     @display("i=block/sink");
-            bool remapToDynamic = default(false); // deprecated, IDE compat            double wTemperature = default(1.0);   // deprecated            double wHopCount = default(0.5);      // deprecated    gates:
+    gates:
         inout in;
 }
 // For details about statistics, please refer to InfiniteBWMultiVCSinkperSrc.h & InfiniteBWMultiVCSinkperSrc.cc

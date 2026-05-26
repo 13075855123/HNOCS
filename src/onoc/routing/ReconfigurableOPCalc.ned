@@ -11,6 +11,6 @@ simple ReconfigurableOPCalc like hnocs.routers.hier.opCalc.OPCalc_Ifc
         bool dropPacketOnWavelengthShortage = default(false); // Drop packet at source when allocation fails due to insufficient resources
         int availableOpticalWavelengths = default(2); // Available wavelengths per optical connection
         @display("i=block/fork");
-            bool remapToDynamic = default(false); // deprecated, IDE compat            double wTemperature = default(1.0);   // deprecated            double wHopCount = default(0.5);      // deprecated    gates:
+    gates:
         inout calc; // Receives flits from InPort and returns chosen output port via control info
 }

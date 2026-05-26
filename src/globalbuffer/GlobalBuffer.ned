@@ -28,7 +28,7 @@ simple GlobalBuffer
         double opticalBasePropagationDelay @unit(s) = default(0.5ns);
         double opticalPerHopDelay @unit(s) = default(0.1ns);
         @display("i=block/buffer");
-            bool remapToDynamic = default(false); // deprecated, IDE compat            double wTemperature = default(1.0);   // deprecated            double wHopCount = default(0.5);      // deprecated    gates:
+    gates:
         inout in[numConnections];
         inout out[numConnections];
         input opticalIn @directIn;

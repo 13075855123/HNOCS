@@ -46,7 +46,7 @@ network TaskMesh
 
         @display("bgb=750,700");
 
-            bool remapToDynamic = default(false); // deprecated, IDE compat            double wTemperature = default(1.0);   // deprecated            double wHopCount = default(0.5);      // deprecated    submodules:
+    submodules:
         router[columns*rows]: <routerType> like Router_Ifc {
             parameters:
                 numPorts = 5;

@@ -50,4 +50,5 @@ simple LogicalTopologyManager
     double opticalSoaGain_TempCoeff_dB_per_K = default(0.05);
     double opticalWaveguideLoss_TempCoeff_dB_per_cm_per_K = default(0.001);
         @display("i=block/cogwheel");
-            bool remapToDynamic = default(false); // deprecated, IDE compat            double wTemperature = default(1.0);   // deprecated            double wHopCount = default(0.5);      // deprecated}
+}
+
