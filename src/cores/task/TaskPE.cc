@@ -444,9 +444,9 @@ void TaskPE::handleMessage(cMessage* msg) {
 }
 
 // -----------------------------------------------------------------------
-// refreshDisplay — Qtenv visualization of optical circuit state
+// updateOpticalLabel — update module display text for Qtenv visibility
 // -----------------------------------------------------------------------
-void TaskPE::refreshDisplay() const {
+void TaskPE::updateOpticalLabel() const {
     if (!enableSetupHandshake || numNodes <= 0) return;
 
     int nReady = 0, nPending = 0;
@@ -455,7 +455,7 @@ void TaskPE::refreshDisplay() const {
         if (setupPendingByDst[d]) nPending++;
     }
 
-    // Colored border: green=active circuit, gold=SETUP pending, none=idle
+    // Colored border
     if (nReady > 0) {
         getDisplayString().setTagArg("b", 0, "3");
         getDisplayString().setTagArg("bc", 0, "green");
@@ -469,12 +469,25 @@ void TaskPE::refreshDisplay() const {
             getDisplayString().removeTag("bc");
     }
 
-    // Show optical flit count on module label
-    if (opticalPacketsSent > 0) {
-        char buf[32];
-        snprintf(buf, sizeof(buf), "opt:%ld", opticalPacketsSent);
-        getDisplayString().setTagArg("t", 0, buf);
+    // Text label showing optical state and flit count
+    char buf[64];
+    if (nReady > 0) {
+        snprintf(buf, sizeof(buf), "OPT:%ld", opticalPacketsSent);
+    } else if (nPending > 0) {
+        snprintf(buf, sizeof(buf), "SETUP");
+    } else if (opticalPacketsSent > 0) {
+        snprintf(buf, sizeof(buf), "OPT:%ld", opticalPacketsSent);
+    } else {
+        buf[0] = '\0';
     }
+    getDisplayString().setTagArg("t", 0, buf);
+}
+
+// -----------------------------------------------------------------------
+// refreshDisplay — delegates to updateOpticalLabel
+// -----------------------------------------------------------------------
+void TaskPE::refreshDisplay() const {
+    updateOpticalLabel();
 }
 
 // -----------------------------------------------------------------------
@@ -736,6 +749,7 @@ void TaskPE::sendOpticalFlitFromQ() {
     totalFlitsSent++;
     windowDynamicEnergyJ += opticalModulatorEnergyPerFlit;
     opticalPacketsSent++;
+    updateOpticalLabel();   // update Qtenv display
 
     // On END flit, release circuit
     if (flit->getType() == NOC_END_FLIT) {
@@ -747,6 +761,7 @@ void TaskPE::sendOpticalFlitFromQ() {
         activeCircuitTokenByDst[dstIdx] = 0;
         printf("[OPTICAL] PE%d TEARDOWN circuit to dst=%d token=%d at t=%.6fus\n",
                peId, dstIdx, token, simTime().dbl() * 1e6);
+        updateOpticalLabel();
     }
 
     simtime_t txFinish = simTime() + computeOpticalTxDuration(flit);
@@ -1071,6 +1086,7 @@ void TaskPE::sendTaskData(TaskDescriptor* task) {
                     sendControlFlitFromQ();
                     printf("[OPTICAL] PE%d SETUP_REQ -> PE%d token=%d at t=%.6fus\n",
                            peId, dstPE, setupToken, simTime().dbl() * 1e6);
+                    updateOpticalLabel();
                 } else {
                     setupReserveFailCount++;
                     nextSetupAttemptByDst[optIdx] = simTime() + setupRetryDelay;
@@ -1247,6 +1263,7 @@ void TaskPE::handleDataArrival(TaskMsg* msg) {
                 activeCircuitTokenByDst[srcIdx] = pktId;
                 printf("[OPTICAL] PE%d SETUP_ACK rcvd from PE%d -> CIRCUIT READY token=%d at t=%.6fus\n",
                        peId, srcPE, pktId, simTime().dbl() * 1e6);
+                updateOpticalLabel();
                 flushPendingData(srcIdx);
             } else if (!circuitReadyByDst[srcIdx]) {
                 setupAckStaleCount++;
