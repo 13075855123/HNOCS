@@ -28,6 +28,9 @@ simple InfiniteBWMultiVCSink like Sink_Ifc
         int numVCs;                    // number of VCs
         int flitSize @unit(byte);      // the flit size in bytes
          
+        @signal[onoc-setup-req-event](long);
+        @signal[onoc-setup-ack-event](long);
+        @signal[onoc-data-release-event](long);
     @display("i=block/sink");
         // Deprecated (retained for IDE compat)
         bool remapToDynamic = default(false);

@@ -51,6 +51,8 @@ simple PktFifoSrc like Source_Ifc
         double          opticalPerTorusHopDelay @unit(s) = default(20ps); // extra propagation delay per torus hop of physical span
         int             opticalBurstSize = default(1); // number of data packets per circuit setup (1=legacy, >1=burst)
            
+        @signal[onoc-setup-req-event](long);
+        @signal[onoc-setup-ack-event](long);
     @display("i=block/source");
         // Deprecated (retained for IDE compat)
         bool remapToDynamic = default(false);

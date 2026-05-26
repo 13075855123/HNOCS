@@ -10,6 +10,8 @@ simple ReconfigurableOPCalc like hnocs.routers.hier.opCalc.OPCalc_Ifc
         bool enforceOpticalWavelengthCap = default(false); // Throw error if required wavelengths exceed available
         bool dropPacketOnWavelengthShortage = default(false); // Drop packet at source when allocation fails due to insufficient resources
         int availableOpticalWavelengths = default(2); // Available wavelengths per optical connection
+        @signal[onoc-optical-required-wavelengths](long);
+        @signal[onoc-optical-wavelength-insufficient](long);
         @display("i=block/fork");
         // Deprecated (retained for IDE compat)
         bool remapToDynamic = default(false);
