@@ -45,10 +45,6 @@ simple TaskPE like hnocs.cores.NI_Ifc
 
         double computeDensity = default(0);
 
-        bool remapToDynamic = default(false); // deprecated, kept for IDE compatibility
-        double wTemperature = default(1.0);   // deprecated
-        double wHopCount = default(0.5);      // deprecated
-
         // Optical bypass parameters
         bool enableSetupHandshake = default(false);
         bool enableOpticalBypass = default(false);
