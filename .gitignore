@@ -16,3 +16,6 @@ thermal_snapshot.json
 *.anf
 src/Makefile.*
 /.metadata/
+# Temp analysis files
+sim_log.txt
+sim_stdout.txt
