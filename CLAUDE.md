@@ -2,6 +2,8 @@
 
 > **行为准则**：每次执行文件操作（删除、修改、创建）后，必须用 `test`/`grep`/`ls` 等独立命令验证结果是否真正生效，不得仅凭命令输出（如 `echo "done"`）判断成功。
 
+> **Git 规则**：每次修改本项目文件后，都必须主动执行 `git add`、`git commit` 和 `git push`，将更改记录到 GitHub。不得跳过此步骤。
+
 ## Project Overview
 
 OMNeT++ simulation framework for **Hybrid Electrical-Optical Network-on-Chip (HNOCS)**.
