@@ -345,6 +345,12 @@ void TaskPE::initialize() {
 
     // Try first task immediately
     scheduleNextTask();
+
+    // ── DIAGNOSTIC: verify code is loaded ──
+    if (enableSetupHandshake && peId == 0) {
+        bubble("PE0 OPT INIT");
+        getDisplayString().setTagArg("t", 0, "PE0-OPT-READY");
+    }
 }
 
 // -----------------------------------------------------------------------
