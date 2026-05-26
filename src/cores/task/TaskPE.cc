@@ -444,9 +444,9 @@ void TaskPE::handleMessage(cMessage* msg) {
 }
 
 // -----------------------------------------------------------------------
-// updateOpticalLabel — update module display text for Qtenv visibility
+// updateOpticalLabel — update module display for Qtenv visibility
 // -----------------------------------------------------------------------
-void TaskPE::updateOpticalLabel() const {
+void TaskPE::updateOpticalLabel() {
     if (!enableSetupHandshake || numNodes <= 0) return;
 
     int nReady = 0, nPending = 0;
@@ -455,21 +455,19 @@ void TaskPE::updateOpticalLabel() const {
         if (setupPendingByDst[d]) nPending++;
     }
 
-    // Colored border
+    // Colored icon: green dot=active, gold dot=pending, default=idle
+    // Format: i=<iconname>,<color>
     if (nReady > 0) {
-        getDisplayString().setTagArg("b", 0, "3");
-        getDisplayString().setTagArg("bc", 0, "green");
+        getDisplayString().setTagArg("i", 0, "");
+        getDisplayString().setTagArg("i", 1, "green");
     } else if (nPending > 0) {
-        getDisplayString().setTagArg("b", 0, "3");
-        getDisplayString().setTagArg("bc", 0, "gold");
+        getDisplayString().setTagArg("i", 0, "");
+        getDisplayString().setTagArg("i", 1, "gold");
     } else {
-        if (getDisplayString().containsTag("b"))
-            getDisplayString().removeTag("b");
-        if (getDisplayString().containsTag("bc"))
-            getDisplayString().removeTag("bc");
+        getDisplayString().setTagArg("i", 1, "");  // clear color, keep default icon
     }
 
-    // Text label showing optical state and flit count
+    // Text label
     char buf[64];
     if (nReady > 0) {
         snprintf(buf, sizeof(buf), "OPT:%ld", opticalPacketsSent);
@@ -484,10 +482,10 @@ void TaskPE::updateOpticalLabel() const {
 }
 
 // -----------------------------------------------------------------------
-// refreshDisplay — delegates to updateOpticalLabel
+// refreshDisplay — const_cast to call non-const updateOpticalLabel
 // -----------------------------------------------------------------------
 void TaskPE::refreshDisplay() const {
-    updateOpticalLabel();
+    const_cast<TaskPE*>(this)->updateOpticalLabel();
 }
 
 // -----------------------------------------------------------------------

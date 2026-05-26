@@ -196,7 +196,7 @@ protected:
     virtual void receiveSignal(cComponent *source, simsignal_t signalID, intval_t value, cObject *details) override;
 
 private:
-    void updateOpticalLabel() const;
+    void updateOpticalLabel();
 
 public:
     virtual ~TaskPE();
