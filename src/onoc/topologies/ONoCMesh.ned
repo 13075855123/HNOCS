@@ -159,7 +159,7 @@ network ONoCMesh
         pe[columns * rows]: TaskPE {
             parameters:
                 id = index;
-                @display("p=150,150,matrix,$columns,150,150");
+                @display("p=150,150,matrix,$columns,150,150;i=block/processor");
         }
 
         // GlobalBuffer for task distribution

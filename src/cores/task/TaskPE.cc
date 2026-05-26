@@ -461,9 +461,7 @@ void TaskPE::refreshDisplay() const {
     } else if (nPending > 0) {
         getDisplayString().setTagArg("i", 1, "gold");
     } else {
-        // Remove color by clearing the i tag (restore default icon)
-        if (getDisplayString().containsTag("i"))
-            getDisplayString().removeTag("i");
+        getDisplayString().setTagArg("i", 1, "");
     }
 }
 
