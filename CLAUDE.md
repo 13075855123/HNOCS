@@ -164,3 +164,112 @@ void removeRouterOpticalPower(int routerId, double power_W); // 拆链时调用
 **原因**：`TaskPE.ned` 中 `powerTraceFile` 默认路径 `results/power_trace.csv`，但 `results/` 目录不存在，C++ `ofstream::open()` 不自动创建目录。
 
 **修复**：在 `omnetpp.ini` 的 `[General]` 和 `[ONoCGeneral]` 中显式设置 `**.pe[*].powerTraceFile = "power_trace.csv"`，输出到当前目录。`[ONoC_*]` 子配置通过 extends 继承。
+
+### 2026-05-26：NED 文件格式损坏导致 IDE Syntax Error
+
+**现象**：IDE 报 18 个 .ned 文件的 "NED Syntax Problem"，但 `make` 编译通过。
+
+**原因**：多个 .ned 文件中 `gates:` / `submodules:` / `}` 关键字被塞进了 `//` 行注释内部，IDE 解析器找不到这些关键字。行如：
+```
+bool remapToDynamic = default(false); // deprecated...    gates:
+```
+`nedtool` 容错性更强所以能编译，IDE 解析器严格所以报错。
+
+**修复**：sed 批量删除损坏行，恢复 `gates:` / `submodules:` 关键字，补回缺失的 `}`。
+
+### 2026-05-26：IDE 缓存旧 INI 导致 "Unknown parameter"
+
+**现象**：运行时报 `Unknown parameter 'wTemperature' / 'remapToDynamic'`。
+
+**原因**：旧 workspace 的 `results/` 目录中有 `.vci` 文件（来自已不存在的 `omnetpp_bench.ini`），其中含 `config **.wTemperature 1.0` 等通配符赋值。OMNeT++ IDE 会将 `.vci` 文件作为可选配置源。
+
+**修复**：删除旧 `.vci` / `.sca` / `.vec` 文件；为所有模块 NED 添加废弃参数声明（`remapToDynamic`, `wTemperature`, `wHopCount`）作为 IDE 兼容占位。
+
+## 终端编译
+
+IDE 外编译需设置 OMNeT++ 工具链 PATH：
+
+```bash
+export TOOLS="/d/omnetpp/omnetpp-6.3.0/tools/win32.x86_64"
+export OMNETPP_ROOT="/d/omnetpp/omnetpp-6.3.0"
+export PATH="$TOOLS/clang64/bin:$TOOLS/usr/bin:$OMNETPP_ROOT/bin:$PATH"
+cd /d/HNOCS
+make MODE=debug -j4
+```
+
+运行仿真：
+```bash
+cd /d/HNOCS/examples/task_driven
+../../out/clang-debug/libhnocs_dbg.exe -c ONoC_MPEG4 -u Cmdenv -n ../../src omnetpp.ini
+```
+
+## 光旁路（Optical Bypass）验证
+
+### 数据流路径
+
+```
+Task完成 → 全部 data flit 进 pendingDataQ
+  → SETUP_REQ (2 flit, 电路由器)
+  → SETUP_ACK (2 flit, 电路由器)
+  → circuitReady = true → flushPendingData → opticalDataQ
+  → sendDirect(flit, ..., targetMod->gate("opticalIn"))  ← 光路直传
+  → END flit 后 TEARDOWN
+```
+
+### 关键计数器
+
+| 变量 | 含义 | 位置 |
+|------|------|------|
+| `totalFlitsSent` | 电层+光层总发送 flit 数 | `sendFlitFromQ()` + `sendOpticalFlitFromQ()` |
+| `opticalPacketsSent` | **仅光路** `sendDirect()` 发送的 flit 数 | `TaskPE.cc:768` |
+| `opticalModulatorEnergyPerFlit` | 每光路 flit 调制器驱动能耗 (2pJ) | NED 参数 |
+| `opticalReceiverEnergyPerFlit` | 每光路 flit PD+TIA 能耗 (1pJ) | NED 参数 |
+
+### 仿真结束时打印光路统计
+
+`TaskPE::finish()` 中通过 `printf` 输出 `[OPTICAL-STATS]`，包括每 PE 的光路 flit 数和全局总计。**`printf` 不受 `cmdenv-log-level` 控制**。
+
+```bash
+# 只看光路统计
+../../out/clang-debug/libhnocs_dbg.exe -c ONoC_MPEG4 -u Cmdenv -n ../../src omnetpp.ini 2>&1 | grep OPTICAL-STATS
+```
+
+输出示例：
+```
+[OPTICAL-STATS] PE0  optical-flits=30  setup-req-rx=1  setup-ack-rx=8  setup-ack-ok=3
+[OPTICAL-STATS] PE7  optical-flits=27  setup-req-rx=2  setup-ack-rx=8  setup-ack-ok=3
+...
+[OPTICAL-STATS] ===== GRAND TOTAL: 153 optical flits sent via sendDirect =====
+```
+
+### Qtenv 可视化限制
+
+- `sendDirect()` 传送的消息**不会**在 Qtenv 中显示为绿色连线箭头（绿色箭头 = 电路由器 channel 消息）
+- 光路握手阶段 SETUP_REQ/ACK 走电路由器，在 Qtenv 中可见为绿色箭头
+- `refreshDisplay()` / display string 修改在 Qtenv 中不可靠，不建议依赖模块图标变色来验证光旁路
+- **推荐用 Cmdenv + printf/grep 验证**
+
+### 光路带宽
+
+- 2 波长 × 256Gbps = **512Gbps** 有效带宽
+- 每 flit (16B) 传输耗时：8×16b / 512Gbps = **0.25ns**
+- 电层单链路带宽：16Gbps（光路是电层的 32 倍）
+
+## CSV 任务图约定
+
+| 字段 | 含义 |
+|------|------|
+| `peId = -1` | GB 预载任务（模拟片外 DRAM 注入初始数据），不在任何 PE 上执行 |
+| `successor = -1:-1` | 输出发送到 GlobalBuffer（最终结果收集），不是错误 |
+
+## 废弃代码标记
+
+- `remapToDynamic` / `wTemperature` / `wHopCount` — 三个参数在全部 21 个模块 NED 中有声明（`default(false)` / `default(1.0)`），但 C++ 代码中**零引用**。当初 `remapToDynamic=true` 时 GB 会动态改写 CSV 中的 peId（在线重映射），现已废弃。保留声明仅为防止 IDE 缓存报 "Unknown parameter" 错误。
+- `GlobalBuffer::distributeTasks()` — 处理 CSV 中 `peId=-1` 的初始数据注入任务，**不是**在线重映射代码。
+- Flit 数计算公式：`max(2, ceil(dataSize / flitSize))`，最小 2 flit（START + END 握手）。
+
+## 控制台日志控制
+
+- `**.cmdenv-log-level = off` — 压制所有 `EV <<` 日志（INFO/WARN/DEBUG/TRACE）
+- `printf()` — 不受 log-level 影响，始终输出到控制台
+- `[OPTICAL]` 前缀的 printf 覆盖全光路生命周期：SETUP_REQ → ACK → CIRCUIT READY → SEND-OPTICAL → TEARDOWN
