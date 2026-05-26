@@ -1,0 +1,62 @@
+OMNeT++ Discrete Event Simulation  (C) 1992-2025 Andras Varga, OpenSim Ltd.
+Version: 6.3.0, build: 251110-bb3d6a4731, edition: Academic Public License -- NOT FOR COMMERCIAL USE
+See the license for distribution terms and warranty disclaimer
+
+Setting up Cmdenv...
+
+Loading NED files from ../../src:  31
+
+Preparing for running configuration ONoC_MPEG4, run #0...
+Assigned runID=ONoC_MPEG4-0-20260527-00:31:46-31836
+Setting up network "hnocs.onoc.topologies.ONoCMesh"...
+Initializing...
+
+Running simulation...
+** Event #0   t=0   Elapsed: 1e-05s (0m 00s)  0% completed  (0% total)
+     Speed:     ev/sec=0   simsec/sec=0   ev/simsec=0
+     Messages:  created: 602   present: 602   in FES: 555
+[PE0] task=1 START at t=0.122us nominalTime=20.000us dvfs=1.000 Tpe=45.1C
+[PE0] task=1 DONE at t=20.122us actualCompute=20.000us output=160B successors=3
+[PE0] task=1 SENDING 10 flits
+[PE1] task=2 START at t=20.245us nominalTime=25.000us dvfs=1.108 Tpe=49.0C
+[PE2] task=8 START at t=20.309us nominalTime=25.000us dvfs=1.066 Tpe=48.2C
+[PE3] task=11 START at t=20.373us nominalTime=20.000us dvfs=1.056 Tpe=48.0C
+[PE3] task=11 DONE at t=41.493us actualCompute=21.120us output=100B successors=1
+[PE3] task=11 SENDING 7 flits
+[PE2] task=8 DONE at t=46.960us actualCompute=26.651us output=50B successors=1
+[PE2] task=8 SENDING 4 flits
+[PE1] task=2 DONE at t=47.950us actualCompute=27.705us output=120B successors=2
+[PE1] task=2 SENDING 8 flits
+[PE5] task=4 START at t=48.093us nominalTime=30.000us dvfs=1.131 Tpe=49.5C
+[PE4] task=3 START at t=48.117us nominalTime=35.000us dvfs=1.097 Tpe=48.8C
+[PE5] task=4 DONE at t=82.008us actualCompute=33.916us output=32B successors=1
+[PE5] task=4 SENDING 2 flits
+[PE4] task=3 DONE at t=86.499us actualCompute=38.383us output=100B successors=1
+[PE4] task=3 SENDING 7 flits
+[PE6] task=5 START at t=86.668us nominalTime=30.000us dvfs=1.091 Tpe=48.7C
+[PE6] task=5 DONE at t=119.408us actualCompute=32.740us output=80B successors=1
+[PE6] task=5 SENDING 5 flits
+[PE7] task=6 START at t=119.532us nominalTime=35.000us dvfs=1.103 Tpe=48.9C
+** Event #2687744   t=0.000149407   Elapsed: 2.29394s (0m 02s)  0% completed  (0% total)
+     Speed:     ev/sec=1.17168e+06   simsec/sec=6.51317e-05   ev/simsec=1.79894e+10
+     Messages:  created: 1225   present: 247   in FES: 147
+[PE7] task=6 DONE at t=158.142us actualCompute=38.611us output=140B successors=3
+[PE7] task=6 SENDING 9 flits
+[PE11] task=10 START at t=158.301us nominalTime=15.000us dvfs=1.108 Tpe=49.0C
+[PE10] task=9 START at t=158.333us nominalTime=15.000us dvfs=1.079 Tpe=48.4C
+[PE8] task=7 START at t=158.413us nominalTime=20.000us dvfs=1.062 Tpe=48.1C
+[PE10] task=9 DONE at t=174.518us actualCompute=16.185us output=500B successors=1
+[PE10] task=9 SENDING 32 flits
+[PE11] task=10 DONE at t=174.927us actualCompute=16.627us output=300B successors=1
+[PE11] task=10 SENDING 19 flits
+[PE8] task=7 DONE at t=179.662us actualCompute=21.248us output=50B successors=1
+[PE8] task=7 SENDING 4 flits
+** Event #3243522   t=0.000180261547   Elapsed: 2.63931s (0m 02s)  0% completed  (0% total)
+     Speed:     ev/sec=1.60916e+06   simsec/sec=8.93327e-05   ev/simsec=1.80131e+10
+     Messages:  created: 1665   present: 247   in FES: 147
+
+<!> Simulation stopped with endSimulation() -- in module (TaskPE) ONoCMesh.pe[8] (id=27), at t=0.000180261547s, event #3243522
+
+Calling finish() at end of Run #0...
+
+End.

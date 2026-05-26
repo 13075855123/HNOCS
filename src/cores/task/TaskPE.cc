@@ -444,6 +444,30 @@ void TaskPE::handleMessage(cMessage* msg) {
 }
 
 // -----------------------------------------------------------------------
+// refreshDisplay — Qtenv visualization of optical circuit state
+// -----------------------------------------------------------------------
+void TaskPE::refreshDisplay() const {
+    if (!enableSetupHandshake || numNodes <= 0) return;
+
+    int nReady = 0, nPending = 0;
+    for (int d = 0; d < numNodes; d++) {
+        if (circuitReadyByDst[d]) nReady++;
+        if (setupPendingByDst[d]) nPending++;
+    }
+
+    // Change module icon color: green=active circuit, gold=pending, ""=default
+    if (nReady > 0) {
+        getDisplayString().setTagArg("i", 1, "green");
+    } else if (nPending > 0) {
+        getDisplayString().setTagArg("i", 1, "gold");
+    } else {
+        // Remove color by clearing the i tag (restore default icon)
+        if (getDisplayString().containsTag("i"))
+            getDisplayString().removeTag("i");
+    }
+}
+
+// -----------------------------------------------------------------------
 // finish
 // -----------------------------------------------------------------------
 void TaskPE::finish() {
@@ -688,12 +712,9 @@ void TaskPE::sendOpticalFlitFromQ() {
         dstIdx = numPEs_release + (dstPE - bufferBaseId);
     }
 
-    EV << "-I- TaskPE[" << peId << "] SEND-OPTICAL"
-       << " pktId=" << flit->getPktId()
-       << " flitIdx=" << flit->getFlitIdx()
-       << "/" << (flit->getFlits() - 1)
-       << " dstPE=" << dstPE
-       << " at " << simTime() << endl;
+    printf("[OPTICAL] PE%d SEND-OPTICAL pktId=%d flitIdx=%d/%d dstPE=%d at t=%.6fus\n",
+           peId, flit->getPktId(), flit->getFlitIdx(),
+           flit->getFlits() - 1, dstPE, simTime().dbl() * 1e6);
 
     flit->setInjectTime(simTime());
     lastOpticalSendTime = simTime();
@@ -714,6 +735,8 @@ void TaskPE::sendOpticalFlitFromQ() {
         }
         circuitReadyByDst[dstIdx] = 0;
         activeCircuitTokenByDst[dstIdx] = 0;
+        printf("[OPTICAL] PE%d TEARDOWN circuit to dst=%d token=%d at t=%.6fus\n",
+               peId, dstIdx, token, simTime().dbl() * 1e6);
     }
 
     simtime_t txFinish = simTime() + computeOpticalTxDuration(flit);
@@ -726,9 +749,8 @@ void TaskPE::flushPendingData(int dst) {
         for (TaskMsg* flit : pendingDataQ[dst]) {
             opticalDataQ.insert(flit);
         }
-        EV << "-I- TaskPE[" << peId << "] flushed " << pendingDataQ[dst].size()
-           << " pending flits to opticalDataQ for dst=" << dst
-           << " at " << simTime() << endl;
+        printf("[OPTICAL] PE%d flush %d pending flits to opticalDataQ for dst=%d at t=%.6fus\n",
+               peId, (int)pendingDataQ[dst].size(), dst, simTime().dbl() * 1e6);
         pendingDataQ[dst].clear();
         sendOpticalFlitFromQ();
     }
@@ -1037,6 +1059,8 @@ void TaskPE::sendTaskData(TaskDescriptor* task) {
                     pendingSetupTokenByDst[optIdx] = setupToken;
                     nextSetupAttemptByDst[optIdx] = simTime() + setupRetryDelay;
                     sendControlFlitFromQ();
+                    printf("[OPTICAL] PE%d SETUP_REQ -> PE%d token=%d at t=%.6fus\n",
+                           peId, dstPE, setupToken, simTime().dbl() * 1e6);
                 } else {
                     setupReserveFailCount++;
                     nextSetupAttemptByDst[optIdx] = simTime() + setupRetryDelay;
@@ -1190,6 +1214,8 @@ void TaskPE::handleDataArrival(TaskMsg* msg) {
                     controlQ.insert(ack);
                 }
                 sendControlFlitFromQ();
+                printf("[OPTICAL] PE%d SETUP_REQ rcvd from PE%d -> ACK sent at t=%.6fus\n",
+                       peId, srcPE, simTime().dbl() * 1e6);
             }
         }
 
@@ -1209,6 +1235,8 @@ void TaskPE::handleDataArrival(TaskMsg* msg) {
                 setupPendingByDst[srcIdx] = 0;
                 setupPendingExpiryByDst[srcIdx] = SIMTIME_ZERO;
                 activeCircuitTokenByDst[srcIdx] = pktId;
+                printf("[OPTICAL] PE%d SETUP_ACK rcvd from PE%d -> CIRCUIT READY token=%d at t=%.6fus\n",
+                       peId, srcPE, pktId, simTime().dbl() * 1e6);
                 flushPendingData(srcIdx);
             } else if (!circuitReadyByDst[srcIdx]) {
                 setupAckStaleCount++;

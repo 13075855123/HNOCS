@@ -192,6 +192,7 @@ protected:
     virtual void initialize() override;
     virtual void handleMessage(cMessage* msg) override;
     virtual void finish() override;
+    virtual void refreshDisplay() const override;
     virtual void receiveSignal(cComponent *source, simsignal_t signalID, intval_t value, cObject *details) override;
 
 public:
