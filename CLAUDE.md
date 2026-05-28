@@ -1,6 +1,10 @@
 # HNOCS - Hybrid Network-on-Chip Simulator (OMNeT++)
 
+> **语言**：用中文回答。
+
 > **行为准则**：每次执行文件操作（删除、修改、创建）后，必须用 `test`/`grep`/`ls` 等独立命令验证结果是否真正生效，不得仅凭命令输出（如 `echo "done"`）判断成功。
+> 
+> **测试文件清理**：如果生成测试文件，在测试完成、确定功能实现正确后删去。
 
 > **Git 规则**：每次修改本项目文件后，都必须主动执行 `git add`、`git commit` 和 `git push`，将更改记录到 GitHub。不得跳过此步骤。
 
@@ -11,6 +15,8 @@ OMNeT++ simulation framework for **Hybrid Electrical-Optical Network-on-Chip (HN
 - 4×4 Mesh ONoC，片外激光器 + 片上 5×5 微环路由器 + WDM（8 波长）
 - 任务通过 CSV task graph 分配到 16 个 TaskPE，**静态离线映射**（peId 在 CSV 中固定）
 - Optical bypass: data flit 走 `sendDirect()` 光路直传；SETUP_REQ/ACK 握手走电路由器
+- 5×5 微环光路由器：20 waveguide 交叉点 × 8 WDM 波长 = **160 微环/路由器**
+- 微环静态热调谐：常驻功耗注入 RC thermal model
 - RC thermal model: 2-layer grid (PE + Router), explicit Euler solver, HotSpot-format trace output
 
 ### 关键约定
@@ -159,6 +165,66 @@ void addRouterOpticalPower(int routerId, double power_W);    // 建链时调用
 void removeRouterOpticalPower(int routerId, double power_W); // 拆链时调用
 ```
 
+## 微环热调谐功耗
+
+### 微环数量
+
+5 端口（0=Local, 1=West, 2=North, 3=East, 4=South），每交叉点 8 个微环（每波长一个）：
+
+> **20 有效交叉点 × 8 波长 = 160 微环/路由器**
+
+各方向路径经过的微环数（through + 1 drop）：
+
+| 方向组 | 公式类型 | through 范围(i=1..8) | 最长(i=8) |
+|--------|:---:|:---|:---:|
+| L→W, W→S, N→L, E→N | Type 0: i−1 | 0–7 | 8 |
+| L→S, N→W, E→L, S→E | Type 1: 2n+i−1 | 16–23 | 24 |
+| L→N, L→E, W→L, S→L | Type 2: 3n+i−1 | 24–31 | 32 |
+| W→E, N→S, E→W, S→N | Type 3: 4n | 32（恒定） | 33 |
+| W→N, E→S | Type 4: 4n+i−1 | 32–39 | 40 |
+| **N→E, S→W** | **Type 5: 6n+i−1** | 48–55 | **56** |
+
+（代码位置：`OpticalDeviceModel.cc:70-128`、`buildWavelengthDependentRouterMatrix()`）
+
+### 静态热调谐（已实现）
+
+每个微环需要恒定的加热功率将谐振波长对准目标，这是**常开功耗**，与建链/拆链无关。实现方式：
+
+- **`LogicalTopologyManager::initialize()`** — 计算每路由器调谐功率（`numRings × powerPerRing`），通过 `addRouterOpticalPower()` 注入 RC 热模型（永久，不 remove）
+- **`LogicalTopologyManager::finish()`** — 计算累计能耗 `energy = totalPower × simTime`，记录 scalars
+
+### 相关参数（ONoCGeneral / LogicalTopologyManager）
+
+| 参数 | 默认值 | 说明 |
+|------|--------|------|
+| `opticalRingTuningPower_mW_per_ring` | 2.0 | 每微环静态调谐功率（Dong 2010: 21mW/FSR → ~2mW baseline） |
+| `opticalNumRingsPerRouter` | 160 | 每路由器微环总数（20 交叉点 × 8 波长） |
+
+### 验证命令
+
+```bash
+grep "ring-tuning" results/ONoC_MPEG4-#0.sca
+```
+
+输出示例：
+
+```
+onoc-ring-tuning-rings-per-router          160
+onoc-ring-tuning-power-per-ring-mW         2
+onoc-ring-tuning-power-per-router-mW       320
+onoc-ring-tuning-total-power-W             5.12
+onoc-ring-tuning-total-energy-J            0.000923
+```
+
+### 静态 vs 动态热调谐
+
+| | 静态（已实现） | 动态（待实现） |
+|------|:---:|:---:|
+| 触发条件 | 始终在线 | 温度漂移时动态补偿 |
+| 功耗 | 恒定 = numRings × powerPerRing | 随 ΔT 变化 |
+| 注入方式 | `initialize()` 一次性加入 | 建链/拆链时 add/remove |
+| 代码位置 | `LogicalTopologyManager` | `OpticalDeviceModel` (需 `opticalEnableThermalEffects=true`) |
+
 ## 已实现 / 待实现
 
 ### 已实现
@@ -167,13 +233,77 @@ void removeRouterOpticalPower(int routerId, double power_W); // 拆链时调用
 - 光旁路：`sendDirect()` 数据直传 + 电层 SETUP_REQ/ACK 握手 + 建链/拆链
 - 光功率分光（耦合损耗 + 分光器损耗计入链路预算）
 - 光器件电功耗入热模型（调制器、微环热调谐、SOA、PD+TIA；激光器不计入芯片热模型）
+- 微环静态热调谐功耗（160 环/路由器，常驻 320mW/路由器，16 路由器共 5.12W）
 
 ### 待实现
 
-- 微环热调谐动态更新 → `implementation_plan.md` 第5步
-- 波导交叉损耗 → `implementation_plan.md` 第6步
+- 微环动态热调谐（温度漂移补偿、谐振波长 detuning → 额外插入损耗）
+- 波导交叉损耗
 - 链路预算驱动丢包/重路由（当前 budget 只统计不阻断）
 - 激光器电功耗模型（WPE）
+
+## Python mapping 仿真器 (mapping/)
+
+### 本次对话（2026-05-28）实现/修改
+
+| 文件 | 改动 | 说明 |
+|------|------|------|
+| `mapping/noc_simulator.py` | **重大重写** | 事件驱动 NoC 仿真器，完整移植 OMNeT++ TaskPE + ThermalTrace |
+| `mapping/thermal_simulator.py` | 更新 | 温度修正漏电功率、DVFS、路由器光器件功耗 |
+| `mapping/optical_budget.py` | 更新 | 分光器功率、波导交叉损耗、温度感知效应 |
+| `mapping/cost_model.py` | 更新 | 温度修正有效温度（漏电模型） |
+| `mapping/compare_omnet.py` | **新建** | OMNeT++ vs Python 自动对比工具 |
+| `mapping/__init__.py` | 更新 | 包导出符号 |
+| `mapping/tests/test_cost_model.py` | 修复 | 适配新的漏电模型 |
+| `src/onoc/topologies/ONoCMesh.ned` | **Bug 修复** | pe[] 移到 topologyManager 前，修复 ring tuning 初始化顺序 |
+
+### Python 仿真器能力对照
+
+| 功能 | OMNeT++ 对应 | 验证状态 |
+|------|-------------|:---:|
+| 事件驱动任务调度 + DAG 依赖 | TaskPE | 完成时间偏差 <0.2% |
+| 光握手建链 (SETUP_REQ/ACK) + 波长分配 + 光路直传 + 拆链 | TaskPE + LTM | 光 flit 数精确匹配 |
+| 双层 RC 热模型（PE + Router，邻居耦合） | ThermalTrace | PE 温度峰值偏差 <0.3K |
+| 温度修正漏电功率 exp((T-Tamb)/15) | TaskPE::getTemperatureCorrectedPower | 路由器温度峰值偏差 <0.3K |
+| DVFS 热节流 1+beta*(T-Tthrottle) | TaskPE::getDvfsScaleFactor | DVFS 因子精确匹配 |
+| 能量窗口追踪 100ns（静态+动态分离） | TaskPE::finalizeEnergyWindow | 能耗偏差 <2% |
+| 路由器 InPort 电功耗 (pLeak + buffer + crossbar) | InPortSync | 已实现 |
+| 路由器光器件功耗 (ring tuning 320mW/router) | LTM + ThermalModel | 已实现 |
+| 光功率预算（分光器、SOA ASE、PAM4 BER） | OpticalDeviceModel | 已实现 |
+| Wormhole 切换电气 flit 延迟 | InPortSync + SchedSync | 已实现 |
+
+### 关键参数（匹配 omnetpp.ini [ONoCGeneral]）
+
+| 参数 | 值 | 说明 |
+|------|-----|------|
+| `energy_window` | 100e-9 | 能量窗口周期 |
+| `pend_to` | 200e-9 | SETUP 超时 |
+| `retry_dt` | 50e-9 | SETUP 重试间隔 |
+| `router_pipeline` | 2e-9 | 路由器内部流水线延迟 |
+| `inport_pLeak` | 1e-3 | 每 InPort 漏电功率 |
+| `inport_eBufferWrite` | 1e-12 | Buffer 写能耗 |
+| `inport_eBufferRead` | 1e-12 | Buffer 读能耗 |
+| `inport_eCrossbar` | 0.5e-12 | Crossbar 能耗 |
+| `inport_num_per_router` | 5 | 每路由器 InPort 数 |
+| `optical_ring_tuning_mW_per_ring` | 2.0 | 每微环调谐功率 |
+| `optical_num_rings_per_router` | 160 | 每路由器微环数 |
+
+### OMNeT++ Ring Tuning Bug（已修复）
+
+**问题**：`LogicalTopologyManager::initialize()` 在 `ThermalModel::open()` 之前调用 `addRouterOpticalPower()`，此时 `numRouters==0`（构造器默认值），`addRouterOpticalPower` 中 `routerId >= numRouters` 检查（0>=0）为 true，静默返回，ring tuning 功率从未注入热模型。
+
+**修复**：`ONoCMesh.ned` 中将 `pe[]` 子模块移到 `topologyManager` 之前，确保 `pe[0].initialize()` → `ThermalModel::open()` → `numRouters=16` 先于 `addRouterOpticalPower()` 执行。
+
+**影响**：修复前 OMNeT++ 的 ring tuning 仅有 scalar 报告（参数×时间），无实际热效应。修复后路由器温度提升 ~2.4°C，PE 温度提升 ~1.5°C，DVFS 因子从 1.108 升至 1.182，完成时间从 179.7μs 增至 191.5μs（MPEG4）。
+
+### compare_omnet.py 用法
+
+```bash
+python -m mapping.compare_omnet --all          # 对比全部四个任务图
+python -m mapping.compare_omnet --csv tasks_gemm_static.csv --config ONoC_GEMM
+```
+
+自动提取 OMNeT++ `.sca/.vec` 结果 → 运行 Python 仿真 → 对比完成时间/PE温度/路由器温度/光flit数 → 输出 PASS/FAIL 报告。
 
 ## 能耗统计
 
