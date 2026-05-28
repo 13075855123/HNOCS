@@ -3,13 +3,17 @@ CostModel — thermal-aware joint cost function for task-to-PE mapping.
 
 Cost for assigning task_i to PE_j (evaluated in topological order):
 
-    cost(PE_j, task_i) = w_T * (T_j - Tambient)
+    cost(PE_j, task_i) = w_T * (T_j_corrected - Tambient)
                        + w_H * sum over predecessors p of i:
                            hops(assignment[p], PE_j) * dataSize(p, i)
 
 Communication cost is computed per-edge: each predecessor → task pair
 contributes its data size weighted by Manhattan distance.
 GB predecessors (peId == -1) contribute zero communication cost.
+
+Key updates matching OMNeT++ (2026-05):
+  - Temperature-corrected effective temperature using leakage model
+  - DVFS-aware compute time scaling affects scheduling and thus temperature
 """
 
 from __future__ import annotations
@@ -28,6 +32,9 @@ class CostModel:
     # are penalised even when temperature gradient is absent.
     LOAD_PENALTY = 500.0
 
+    # Leakage temperature divisor (matches OMNeT++ getTemperatureCorrectedPower)
+    LEAKAGE_DIVISOR = 15.0
+
     def __init__(
         self,
         graph: TaskGraph,
@@ -39,7 +46,7 @@ class CostModel:
         cols: int = 4,
     ):
         self.graph = graph
-        self.T = list(pe_temperatures)   # K, indexed by PE id (fallback)
+        self.T_raw = list(pe_temperatures)   # K, indexed by PE id (fallback)
         self.w_T = w_T
         self.w_H = w_H
         self.Tamb = float(Tambient)
@@ -49,7 +56,6 @@ class CostModel:
 
         # Per-task start-time temperatures (from previous simulation round).
         # {task_id: {pe_id: T_K}} — "when task_i started, PE_j was T_K".
-        # If set, task_cost() uses these instead of self.T[pe].
         self._task_start_temps: dict[int, dict[int, float]] = {}
 
         self._hops_cache: dict[tuple[int, int], int] = {}
@@ -59,6 +65,26 @@ class CostModel:
         simulation.  After this, task_cost() will look up T_PE_j at the
         moment task_i started, rather than using a static PE-wide max."""
         self._task_start_temps = temps
+
+    # ------------------------------------------------------------------
+    # Temperature-corrected effective temperature (leakage model)
+    # ------------------------------------------------------------------
+    def _effective_temp(self, temp_K: float) -> float:
+        """Convert raw temperature to effective thermal cost temperature.
+
+        Uses the same leakage model as OMNeT++:
+          leakageFactor = exp((T - Tamb) / 15.0)
+
+        The effective temperature for thermal cost is scaled by the
+        leakage factor to account for the fact that higher temperatures
+        cause exponentially more leakage power.
+        """
+        if temp_K <= self.Tamb:
+            return temp_K
+        leakage_factor = math.exp((temp_K - self.Tamb) / self.LEAKAGE_DIVISOR)
+        # Blend raw temperature with leakage-weighted excess
+        excess = temp_K - self.Tamb
+        return self.Tamb + excess * leakage_factor
 
     # ------------------------------------------------------------------
     # Manhattan distance on 2-D mesh
@@ -88,8 +114,8 @@ class CostModel:
         task_temps = self._task_start_temps.get(task_id)
         if task_temps is not None and pe in task_temps:
             return task_temps[pe]
-        if pe < len(self.T):
-            return self.T[pe]
+        if pe < len(self.T_raw):
+            return self.T_raw[pe]
         return self.Tamb
 
     def task_cost(
@@ -99,7 +125,9 @@ class CostModel:
         assignment: dict[int, int],
     ) -> float:
         node = self.graph.tasks[task_id]
-        thermal = self.w_T * max(0.0, self._pe_temp(task_id, candidate_pe) - self.Tamb)
+        raw_temp = self._pe_temp(task_id, candidate_pe)
+        eff_temp = self._effective_temp(raw_temp)
+        thermal = self.w_T * max(0.0, eff_temp - self.Tamb)
 
         # Communication term: sum over predecessors already assigned
         comm = 0.0
@@ -175,8 +203,10 @@ class CostModel:
             pe = assignment.get(tid)
             if pe is None:
                 continue
-            thermal += self.w_T * max(0.0, self._pe_temp(tid, pe) - self.Tamb)
-            max_t = max(max_t, self._pe_temp(tid, pe))
+            raw_temp = self._pe_temp(tid, pe)
+            eff_temp = self._effective_temp(raw_temp)
+            thermal += self.w_T * max(0.0, eff_temp - self.Tamb)
+            max_t = max(max_t, raw_temp)
 
             for pred_id in node.predecessor_set:
                 pred_node = self.graph.tasks.get(pred_id)

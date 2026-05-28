@@ -1,5 +1,6 @@
 """Tests for cost_model.py — Manhattan distance and cost calculations."""
 
+import math
 import sys
 from pathlib import Path
 
@@ -48,9 +49,13 @@ def test_thermal_term():
     temps[0] = 320.0
     cm = CostModel(g, temps, w_T=1.0, w_H=0.0, Tambient=318.15)
 
-    # Task 1 thermal cost on PE 0: 1.0 * (320 - 318.15) = 1.85
+    # Task 1 thermal cost on PE 0 with leakage-corrected temp:
+    #   leakageFactor = exp((320 - 318.15) / 15.0) ≈ 1.1313
+    #   eff_excess = 1.85 * 1.1313 ≈ 2.093
+    #   thermal = 1.0 * 2.093 ≈ 2.093
     cost = cm.task_cost(1, 0, {})
-    assert abs(cost - 1.85) < 0.01
+    expected = 1.85 * math.exp(1.85 / 15.0)
+    assert abs(cost - expected) < 0.01
 
     # Task 1 on PE 2 (at Tambient): cost = 0
     cost = cm.task_cost(1, 2, {})
