@@ -95,6 +95,14 @@ network ONoCMesh
         double wHopCount = default(0.5);
 
     submodules:
+        // TaskPE per router — MUST come first so pe[0].initialize() calls
+        // ThermalModel::open() BEFORE topologyManager adds ring tuning power.
+        pe[columns * rows]: TaskPE {
+            parameters:
+                id = index;
+                @display("p=150,150,matrix,$columns,150,150");
+        }
+
         // Central manager that owns the logical adjacency graph A(t).
         topologyManager: LogicalTopologyManager {
             parameters:
@@ -153,13 +161,6 @@ network ONoCMesh
             gates:
                 in[5];
                 out[5];
-        }
-
-        // TaskPE per router.
-        pe[columns * rows]: TaskPE {
-            parameters:
-                id = index;
-                @display("p=150,150,matrix,$columns,150,150");
         }
 
         // GlobalBuffer for task distribution
