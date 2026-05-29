@@ -45,10 +45,13 @@ simple LogicalTopologyManager
     double opticalTambient_K = default(318.15);
     double opticalThermoOpticCoeff_nm_per_K = default(0.1);
     double opticalTuningEfficiency_mW_per_nm = default(0.5);
-    double opticalSoaPumpPower_mW = default(15.0);   // SOA electrical pump power per device
+    double opticalSoaPumpPower_mW = default(80.0);   // SOA electrical pump power per device (256 Gbps PAM4: ~80 mW for 13 dB gain, 128 GBaud)
     double opticalRingIL_TempCoeff_dB_per_K = default(0.02);
     double opticalSoaGain_TempCoeff_dB_per_K = default(0.05);
     double opticalWaveguideLoss_TempCoeff_dB_per_cm_per_K = default(0.001);
+        // Baseline microring thermal tuning — static always-on power per ring
+        double opticalRingTuningPower_mW_per_ring = default(2.0);
+        int opticalNumRingsPerRouter = default(160);
         @display("i=block/cogwheel");
 
         // Deprecated (retained for IDE compat)

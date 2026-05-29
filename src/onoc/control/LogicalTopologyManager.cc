@@ -56,6 +56,11 @@ LogicalTopologyManager::LogicalTopologyManager() {
     opticalBudgetComputations = 0;
     opticalWavelengthEvaluations = 0;
     opticalWavelengthStrategy = "lowest";
+    opticalRingTuningPower_mW_per_ring = 0.0;
+    opticalNumRingsPerRouter = 0;
+    totalRingTuningEnergy_J = 0.0;
+    totalSoaEnergy_J = 0.0;
+    totalSoaCircuitHops = 0;
 }
 
 // Cancel and delete all scheduled topology switch messages.
@@ -815,6 +820,9 @@ void LogicalTopologyManager::initialize() {
     wgDistances.sourceToModulator_cm = par("opticalWaveguideSourceToMod_cm");
     wgDistances.demodulatorToPD_cm = par("opticalWaveguideDemodToPD_cm");
     wgDistances.routerToDemodulator_cm = wgDistances.modulatorToRouter_cm; // symmetric
+    opticalRingTuningPower_mW_per_ring = par("opticalRingTuningPower_mW_per_ring");
+    opticalNumRingsPerRouter = par("opticalNumRingsPerRouter");
+    totalRingTuningEnergy_J = 0.0;
     logOpticalAllocDecisions = par("logOpticalAllocDecisions");
     logTopologyTransitions = par("logTopologyTransitions");
     if (hasPar("physicalTopology")) {
@@ -880,6 +888,23 @@ void LogicalTopologyManager::initialize() {
 
     std::string switchSpec = par("topologySwitches").stringValue();
     scheduleTopologySwitches(switchSpec);
+
+    // ---- baseline microring thermal tuning power (always-on, per-router) ----
+    if (opticalRingTuningPower_mW_per_ring > 0.0 && opticalNumRingsPerRouter > 0) {
+        double routerTuningPower_mW = opticalNumRingsPerRouter
+                                    * opticalRingTuningPower_mW_per_ring;
+        double routerTuningPower_W = routerTuningPower_mW * 1e-3;
+        ThermalModel *tm = getThermalModel();
+        if (tm) {
+            for (int r = 0; r < numNodes; r++) {
+                tm->addRouterOpticalPower(r, routerTuningPower_W);
+            }
+            EV << "-I- " << getFullPath()
+               << " baseline ring tuning: " << numNodes << " routers × "
+               << routerTuningPower_mW << " mW = "
+               << numNodes * routerTuningPower_mW << " mW total\n";
+        }
+    }
 }
 
 void LogicalTopologyManager::handleMessage(cMessage *msg) {
@@ -950,6 +975,48 @@ void LogicalTopologyManager::finish() {
             recordScalar("onoc-optical-avg-tuning-power-mW",
                     totalOpticalTuningPower_mW / opticalBudgetComputations);
         }
+    }
+
+    // Baseline microring thermal tuning energy
+    if (opticalRingTuningPower_mW_per_ring > 0.0 && opticalNumRingsPerRouter > 0) {
+        double routerPwr_mW = opticalNumRingsPerRouter
+                            * opticalRingTuningPower_mW_per_ring;
+        double totalPwr_W = numNodes * routerPwr_mW * 1e-3;
+        totalRingTuningEnergy_J = totalPwr_W * simTime().dbl();
+        recordScalar("onoc-ring-tuning-rings-per-router",
+                     static_cast<double>(opticalNumRingsPerRouter));
+        recordScalar("onoc-ring-tuning-power-per-ring-mW",
+                     opticalRingTuningPower_mW_per_ring);
+        recordScalar("onoc-ring-tuning-power-per-router-mW", routerPwr_mW);
+        recordScalar("onoc-ring-tuning-total-power-W", totalPwr_W);
+        recordScalar("onoc-ring-tuning-total-energy-J", totalRingTuningEnergy_J);
+    }
+
+    // ── SOA electrical energy: account for still-active circuits ──
+    for (std::map<int, OpticalPacketAllocation>::const_iterator it =
+            opticalPacketAllocations.begin();
+            it != opticalPacketAllocations.end(); ++it) {
+        const OpticalPacketAllocation &alloc = it->second;
+        int soaCount = static_cast<int>(alloc.pathEdges.size());
+        simtime_t duration = simTime() - alloc.setupTime;
+        if (duration > 0 && soaCount > 0) {
+            double energy_J = soaCount * opticalSoaPumpPower_mW * 1e-3 * duration.dbl();
+            totalSoaEnergy_J += energy_J;
+            totalSoaCircuitHops += soaCount;
+        }
+    }
+
+    // Record SOA energy scalars
+    recordScalar("onoc-soa-pump-power-mW", opticalSoaPumpPower_mW);
+    recordScalar("onoc-soa-total-energy-J", totalSoaEnergy_J);
+    recordScalar("onoc-soa-total-circuit-hops", static_cast<double>(totalSoaCircuitHops));
+    if (simTime() > 0) {
+        recordScalar("onoc-soa-average-power-W",
+                totalSoaEnergy_J / simTime().dbl());
+    }
+    if (totalSoaCircuitHops > 0) {
+        recordScalar("onoc-soa-energy-per-hop-J",
+                totalSoaEnergy_J / static_cast<double>(totalSoaCircuitHops));
     }
 }
 
@@ -1572,6 +1639,7 @@ bool LogicalTopologyManager::tryAllocateOpticalPathForPacket(int srcId,
         alloc.spatialChannel = spatial;
         alloc.wavelengths = bestWls;
         alloc.pathEdges = pathEdges;
+        alloc.setupTime = simTime();
         opticalPacketAllocations[pktId] = alloc;
 
         selectedSpatialChannel = spatial;
@@ -1687,6 +1755,17 @@ void LogicalTopologyManager::releaseOpticalPathForPacket(int pktId) {
         if (tm) {
             for (size_t i = 0; i < alloc.pathRouters.size(); ++i)
                 tm->removeRouterOpticalPower(alloc.pathRouters[i], totalPower_mW * 1e-3);
+        }
+    }
+
+    // Accumulate SOA electrical energy: one SOA per hop
+    {
+        int soaCount = static_cast<int>(alloc.pathEdges.size());
+        simtime_t duration = simTime() - alloc.setupTime;
+        if (duration > 0 && soaCount > 0) {
+            double energy_J = soaCount * opticalSoaPumpPower_mW * 1e-3 * duration.dbl();
+            totalSoaEnergy_J += energy_J;
+            totalSoaCircuitHops += soaCount;
         }
     }
 

@@ -123,6 +123,27 @@ Task完成 → data flit 全部进 pendingDataQ
 | `opticalModulatorEnergyPerFlit` | 调制器驱动能耗 (2pJ/flit) | NED 参数 |
 | `opticalReceiverEnergyPerFlit` | PD+TIA 能耗 (1pJ/flit) | NED 参数 |
 
+### SOA 电能耗追踪（2026-05-29 新增）
+
+每条光路建立时记录 `setupTime`，拆除时按电路持续时间累计 SOA 电能：
+```
+energy_J = SOA数量(跳数) × opticalSoaPumpPower_mW × 1e-3 × 持续时间(s)
+```
+
+验证命令：
+```bash
+grep "onoc-soa" results/ONoC_MPEG4-#0.sca
+```
+
+输出示例：
+```
+onoc-soa-pump-power-mW       80
+onoc-soa-total-energy-J      6.89e-07      # 全仿真 SOA 总电能
+onoc-soa-total-circuit-hops  44            # 所有光路 SOA·跳 累计
+onoc-soa-average-power-W     0.00360       # 时间平均功率
+onoc-soa-energy-per-hop-J    1.57e-08      # 每 SOA·跳 平均 15.7 nJ
+```
+
 ### 日志控制
 
 - `**.cmdenv-log-level = off` → 压制所有 `EV <<` 日志
@@ -149,7 +170,7 @@ PE 调制 → WDM 波导 → 5×5 微环路由器 (XY) → 目的 PE 解调 → 
 | `opticalNumSplitBranches` | 16 | 1×N 分光器路数 |
 | `opticalCouplingLoss_dB` | 3.0 | 光栅耦合损耗 |
 | `opticalSplitterExcessLoss_dB` | 1.0 | 分光器额外损耗 |
-| `opticalSoaPumpPower_mW` | 15.0 | SOA 电泵浦功耗 |
+| `opticalSoaPumpPower_mW` | 80.0 | SOA 电泵浦功耗（256 Gbps PAM4 128 GBaud，13 dB 增益） |
 
 ### TaskPE 参数
 
@@ -234,6 +255,7 @@ onoc-ring-tuning-total-energy-J            0.000923
 - 光功率分光（耦合损耗 + 分光器损耗计入链路预算）
 - 光器件电功耗入热模型（调制器、微环热调谐、SOA、PD+TIA；激光器不计入芯片热模型）
 - 微环静态热调谐功耗（160 环/路由器，常驻 320mW/路由器，16 路由器共 5.12W）
+- SOA 电能耗追踪（按电路持续时间累计，5 个 scalar：pump-power / total-energy / circuit-hops / average-power / energy-per-hop）
 
 ### 待实现
 

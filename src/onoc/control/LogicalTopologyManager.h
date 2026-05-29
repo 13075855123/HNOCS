@@ -75,6 +75,15 @@ class LogicalTopologyManager : public cSimpleModule {
     mutable int opticalBudgetComputations;
     mutable int opticalWavelengthEvaluations;  // #candidates evaluated per allocation
 
+    // Baseline microring thermal tuning — static always-on power
+    double opticalRingTuningPower_mW_per_ring;
+    int    opticalNumRingsPerRouter;
+    double totalRingTuningEnergy_J;
+
+    // SOA electrical energy tracking
+    double totalSoaEnergy_J;
+    long long totalSoaCircuitHops;
+
     // Waveguide distance parameters (cm)
     OpticalWaveguideDistances wgDistances;
 
@@ -93,6 +102,7 @@ class LogicalTopologyManager : public cSimpleModule {
       std::vector<int> pathRouters;     // routers on the optical path
       double tuningPowerPerRouter_mW;   // tuning power added to each router
       double soaPowerPerRouter_mW;      // SOA pump power added to each router
+      simtime_t setupTime;              // simtime when circuit was established
     };
     std::map<int, OpticalPacketAllocation> opticalPacketAllocations;
     mutable std::map<int, OpticalPathMetrics> cachedBudgets;  // pre-computed at reservation time
