@@ -6,8 +6,6 @@
 > 
 > **测试文件清理**：如果生成测试文件，在测试完成、确定功能实现正确后删去。
 
-> **Git 规则**：每次修改本项目文件后，都必须主动执行 `git add`、`git commit` 和 `git push`，将更改记录到 GitHub。不得跳过此步骤。
-
 ## Project Overview
 
 OMNeT++ simulation framework for **Hybrid Electrical-Optical Network-on-Chip (HNOCS)**.
@@ -278,6 +276,17 @@ onoc-ring-tuning-total-energy-J            0.000923
 | `mapping/__init__.py` | 更新 | 包导出符号 |
 | `mapping/tests/test_cost_model.py` | 修复 | 适配新的漏电模型 |
 | `src/onoc/topologies/ONoCMesh.ned` | **Bug 修复** | pe[] 移到 topologyManager 前，修复 ring tuning 初始化顺序 |
+
+### 本次对话（2026-05-29）实现/修改
+
+| 文件 | 改动 | 说明 |
+|------|------|------|
+| `src/onoc/control/LogicalTopologyManager.h` | 新增字段 | `OpticalPacketAllocation.setupTime`，`totalSoaEnergy_J`，`totalSoaCircuitHops` |
+| `src/onoc/control/LogicalTopologyManager.cc` | SOA 能耗追踪 | 建链记录时间、拆链累计、finish 残留处理、5 个 scalar |
+| `src/onoc/control/LogicalTopologyManager.ned` | 参数更新 | `opticalSoaPumpPower_mW` 15→80 |
+| `mapping/noc_simulator.py` | SOA 能耗同步 | 泵浦功率 15→80，新增 `_circuit_soa` 追踪，run() 输出 5 个 SOA 统计 |
+| `mapping/thermal_simulator.py` | 参数同步 | `opticalSoaPump_mW` 15→80 |
+| `paper/20260529.md` | **新建** | SOA 放置分析 + 能耗追踪实现文档 |
 
 ### Python 仿真器能力对照
 
