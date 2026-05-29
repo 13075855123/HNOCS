@@ -180,7 +180,7 @@ class NoCSimulator:
                  # Energy window
                  energy_window=100e-9,
                  # Optical device power
-                 optical_soa_pump_mW=15.0,
+                 optical_soa_pump_mW=80.0,
                  optical_ring_tuning_mW_per_ring=0.0,
                  optical_num_rings_per_router=0,
                  # Compute density (ns/B, 0 = use CSV compute time)
@@ -230,6 +230,11 @@ class NoCSimulator:
         self.optical_soa_pump_mW = optical_soa_pump_mW
         self.optical_ring_tuning_mW_per_ring = optical_ring_tuning_mW_per_ring
         self.optical_num_rings_per_router = optical_num_rings_per_router
+
+        # SOA electrical energy tracking
+        self.total_soa_energy_J = 0.0
+        self.total_soa_circuit_hops = 0
+        self._circuit_soa = {}  # token → (setup_time, soa_count)
 
         # Router InPort power parameters
         self.inport_pLeak = inport_pLeak
@@ -658,11 +663,29 @@ class NoCSimulator:
             self._accumulate_pe_static_energy(pe)
             self._finalize_energy_window(pe)
 
+        # Account for residual SOA circuits at simulation end
+        for token, (setup_t, soa_count) in list(self._circuit_soa.items()):
+            duration = self.t - setup_t
+            if duration > 0 and soa_count > 0:
+                energy_J = soa_count * self.optical_soa_pump_mW * 1e-3 * duration
+                self.total_soa_energy_J += energy_J
+                self.total_soa_circuit_hops += soa_count
+            del self._circuit_soa[token]
+
+        soa_avg_power_W = (self.total_soa_energy_J / self.t) if self.t > 0 else 0.0
+        soa_energy_per_hop_J = (self.total_soa_energy_J / self.total_soa_circuit_hops
+                                if self.total_soa_circuit_hops > 0 else 0.0)
+
         return {"t": self.t, "ack": self.ack_ok, "stale": self.ack_st,
                 "to": self.to, "fail": self.sf, "ofl": self.ofl,
                 "evals": self.wl._evaluations, "events": n,
                 "pe_temps_K": list(self._T_pe),
-                "router_temps_K": list(self._T_router)}
+                "router_temps_K": list(self._T_router),
+                "soa_pump_power_mW": self.optical_soa_pump_mW,
+                "soa_total_energy_J": self.total_soa_energy_J,
+                "soa_total_circuit_hops": self.total_soa_circuit_hops,
+                "soa_avg_power_W": soa_avg_power_W,
+                "soa_energy_per_hop_J": soa_energy_per_hop_J}
 
     # ═══════════════ Task execution ═══════════════
 
@@ -1027,6 +1050,10 @@ class NoCSimulator:
         if self.op.enableSOA and len(path_nodes) > 0:
             soa_per_router = self.optical_soa_pump_mW * len(path_nodes) / num_routers
 
+        # Record SOA tracking info: setup time + hop count
+        soa_count = len(path_nodes) if self.op.enableSOA else 0
+        self._circuit_soa[token] = (self.t, soa_count)
+
         total_per_router_W = (tuning_per_router + soa_per_router) * 1e-3
         if total_per_router_W > 0:
             self._bid[token] = budget  # store for release
@@ -1047,7 +1074,17 @@ class NoCSimulator:
         total_mW = budget.totalTuningPower_mW
         if total_mW <= 0 and not self.op.enableSOA:
             del self._bid[token]
+            self._circuit_soa.pop(token, None)
             return
+
+        # Accumulate SOA electrical energy
+        if token in self._circuit_soa:
+            setup_t, soa_count = self._circuit_soa.pop(token)
+            duration = self.t - setup_t
+            if duration > 0 and soa_count > 0:
+                energy_J = soa_count * self.optical_soa_pump_mW * 1e-3 * duration
+                self.total_soa_energy_J += energy_J
+                self.total_soa_circuit_hops += soa_count
 
         # The budget doesn't store the path, so we estimate
         # In a full implementation, we'd store path with each circuit token

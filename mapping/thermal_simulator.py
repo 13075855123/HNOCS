@@ -68,7 +68,7 @@ class SimParams:
     schedClk:       float = 8e-9     # scheduler clock = flitTxTime
 
     # Optical device power (for router thermal model)
-    opticalSoaPump_mW: float = 15.0
+    opticalSoaPump_mW: float = 80.0
     opticalRingTuning_mW_per_ring: float = 0.0
     opticalNumRingsPerRouter: int = 0
 
