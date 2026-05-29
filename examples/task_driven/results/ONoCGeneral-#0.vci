@@ -1,0 +1,1621 @@
+file 12705315 1780040770                                        
+version 3
+run ONoCGeneral-0-20260529-15:46:10-7732
+attr configname ONoCGeneral
+attr datetime 20260529-15:46:10
+attr datetimef 20260529-154610
+attr experiment ONoCGeneral
+attr inifile omnetpp.ini
+attr iterationvars ""
+attr iterationvarsd ""
+attr iterationvarsf ""
+attr measurement ""
+attr network hnocs.onoc.topologies.ONoCMesh
+attr processid 7732
+attr repetition 0
+attr replication #0
+attr resultdir results
+attr runnumber 0
+attr seedset 0
+config sim-time-limit 50us
+config network hnocs.onoc.topologies.ONoCMesh
+config sim-time-limit 20ms
+config record-eventlog false
+config **.vector-recording true
+config **.cmdenv-log-level off
+config **.rows 4
+config **.columns 4
+config **.routerType "\"hnocs.routers.hier.Router\""
+config **.portType "\"hnocs.routers.hier.Port\""
+config **.inPortType "\"hnocs.routers.hier.inPort.InPortSync\""
+config **.OPCalcType "\"hnocs.onoc.routing.ReconfigurableOPCalc\""
+config **.coreType "\"hnocs.cores.task.TaskPE\""
+config **.VCCalcType "\"hnocs.routers.hier.vcCalc.free.FLUVCCalc\""
+config **.schedType "\"hnocs.routers.hier.sched.wormhole.SchedSync\""
+config **.numVCs 4
+config **.flitSize 16B
+config **.statStartTime 1us
+config **.csvFile "\"tasks_mpeg4_static.csv\""
+config **.bufferBaseId 1000
+config **.pe[*].enableEnergyWindow true
+config **.pe[*].enablePowerTrace true
+config **.pe[*].powerTraceFile "\"power_trace.csv\""
+config **.pe[*].powerIdle 0.5W
+config **.pe[*].powerCompute 2.0W
+config **.pe[*].powerSendPerFlit 1e-10J
+config **.pe[*].powerRecvPerFlit 5e-11J
+config **.pe[*].energyWindow 100ns
+config **.pe[*].computeDensity 0
+config **.initialTopology "\"mesh\""
+config **.physicalTopology "\"mesh\""
+config **.enableSetupHandshake true
+config **.enableOpticalBypass true
+config **.pe[*].setupRetryDelay 50ns
+config **.pe[*].setupPendingTimeout 200ns
+config **.pe[*].opticalRequiredWavelengths 2
+config **.pe[*].opticalWavelengthBitrate 256Gbps
+config **.pe[*].opticalBasePropagationDelay 0.5ns
+config **.pe[*].opticalPerHopDelay 0.1ns
+config **.pe[*].opticalBurstSize 1
+config **.opticalEnableThermalEffects false
+config **.opticalRingTuningPower_mW_per_ring 2.0
+config **.opticalNumRingsPerRouter 160
+config **.opticalWavelengthStrategy "\"lowest\""
+config **.defaultOpticalWavelengths 2
+config **.maxOpticalWavelengths 8
+config **.numOpticalSpatialChannels 2
+config **.opticalLaunchPower_dBm 0.0
+config **.opticalReceiverSensitivity_dBm -18.0
+config **.opticalSourceModulatorLoss_dB 2.0
+config **.opticalHopInsertionLoss_dB 0.5
+config **.opticalHopCrosstalkLoss_dB 0.1
+config **.opticalReceiverDemodulatorLoss_dB 2.0
+config **.inPort.flitsPerVC 4
+config **.inPort.collectPerHopWait false
+config **.inPort.energyWindow 100ns
+config **.inPort.enableEnergyWindow true
+config **.inPort.eBufferWrite 1e-12J
+config **.inPort.eBufferRead 1e-12J
+config **.inPort.eCrossbar 0.5e-12J
+config **.inPort.pLeak 1e-3W
+config **.RconvPE 8
+config **.RconvRouter 10
+config **.RlateralPE 15
+config **.RlateralRouter 15
+config **.Rpe2router 3
+config **.Cpe 1e-6
+config **.Crouter 2e-7
+config **.Tambient 318.15
+config **.Tthrottle 320.0
+config **.throttleBeta 0.05
+config **.sched.arbitration_type 0
+config **.sched.freeRunningClk false
+config result-dir results
+config network hnocs.topologies.TaskMesh
+config sim-time-limit 20ms
+config record-eventlog false
+config **.vector-recording true
+config **.cmdenv-log-level error
+config **.rows 4
+config **.columns 4
+config **.coreType "\"hnocs.cores.task.TaskPE\""
+config **.routerType "\"hnocs.routers.hier.Router\""
+config **.portType "\"hnocs.routers.hier.Port\""
+config **.inPortType "\"hnocs.routers.hier.inPort.InPortSync\""
+config **.OPCalcType "\"hnocs.routers.hier.opCalc.static.XYOPCalc\""
+config **.VCCalcType "\"hnocs.routers.hier.vcCalc.free.FLUVCCalc\""
+config **.schedType "\"hnocs.routers.hier.sched.wormhole.SchedSync\""
+config **.bufferBaseId 1000
+config **.csvFile "\"tasks_mpeg4_static.csv\""
+config **.numVCs 4
+config **.flitSize 16B
+config **.statStartTime 1us
+config **.pe[*].enableEnergyWindow true
+config **.pe[*].enablePowerTrace true
+config **.pe[*].powerTraceFile "\"power_trace.csv\""
+config **.pe[*].powerIdle 0.5W
+config **.pe[*].powerCompute 2.0W
+config **.pe[*].powerSendPerFlit 1e-10J
+config **.pe[*].powerRecvPerFlit 5e-11J
+config **.pe[*].energyWindow 100ns
+config **.pe[*].computeDensity 0
+config **.inPort.flitsPerVC 4
+config **.inPort.collectPerHopWait false
+config **.inPort.energyWindow 100ns
+config **.inPort.enableEnergyWindow true
+config **.inPort.eBufferWrite 1e-12J
+config **.inPort.eBufferRead 1e-12J
+config **.inPort.eCrossbar 0.5e-12J
+config **.inPort.pLeak 1e-3W
+config **.sched.arbitration_type 0
+config **.sched.freeRunningClk false
+config **.heterogeneous false
+config **.givenTclk false
+config **.tClk 1ns
+config **.RconvPE 8
+config **.RconvRouter 10
+config **.RlateralPE 15
+config **.RlateralRouter 15
+config **.Rpe2router 3
+config **.Cpe 1e-6
+config **.Crouter 2e-7
+config **.Tambient 318.15
+config **.Tthrottle 320.0
+config **.throttleBeta 0.05
+config result-dir results
+
+vector 0 ONoCMesh.pe[0] pe-window-energy ETV
+vector 1 ONoCMesh.pe[0] pe-window-static-energy ETV
+vector 2 ONoCMesh.pe[0] pe-window-dynamic-energy ETV
+vector 3 ONoCMesh.pe[0] pe-cumulative-energy ETV
+vector 4 ONoCMesh.pe[0] pe-cumulative-static-energy ETV
+vector 5 ONoCMesh.pe[0] pe-cumulative-dynamic-energy ETV
+vector 6 ONoCMesh.pe[0] pe-window-avg-power ETV
+vector 7 ONoCMesh.pe[0] pe-die-temperature ETV
+vector 8 ONoCMesh.pe[1] pe-window-energy ETV
+vector 9 ONoCMesh.pe[1] pe-window-static-energy ETV
+vector 10 ONoCMesh.pe[1] pe-window-dynamic-energy ETV
+vector 11 ONoCMesh.pe[1] pe-cumulative-energy ETV
+vector 12 ONoCMesh.pe[1] pe-cumulative-static-energy ETV
+vector 13 ONoCMesh.pe[1] pe-cumulative-dynamic-energy ETV
+vector 14 ONoCMesh.pe[1] pe-window-avg-power ETV
+vector 15 ONoCMesh.pe[1] pe-die-temperature ETV
+vector 16 ONoCMesh.pe[2] pe-window-energy ETV
+vector 17 ONoCMesh.pe[2] pe-window-static-energy ETV
+vector 18 ONoCMesh.pe[2] pe-window-dynamic-energy ETV
+vector 19 ONoCMesh.pe[2] pe-cumulative-energy ETV
+vector 20 ONoCMesh.pe[2] pe-cumulative-static-energy ETV
+vector 21 ONoCMesh.pe[2] pe-cumulative-dynamic-energy ETV
+vector 22 ONoCMesh.pe[2] pe-window-avg-power ETV
+vector 23 ONoCMesh.pe[2] pe-die-temperature ETV
+vector 24 ONoCMesh.pe[3] pe-window-energy ETV
+vector 25 ONoCMesh.pe[3] pe-window-static-energy ETV
+vector 26 ONoCMesh.pe[3] pe-window-dynamic-energy ETV
+vector 27 ONoCMesh.pe[3] pe-cumulative-energy ETV
+vector 28 ONoCMesh.pe[3] pe-cumulative-static-energy ETV
+vector 29 ONoCMesh.pe[3] pe-cumulative-dynamic-energy ETV
+vector 30 ONoCMesh.pe[3] pe-window-avg-power ETV
+vector 31 ONoCMesh.pe[3] pe-die-temperature ETV
+vector 32 ONoCMesh.pe[4] pe-window-energy ETV
+vector 33 ONoCMesh.pe[4] pe-window-static-energy ETV
+vector 34 ONoCMesh.pe[4] pe-window-dynamic-energy ETV
+vector 35 ONoCMesh.pe[4] pe-cumulative-energy ETV
+vector 36 ONoCMesh.pe[4] pe-cumulative-static-energy ETV
+vector 37 ONoCMesh.pe[4] pe-cumulative-dynamic-energy ETV
+vector 38 ONoCMesh.pe[4] pe-window-avg-power ETV
+vector 39 ONoCMesh.pe[4] pe-die-temperature ETV
+vector 40 ONoCMesh.pe[5] pe-window-energy ETV
+vector 41 ONoCMesh.pe[5] pe-window-static-energy ETV
+vector 42 ONoCMesh.pe[5] pe-window-dynamic-energy ETV
+vector 43 ONoCMesh.pe[5] pe-cumulative-energy ETV
+vector 44 ONoCMesh.pe[5] pe-cumulative-static-energy ETV
+vector 45 ONoCMesh.pe[5] pe-cumulative-dynamic-energy ETV
+vector 46 ONoCMesh.pe[5] pe-window-avg-power ETV
+vector 47 ONoCMesh.pe[5] pe-die-temperature ETV
+vector 48 ONoCMesh.pe[6] pe-window-energy ETV
+vector 49 ONoCMesh.pe[6] pe-window-static-energy ETV
+vector 50 ONoCMesh.pe[6] pe-window-dynamic-energy ETV
+vector 51 ONoCMesh.pe[6] pe-cumulative-energy ETV
+vector 52 ONoCMesh.pe[6] pe-cumulative-static-energy ETV
+vector 53 ONoCMesh.pe[6] pe-cumulative-dynamic-energy ETV
+vector 54 ONoCMesh.pe[6] pe-window-avg-power ETV
+vector 55 ONoCMesh.pe[6] pe-die-temperature ETV
+vector 56 ONoCMesh.pe[7] pe-window-energy ETV
+vector 57 ONoCMesh.pe[7] pe-window-static-energy ETV
+vector 58 ONoCMesh.pe[7] pe-window-dynamic-energy ETV
+vector 59 ONoCMesh.pe[7] pe-cumulative-energy ETV
+vector 60 ONoCMesh.pe[7] pe-cumulative-static-energy ETV
+vector 61 ONoCMesh.pe[7] pe-cumulative-dynamic-energy ETV
+vector 62 ONoCMesh.pe[7] pe-window-avg-power ETV
+vector 63 ONoCMesh.pe[7] pe-die-temperature ETV
+vector 64 ONoCMesh.pe[8] pe-window-energy ETV
+vector 65 ONoCMesh.pe[8] pe-window-static-energy ETV
+vector 66 ONoCMesh.pe[8] pe-window-dynamic-energy ETV
+vector 67 ONoCMesh.pe[8] pe-cumulative-energy ETV
+vector 68 ONoCMesh.pe[8] pe-cumulative-static-energy ETV
+vector 69 ONoCMesh.pe[8] pe-cumulative-dynamic-energy ETV
+vector 70 ONoCMesh.pe[8] pe-window-avg-power ETV
+vector 71 ONoCMesh.pe[8] pe-die-temperature ETV
+vector 72 ONoCMesh.pe[9] pe-window-energy ETV
+vector 73 ONoCMesh.pe[9] pe-window-static-energy ETV
+vector 74 ONoCMesh.pe[9] pe-window-dynamic-energy ETV
+vector 75 ONoCMesh.pe[9] pe-cumulative-energy ETV
+vector 76 ONoCMesh.pe[9] pe-cumulative-static-energy ETV
+vector 77 ONoCMesh.pe[9] pe-cumulative-dynamic-energy ETV
+vector 78 ONoCMesh.pe[9] pe-window-avg-power ETV
+vector 79 ONoCMesh.pe[9] pe-die-temperature ETV
+vector 80 ONoCMesh.pe[10] pe-window-energy ETV
+vector 81 ONoCMesh.pe[10] pe-window-static-energy ETV
+vector 82 ONoCMesh.pe[10] pe-window-dynamic-energy ETV
+vector 83 ONoCMesh.pe[10] pe-cumulative-energy ETV
+vector 84 ONoCMesh.pe[10] pe-cumulative-static-energy ETV
+vector 85 ONoCMesh.pe[10] pe-cumulative-dynamic-energy ETV
+vector 86 ONoCMesh.pe[10] pe-window-avg-power ETV
+vector 87 ONoCMesh.pe[10] pe-die-temperature ETV
+vector 88 ONoCMesh.pe[11] pe-window-energy ETV
+vector 89 ONoCMesh.pe[11] pe-window-static-energy ETV
+vector 90 ONoCMesh.pe[11] pe-window-dynamic-energy ETV
+vector 91 ONoCMesh.pe[11] pe-cumulative-energy ETV
+vector 92 ONoCMesh.pe[11] pe-cumulative-static-energy ETV
+vector 93 ONoCMesh.pe[11] pe-cumulative-dynamic-energy ETV
+vector 94 ONoCMesh.pe[11] pe-window-avg-power ETV
+vector 95 ONoCMesh.pe[11] pe-die-temperature ETV
+vector 96 ONoCMesh.pe[12] pe-window-energy ETV
+vector 97 ONoCMesh.pe[12] pe-window-static-energy ETV
+vector 98 ONoCMesh.pe[12] pe-window-dynamic-energy ETV
+vector 99 ONoCMesh.pe[12] pe-cumulative-energy ETV
+vector 100 ONoCMesh.pe[12] pe-cumulative-static-energy ETV
+vector 101 ONoCMesh.pe[12] pe-cumulative-dynamic-energy ETV
+vector 102 ONoCMesh.pe[12] pe-window-avg-power ETV
+vector 103 ONoCMesh.pe[12] pe-die-temperature ETV
+vector 104 ONoCMesh.pe[13] pe-window-energy ETV
+vector 105 ONoCMesh.pe[13] pe-window-static-energy ETV
+vector 106 ONoCMesh.pe[13] pe-window-dynamic-energy ETV
+vector 107 ONoCMesh.pe[13] pe-cumulative-energy ETV
+vector 108 ONoCMesh.pe[13] pe-cumulative-static-energy ETV
+vector 109 ONoCMesh.pe[13] pe-cumulative-dynamic-energy ETV
+vector 110 ONoCMesh.pe[13] pe-window-avg-power ETV
+vector 111 ONoCMesh.pe[13] pe-die-temperature ETV
+vector 112 ONoCMesh.pe[14] pe-window-energy ETV
+vector 113 ONoCMesh.pe[14] pe-window-static-energy ETV
+vector 114 ONoCMesh.pe[14] pe-window-dynamic-energy ETV
+vector 115 ONoCMesh.pe[14] pe-cumulative-energy ETV
+vector 116 ONoCMesh.pe[14] pe-cumulative-static-energy ETV
+vector 117 ONoCMesh.pe[14] pe-cumulative-dynamic-energy ETV
+vector 118 ONoCMesh.pe[14] pe-window-avg-power ETV
+vector 119 ONoCMesh.pe[14] pe-die-temperature ETV
+vector 120 ONoCMesh.pe[15] pe-window-energy ETV
+vector 121 ONoCMesh.pe[15] pe-window-static-energy ETV
+vector 122 ONoCMesh.pe[15] pe-window-dynamic-energy ETV
+vector 123 ONoCMesh.pe[15] pe-cumulative-energy ETV
+vector 124 ONoCMesh.pe[15] pe-cumulative-static-energy ETV
+vector 125 ONoCMesh.pe[15] pe-cumulative-dynamic-energy ETV
+vector 126 ONoCMesh.pe[15] pe-window-avg-power ETV
+vector 127 ONoCMesh.pe[15] pe-die-temperature ETV
+vector 128 ONoCMesh.router[0].port[0].inPort router-die-temperature ETV
+vector 129 ONoCMesh.router[1].port[0].inPort router-die-temperature ETV
+vector 130 ONoCMesh.router[2].port[0].inPort router-die-temperature ETV
+vector 131 ONoCMesh.router[3].port[0].inPort router-die-temperature ETV
+vector 132 ONoCMesh.router[4].port[0].inPort router-die-temperature ETV
+vector 133 ONoCMesh.router[5].port[0].inPort router-die-temperature ETV
+vector 134 ONoCMesh.router[6].port[0].inPort router-die-temperature ETV
+vector 135 ONoCMesh.router[7].port[0].inPort router-die-temperature ETV
+vector 136 ONoCMesh.router[8].port[0].inPort router-die-temperature ETV
+vector 137 ONoCMesh.router[9].port[0].inPort router-die-temperature ETV
+vector 138 ONoCMesh.router[10].port[0].inPort router-die-temperature ETV
+vector 139 ONoCMesh.router[11].port[0].inPort router-die-temperature ETV
+vector 140 ONoCMesh.router[12].port[0].inPort router-die-temperature ETV
+vector 141 ONoCMesh.router[13].port[0].inPort router-die-temperature ETV
+vector 142 ONoCMesh.router[14].port[0].inPort router-die-temperature ETV
+vector 143 ONoCMesh.router[15].port[0].inPort router-die-temperature ETV
+vector 144 ONoCMesh.pe[0] power ETV
+vector 145 ONoCMesh.pe[1] power ETV
+vector 146 ONoCMesh.pe[2] power ETV
+vector 147 ONoCMesh.pe[3] power ETV
+vector 148 ONoCMesh.pe[4] power ETV
+vector 149 ONoCMesh.pe[5] power ETV
+vector 150 ONoCMesh.pe[6] power ETV
+vector 151 ONoCMesh.pe[7] power ETV
+vector 152 ONoCMesh.pe[8] power ETV
+vector 153 ONoCMesh.pe[9] power ETV
+vector 154 ONoCMesh.pe[10] power ETV
+vector 155 ONoCMesh.pe[11] power ETV
+vector 156 ONoCMesh.pe[12] power ETV
+vector 157 ONoCMesh.pe[13] power ETV
+vector 158 ONoCMesh.pe[14] power ETV
+vector 159 ONoCMesh.pe[15] power ETV
+vector 160 ONoCMesh.router[0].port[0].inPort router-window-energy ETV
+vector 161 ONoCMesh.router[0].port[0].inPort router-window-static-energy ETV
+vector 162 ONoCMesh.router[0].port[0].inPort router-window-dynamic-energy ETV
+vector 163 ONoCMesh.router[0].port[0].inPort router-cumulative-energy ETV
+vector 164 ONoCMesh.router[0].port[0].inPort router-cumulative-static-energy ETV
+vector 165 ONoCMesh.router[0].port[0].inPort router-cumulative-dynamic-energy ETV
+vector 166 ONoCMesh.router[0].port[0].inPort router-window-avg-power ETV
+vector 167 ONoCMesh.router[0].port[1].inPort router-window-energy ETV
+vector 168 ONoCMesh.router[0].port[1].inPort router-window-static-energy ETV
+vector 169 ONoCMesh.router[0].port[1].inPort router-window-dynamic-energy ETV
+vector 170 ONoCMesh.router[0].port[1].inPort router-cumulative-energy ETV
+vector 171 ONoCMesh.router[0].port[1].inPort router-cumulative-static-energy ETV
+vector 172 ONoCMesh.router[0].port[1].inPort router-cumulative-dynamic-energy ETV
+vector 173 ONoCMesh.router[0].port[1].inPort router-window-avg-power ETV
+vector 174 ONoCMesh.router[0].port[2].inPort router-window-energy ETV
+vector 175 ONoCMesh.router[0].port[2].inPort router-window-static-energy ETV
+vector 176 ONoCMesh.router[0].port[2].inPort router-window-dynamic-energy ETV
+vector 177 ONoCMesh.router[0].port[2].inPort router-cumulative-energy ETV
+vector 178 ONoCMesh.router[0].port[2].inPort router-cumulative-static-energy ETV
+vector 179 ONoCMesh.router[0].port[2].inPort router-cumulative-dynamic-energy ETV
+vector 180 ONoCMesh.router[0].port[2].inPort router-window-avg-power ETV
+vector 181 ONoCMesh.router[0].port[3].inPort router-window-energy ETV
+vector 182 ONoCMesh.router[0].port[3].inPort router-window-static-energy ETV
+vector 183 ONoCMesh.router[0].port[3].inPort router-window-dynamic-energy ETV
+vector 184 ONoCMesh.router[0].port[3].inPort router-cumulative-energy ETV
+vector 185 ONoCMesh.router[0].port[3].inPort router-cumulative-static-energy ETV
+vector 186 ONoCMesh.router[0].port[3].inPort router-cumulative-dynamic-energy ETV
+vector 187 ONoCMesh.router[0].port[3].inPort router-window-avg-power ETV
+vector 188 ONoCMesh.router[0].port[4].inPort router-window-energy ETV
+vector 189 ONoCMesh.router[0].port[4].inPort router-window-static-energy ETV
+vector 190 ONoCMesh.router[0].port[4].inPort router-window-dynamic-energy ETV
+vector 191 ONoCMesh.router[0].port[4].inPort router-cumulative-energy ETV
+vector 192 ONoCMesh.router[0].port[4].inPort router-cumulative-static-energy ETV
+vector 193 ONoCMesh.router[0].port[4].inPort router-cumulative-dynamic-energy ETV
+vector 194 ONoCMesh.router[0].port[4].inPort router-window-avg-power ETV
+vector 195 ONoCMesh.router[1].port[0].inPort router-window-energy ETV
+vector 196 ONoCMesh.router[1].port[0].inPort router-window-static-energy ETV
+vector 197 ONoCMesh.router[1].port[0].inPort router-window-dynamic-energy ETV
+vector 198 ONoCMesh.router[1].port[0].inPort router-cumulative-energy ETV
+vector 199 ONoCMesh.router[1].port[0].inPort router-cumulative-static-energy ETV
+vector 200 ONoCMesh.router[1].port[0].inPort router-cumulative-dynamic-energy ETV
+vector 201 ONoCMesh.router[1].port[0].inPort router-window-avg-power ETV
+vector 202 ONoCMesh.router[1].port[1].inPort router-window-energy ETV
+vector 203 ONoCMesh.router[1].port[1].inPort router-window-static-energy ETV
+vector 204 ONoCMesh.router[1].port[1].inPort router-window-dynamic-energy ETV
+vector 205 ONoCMesh.router[1].port[1].inPort router-cumulative-energy ETV
+vector 206 ONoCMesh.router[1].port[1].inPort router-cumulative-static-energy ETV
+vector 207 ONoCMesh.router[1].port[1].inPort router-cumulative-dynamic-energy ETV
+vector 208 ONoCMesh.router[1].port[1].inPort router-window-avg-power ETV
+vector 209 ONoCMesh.router[1].port[2].inPort router-window-energy ETV
+vector 210 ONoCMesh.router[1].port[2].inPort router-window-static-energy ETV
+vector 211 ONoCMesh.router[1].port[2].inPort router-window-dynamic-energy ETV
+vector 212 ONoCMesh.router[1].port[2].inPort router-cumulative-energy ETV
+vector 213 ONoCMesh.router[1].port[2].inPort router-cumulative-static-energy ETV
+vector 214 ONoCMesh.router[1].port[2].inPort router-cumulative-dynamic-energy ETV
+vector 215 ONoCMesh.router[1].port[2].inPort router-window-avg-power ETV
+vector 216 ONoCMesh.router[1].port[3].inPort router-window-energy ETV
+vector 217 ONoCMesh.router[1].port[3].inPort router-window-static-energy ETV
+vector 218 ONoCMesh.router[1].port[3].inPort router-window-dynamic-energy ETV
+vector 219 ONoCMesh.router[1].port[3].inPort router-cumulative-energy ETV
+vector 220 ONoCMesh.router[1].port[3].inPort router-cumulative-static-energy ETV
+vector 221 ONoCMesh.router[1].port[3].inPort router-cumulative-dynamic-energy ETV
+vector 222 ONoCMesh.router[1].port[3].inPort router-window-avg-power ETV
+vector 223 ONoCMesh.router[1].port[4].inPort router-window-energy ETV
+vector 224 ONoCMesh.router[1].port[4].inPort router-window-static-energy ETV
+vector 225 ONoCMesh.router[1].port[4].inPort router-window-dynamic-energy ETV
+vector 226 ONoCMesh.router[1].port[4].inPort router-cumulative-energy ETV
+vector 227 ONoCMesh.router[1].port[4].inPort router-cumulative-static-energy ETV
+vector 228 ONoCMesh.router[1].port[4].inPort router-cumulative-dynamic-energy ETV
+vector 229 ONoCMesh.router[1].port[4].inPort router-window-avg-power ETV
+vector 230 ONoCMesh.router[2].port[0].inPort router-window-energy ETV
+vector 231 ONoCMesh.router[2].port[0].inPort router-window-static-energy ETV
+vector 232 ONoCMesh.router[2].port[0].inPort router-window-dynamic-energy ETV
+vector 233 ONoCMesh.router[2].port[0].inPort router-cumulative-energy ETV
+vector 234 ONoCMesh.router[2].port[0].inPort router-cumulative-static-energy ETV
+vector 235 ONoCMesh.router[2].port[0].inPort router-cumulative-dynamic-energy ETV
+vector 236 ONoCMesh.router[2].port[0].inPort router-window-avg-power ETV
+vector 237 ONoCMesh.router[2].port[1].inPort router-window-energy ETV
+vector 238 ONoCMesh.router[2].port[1].inPort router-window-static-energy ETV
+vector 239 ONoCMesh.router[2].port[1].inPort router-window-dynamic-energy ETV
+vector 240 ONoCMesh.router[2].port[1].inPort router-cumulative-energy ETV
+vector 241 ONoCMesh.router[2].port[1].inPort router-cumulative-static-energy ETV
+vector 242 ONoCMesh.router[2].port[1].inPort router-cumulative-dynamic-energy ETV
+vector 243 ONoCMesh.router[2].port[1].inPort router-window-avg-power ETV
+vector 244 ONoCMesh.router[2].port[2].inPort router-window-energy ETV
+vector 245 ONoCMesh.router[2].port[2].inPort router-window-static-energy ETV
+vector 246 ONoCMesh.router[2].port[2].inPort router-window-dynamic-energy ETV
+vector 247 ONoCMesh.router[2].port[2].inPort router-cumulative-energy ETV
+vector 248 ONoCMesh.router[2].port[2].inPort router-cumulative-static-energy ETV
+vector 249 ONoCMesh.router[2].port[2].inPort router-cumulative-dynamic-energy ETV
+vector 250 ONoCMesh.router[2].port[2].inPort router-window-avg-power ETV
+vector 251 ONoCMesh.router[2].port[3].inPort router-window-energy ETV
+vector 252 ONoCMesh.router[2].port[3].inPort router-window-static-energy ETV
+vector 253 ONoCMesh.router[2].port[3].inPort router-window-dynamic-energy ETV
+vector 254 ONoCMesh.router[2].port[3].inPort router-cumulative-energy ETV
+vector 255 ONoCMesh.router[2].port[3].inPort router-cumulative-static-energy ETV
+vector 256 ONoCMesh.router[2].port[3].inPort router-cumulative-dynamic-energy ETV
+vector 257 ONoCMesh.router[2].port[3].inPort router-window-avg-power ETV
+vector 258 ONoCMesh.router[2].port[4].inPort router-window-energy ETV
+vector 259 ONoCMesh.router[2].port[4].inPort router-window-static-energy ETV
+vector 260 ONoCMesh.router[2].port[4].inPort router-window-dynamic-energy ETV
+vector 261 ONoCMesh.router[2].port[4].inPort router-cumulative-energy ETV
+vector 262 ONoCMesh.router[2].port[4].inPort router-cumulative-static-energy ETV
+vector 263 ONoCMesh.router[2].port[4].inPort router-cumulative-dynamic-energy ETV
+vector 264 ONoCMesh.router[2].port[4].inPort router-window-avg-power ETV
+vector 265 ONoCMesh.router[3].port[0].inPort router-window-energy ETV
+vector 266 ONoCMesh.router[3].port[0].inPort router-window-static-energy ETV
+vector 267 ONoCMesh.router[3].port[0].inPort router-window-dynamic-energy ETV
+vector 268 ONoCMesh.router[3].port[0].inPort router-cumulative-energy ETV
+vector 269 ONoCMesh.router[3].port[0].inPort router-cumulative-static-energy ETV
+vector 270 ONoCMesh.router[3].port[0].inPort router-cumulative-dynamic-energy ETV
+vector 271 ONoCMesh.router[3].port[0].inPort router-window-avg-power ETV
+vector 272 ONoCMesh.router[3].port[1].inPort router-window-energy ETV
+vector 273 ONoCMesh.router[3].port[1].inPort router-window-static-energy ETV
+vector 274 ONoCMesh.router[3].port[1].inPort router-window-dynamic-energy ETV
+vector 275 ONoCMesh.router[3].port[1].inPort router-cumulative-energy ETV
+vector 276 ONoCMesh.router[3].port[1].inPort router-cumulative-static-energy ETV
+vector 277 ONoCMesh.router[3].port[1].inPort router-cumulative-dynamic-energy ETV
+vector 278 ONoCMesh.router[3].port[1].inPort router-window-avg-power ETV
+vector 279 ONoCMesh.router[3].port[2].inPort router-window-energy ETV
+vector 280 ONoCMesh.router[3].port[2].inPort router-window-static-energy ETV
+vector 281 ONoCMesh.router[3].port[2].inPort router-window-dynamic-energy ETV
+vector 282 ONoCMesh.router[3].port[2].inPort router-cumulative-energy ETV
+vector 283 ONoCMesh.router[3].port[2].inPort router-cumulative-static-energy ETV
+vector 284 ONoCMesh.router[3].port[2].inPort router-cumulative-dynamic-energy ETV
+vector 285 ONoCMesh.router[3].port[2].inPort router-window-avg-power ETV
+vector 286 ONoCMesh.router[3].port[3].inPort router-window-energy ETV
+vector 287 ONoCMesh.router[3].port[3].inPort router-window-static-energy ETV
+vector 288 ONoCMesh.router[3].port[3].inPort router-window-dynamic-energy ETV
+vector 289 ONoCMesh.router[3].port[3].inPort router-cumulative-energy ETV
+vector 290 ONoCMesh.router[3].port[3].inPort router-cumulative-static-energy ETV
+vector 291 ONoCMesh.router[3].port[3].inPort router-cumulative-dynamic-energy ETV
+vector 292 ONoCMesh.router[3].port[3].inPort router-window-avg-power ETV
+vector 293 ONoCMesh.router[3].port[4].inPort router-window-energy ETV
+vector 294 ONoCMesh.router[3].port[4].inPort router-window-static-energy ETV
+vector 295 ONoCMesh.router[3].port[4].inPort router-window-dynamic-energy ETV
+vector 296 ONoCMesh.router[3].port[4].inPort router-cumulative-energy ETV
+vector 297 ONoCMesh.router[3].port[4].inPort router-cumulative-static-energy ETV
+vector 298 ONoCMesh.router[3].port[4].inPort router-cumulative-dynamic-energy ETV
+vector 299 ONoCMesh.router[3].port[4].inPort router-window-avg-power ETV
+vector 300 ONoCMesh.router[4].port[0].inPort router-window-energy ETV
+vector 301 ONoCMesh.router[4].port[0].inPort router-window-static-energy ETV
+vector 302 ONoCMesh.router[4].port[0].inPort router-window-dynamic-energy ETV
+vector 303 ONoCMesh.router[4].port[0].inPort router-cumulative-energy ETV
+vector 304 ONoCMesh.router[4].port[0].inPort router-cumulative-static-energy ETV
+vector 305 ONoCMesh.router[4].port[0].inPort router-cumulative-dynamic-energy ETV
+vector 306 ONoCMesh.router[4].port[0].inPort router-window-avg-power ETV
+vector 307 ONoCMesh.router[4].port[1].inPort router-window-energy ETV
+vector 308 ONoCMesh.router[4].port[1].inPort router-window-static-energy ETV
+vector 309 ONoCMesh.router[4].port[1].inPort router-window-dynamic-energy ETV
+vector 310 ONoCMesh.router[4].port[1].inPort router-cumulative-energy ETV
+vector 311 ONoCMesh.router[4].port[1].inPort router-cumulative-static-energy ETV
+vector 312 ONoCMesh.router[4].port[1].inPort router-cumulative-dynamic-energy ETV
+vector 313 ONoCMesh.router[4].port[1].inPort router-window-avg-power ETV
+vector 314 ONoCMesh.router[4].port[2].inPort router-window-energy ETV
+vector 315 ONoCMesh.router[4].port[2].inPort router-window-static-energy ETV
+vector 316 ONoCMesh.router[4].port[2].inPort router-window-dynamic-energy ETV
+vector 317 ONoCMesh.router[4].port[2].inPort router-cumulative-energy ETV
+vector 318 ONoCMesh.router[4].port[2].inPort router-cumulative-static-energy ETV
+vector 319 ONoCMesh.router[4].port[2].inPort router-cumulative-dynamic-energy ETV
+vector 320 ONoCMesh.router[4].port[2].inPort router-window-avg-power ETV
+vector 321 ONoCMesh.router[4].port[3].inPort router-window-energy ETV
+vector 322 ONoCMesh.router[4].port[3].inPort router-window-static-energy ETV
+vector 323 ONoCMesh.router[4].port[3].inPort router-window-dynamic-energy ETV
+vector 324 ONoCMesh.router[4].port[3].inPort router-cumulative-energy ETV
+vector 325 ONoCMesh.router[4].port[3].inPort router-cumulative-static-energy ETV
+vector 326 ONoCMesh.router[4].port[3].inPort router-cumulative-dynamic-energy ETV
+vector 327 ONoCMesh.router[4].port[3].inPort router-window-avg-power ETV
+vector 328 ONoCMesh.router[4].port[4].inPort router-window-energy ETV
+vector 329 ONoCMesh.router[4].port[4].inPort router-window-static-energy ETV
+vector 330 ONoCMesh.router[4].port[4].inPort router-window-dynamic-energy ETV
+vector 331 ONoCMesh.router[4].port[4].inPort router-cumulative-energy ETV
+vector 332 ONoCMesh.router[4].port[4].inPort router-cumulative-static-energy ETV
+vector 333 ONoCMesh.router[4].port[4].inPort router-cumulative-dynamic-energy ETV
+vector 334 ONoCMesh.router[4].port[4].inPort router-window-avg-power ETV
+vector 335 ONoCMesh.router[5].port[0].inPort router-window-energy ETV
+vector 336 ONoCMesh.router[5].port[0].inPort router-window-static-energy ETV
+vector 337 ONoCMesh.router[5].port[0].inPort router-window-dynamic-energy ETV
+vector 338 ONoCMesh.router[5].port[0].inPort router-cumulative-energy ETV
+vector 339 ONoCMesh.router[5].port[0].inPort router-cumulative-static-energy ETV
+vector 340 ONoCMesh.router[5].port[0].inPort router-cumulative-dynamic-energy ETV
+vector 341 ONoCMesh.router[5].port[0].inPort router-window-avg-power ETV
+vector 342 ONoCMesh.router[5].port[1].inPort router-window-energy ETV
+vector 343 ONoCMesh.router[5].port[1].inPort router-window-static-energy ETV
+vector 344 ONoCMesh.router[5].port[1].inPort router-window-dynamic-energy ETV
+vector 345 ONoCMesh.router[5].port[1].inPort router-cumulative-energy ETV
+vector 346 ONoCMesh.router[5].port[1].inPort router-cumulative-static-energy ETV
+vector 347 ONoCMesh.router[5].port[1].inPort router-cumulative-dynamic-energy ETV
+vector 348 ONoCMesh.router[5].port[1].inPort router-window-avg-power ETV
+vector 349 ONoCMesh.router[5].port[2].inPort router-window-energy ETV
+vector 350 ONoCMesh.router[5].port[2].inPort router-window-static-energy ETV
+vector 351 ONoCMesh.router[5].port[2].inPort router-window-dynamic-energy ETV
+vector 352 ONoCMesh.router[5].port[2].inPort router-cumulative-energy ETV
+vector 353 ONoCMesh.router[5].port[2].inPort router-cumulative-static-energy ETV
+vector 354 ONoCMesh.router[5].port[2].inPort router-cumulative-dynamic-energy ETV
+vector 355 ONoCMesh.router[5].port[2].inPort router-window-avg-power ETV
+vector 356 ONoCMesh.router[5].port[3].inPort router-window-energy ETV
+vector 357 ONoCMesh.router[5].port[3].inPort router-window-static-energy ETV
+vector 358 ONoCMesh.router[5].port[3].inPort router-window-dynamic-energy ETV
+vector 359 ONoCMesh.router[5].port[3].inPort router-cumulative-energy ETV
+vector 360 ONoCMesh.router[5].port[3].inPort router-cumulative-static-energy ETV
+vector 361 ONoCMesh.router[5].port[3].inPort router-cumulative-dynamic-energy ETV
+vector 362 ONoCMesh.router[5].port[3].inPort router-window-avg-power ETV
+vector 363 ONoCMesh.router[5].port[4].inPort router-window-energy ETV
+vector 364 ONoCMesh.router[5].port[4].inPort router-window-static-energy ETV
+vector 365 ONoCMesh.router[5].port[4].inPort router-window-dynamic-energy ETV
+vector 366 ONoCMesh.router[5].port[4].inPort router-cumulative-energy ETV
+vector 367 ONoCMesh.router[5].port[4].inPort router-cumulative-static-energy ETV
+vector 368 ONoCMesh.router[5].port[4].inPort router-cumulative-dynamic-energy ETV
+vector 369 ONoCMesh.router[5].port[4].inPort router-window-avg-power ETV
+vector 370 ONoCMesh.router[6].port[0].inPort router-window-energy ETV
+vector 371 ONoCMesh.router[6].port[0].inPort router-window-static-energy ETV
+vector 372 ONoCMesh.router[6].port[0].inPort router-window-dynamic-energy ETV
+vector 373 ONoCMesh.router[6].port[0].inPort router-cumulative-energy ETV
+vector 374 ONoCMesh.router[6].port[0].inPort router-cumulative-static-energy ETV
+vector 375 ONoCMesh.router[6].port[0].inPort router-cumulative-dynamic-energy ETV
+vector 376 ONoCMesh.router[6].port[0].inPort router-window-avg-power ETV
+vector 377 ONoCMesh.router[6].port[1].inPort router-window-energy ETV
+vector 378 ONoCMesh.router[6].port[1].inPort router-window-static-energy ETV
+vector 379 ONoCMesh.router[6].port[1].inPort router-window-dynamic-energy ETV
+vector 380 ONoCMesh.router[6].port[1].inPort router-cumulative-energy ETV
+vector 381 ONoCMesh.router[6].port[1].inPort router-cumulative-static-energy ETV
+vector 382 ONoCMesh.router[6].port[1].inPort router-cumulative-dynamic-energy ETV
+vector 383 ONoCMesh.router[6].port[1].inPort router-window-avg-power ETV
+vector 384 ONoCMesh.router[6].port[2].inPort router-window-energy ETV
+vector 385 ONoCMesh.router[6].port[2].inPort router-window-static-energy ETV
+vector 386 ONoCMesh.router[6].port[2].inPort router-window-dynamic-energy ETV
+vector 387 ONoCMesh.router[6].port[2].inPort router-cumulative-energy ETV
+vector 388 ONoCMesh.router[6].port[2].inPort router-cumulative-static-energy ETV
+vector 389 ONoCMesh.router[6].port[2].inPort router-cumulative-dynamic-energy ETV
+vector 390 ONoCMesh.router[6].port[2].inPort router-window-avg-power ETV
+vector 391 ONoCMesh.router[6].port[3].inPort router-window-energy ETV
+vector 392 ONoCMesh.router[6].port[3].inPort router-window-static-energy ETV
+vector 393 ONoCMesh.router[6].port[3].inPort router-window-dynamic-energy ETV
+vector 394 ONoCMesh.router[6].port[3].inPort router-cumulative-energy ETV
+vector 395 ONoCMesh.router[6].port[3].inPort router-cumulative-static-energy ETV
+vector 396 ONoCMesh.router[6].port[3].inPort router-cumulative-dynamic-energy ETV
+vector 397 ONoCMesh.router[6].port[3].inPort router-window-avg-power ETV
+vector 398 ONoCMesh.router[6].port[4].inPort router-window-energy ETV
+vector 399 ONoCMesh.router[6].port[4].inPort router-window-static-energy ETV
+vector 400 ONoCMesh.router[6].port[4].inPort router-window-dynamic-energy ETV
+vector 401 ONoCMesh.router[6].port[4].inPort router-cumulative-energy ETV
+vector 402 ONoCMesh.router[6].port[4].inPort router-cumulative-static-energy ETV
+vector 403 ONoCMesh.router[6].port[4].inPort router-cumulative-dynamic-energy ETV
+vector 404 ONoCMesh.router[6].port[4].inPort router-window-avg-power ETV
+vector 405 ONoCMesh.router[7].port[0].inPort router-window-energy ETV
+vector 406 ONoCMesh.router[7].port[0].inPort router-window-static-energy ETV
+vector 407 ONoCMesh.router[7].port[0].inPort router-window-dynamic-energy ETV
+vector 408 ONoCMesh.router[7].port[0].inPort router-cumulative-energy ETV
+vector 409 ONoCMesh.router[7].port[0].inPort router-cumulative-static-energy ETV
+vector 410 ONoCMesh.router[7].port[0].inPort router-cumulative-dynamic-energy ETV
+vector 411 ONoCMesh.router[7].port[0].inPort router-window-avg-power ETV
+vector 412 ONoCMesh.router[7].port[1].inPort router-window-energy ETV
+vector 413 ONoCMesh.router[7].port[1].inPort router-window-static-energy ETV
+vector 414 ONoCMesh.router[7].port[1].inPort router-window-dynamic-energy ETV
+vector 415 ONoCMesh.router[7].port[1].inPort router-cumulative-energy ETV
+vector 416 ONoCMesh.router[7].port[1].inPort router-cumulative-static-energy ETV
+vector 417 ONoCMesh.router[7].port[1].inPort router-cumulative-dynamic-energy ETV
+vector 418 ONoCMesh.router[7].port[1].inPort router-window-avg-power ETV
+vector 419 ONoCMesh.router[7].port[2].inPort router-window-energy ETV
+vector 420 ONoCMesh.router[7].port[2].inPort router-window-static-energy ETV
+vector 421 ONoCMesh.router[7].port[2].inPort router-window-dynamic-energy ETV
+vector 422 ONoCMesh.router[7].port[2].inPort router-cumulative-energy ETV
+vector 423 ONoCMesh.router[7].port[2].inPort router-cumulative-static-energy ETV
+vector 424 ONoCMesh.router[7].port[2].inPort router-cumulative-dynamic-energy ETV
+vector 425 ONoCMesh.router[7].port[2].inPort router-window-avg-power ETV
+vector 426 ONoCMesh.router[7].port[3].inPort router-window-energy ETV
+vector 427 ONoCMesh.router[7].port[3].inPort router-window-static-energy ETV
+vector 428 ONoCMesh.router[7].port[3].inPort router-window-dynamic-energy ETV
+vector 429 ONoCMesh.router[7].port[3].inPort router-cumulative-energy ETV
+vector 430 ONoCMesh.router[7].port[3].inPort router-cumulative-static-energy ETV
+vector 431 ONoCMesh.router[7].port[3].inPort router-cumulative-dynamic-energy ETV
+vector 432 ONoCMesh.router[7].port[3].inPort router-window-avg-power ETV
+vector 433 ONoCMesh.router[7].port[4].inPort router-window-energy ETV
+vector 434 ONoCMesh.router[7].port[4].inPort router-window-static-energy ETV
+vector 435 ONoCMesh.router[7].port[4].inPort router-window-dynamic-energy ETV
+vector 436 ONoCMesh.router[7].port[4].inPort router-cumulative-energy ETV
+vector 437 ONoCMesh.router[7].port[4].inPort router-cumulative-static-energy ETV
+vector 438 ONoCMesh.router[7].port[4].inPort router-cumulative-dynamic-energy ETV
+vector 439 ONoCMesh.router[7].port[4].inPort router-window-avg-power ETV
+vector 440 ONoCMesh.router[8].port[0].inPort router-window-energy ETV
+vector 441 ONoCMesh.router[8].port[0].inPort router-window-static-energy ETV
+vector 442 ONoCMesh.router[8].port[0].inPort router-window-dynamic-energy ETV
+vector 443 ONoCMesh.router[8].port[0].inPort router-cumulative-energy ETV
+vector 444 ONoCMesh.router[8].port[0].inPort router-cumulative-static-energy ETV
+vector 445 ONoCMesh.router[8].port[0].inPort router-cumulative-dynamic-energy ETV
+vector 446 ONoCMesh.router[8].port[0].inPort router-window-avg-power ETV
+vector 447 ONoCMesh.router[8].port[1].inPort router-window-energy ETV
+vector 448 ONoCMesh.router[8].port[1].inPort router-window-static-energy ETV
+vector 449 ONoCMesh.router[8].port[1].inPort router-window-dynamic-energy ETV
+vector 450 ONoCMesh.router[8].port[1].inPort router-cumulative-energy ETV
+vector 451 ONoCMesh.router[8].port[1].inPort router-cumulative-static-energy ETV
+vector 452 ONoCMesh.router[8].port[1].inPort router-cumulative-dynamic-energy ETV
+vector 453 ONoCMesh.router[8].port[1].inPort router-window-avg-power ETV
+vector 454 ONoCMesh.router[8].port[2].inPort router-window-energy ETV
+vector 455 ONoCMesh.router[8].port[2].inPort router-window-static-energy ETV
+vector 456 ONoCMesh.router[8].port[2].inPort router-window-dynamic-energy ETV
+vector 457 ONoCMesh.router[8].port[2].inPort router-cumulative-energy ETV
+vector 458 ONoCMesh.router[8].port[2].inPort router-cumulative-static-energy ETV
+vector 459 ONoCMesh.router[8].port[2].inPort router-cumulative-dynamic-energy ETV
+vector 460 ONoCMesh.router[8].port[2].inPort router-window-avg-power ETV
+vector 461 ONoCMesh.router[8].port[3].inPort router-window-energy ETV
+vector 462 ONoCMesh.router[8].port[3].inPort router-window-static-energy ETV
+vector 463 ONoCMesh.router[8].port[3].inPort router-window-dynamic-energy ETV
+vector 464 ONoCMesh.router[8].port[3].inPort router-cumulative-energy ETV
+vector 465 ONoCMesh.router[8].port[3].inPort router-cumulative-static-energy ETV
+vector 466 ONoCMesh.router[8].port[3].inPort router-cumulative-dynamic-energy ETV
+vector 467 ONoCMesh.router[8].port[3].inPort router-window-avg-power ETV
+vector 468 ONoCMesh.router[8].port[4].inPort router-window-energy ETV
+vector 469 ONoCMesh.router[8].port[4].inPort router-window-static-energy ETV
+vector 470 ONoCMesh.router[8].port[4].inPort router-window-dynamic-energy ETV
+vector 471 ONoCMesh.router[8].port[4].inPort router-cumulative-energy ETV
+vector 472 ONoCMesh.router[8].port[4].inPort router-cumulative-static-energy ETV
+vector 473 ONoCMesh.router[8].port[4].inPort router-cumulative-dynamic-energy ETV
+vector 474 ONoCMesh.router[8].port[4].inPort router-window-avg-power ETV
+vector 475 ONoCMesh.router[9].port[0].inPort router-window-energy ETV
+vector 476 ONoCMesh.router[9].port[0].inPort router-window-static-energy ETV
+vector 477 ONoCMesh.router[9].port[0].inPort router-window-dynamic-energy ETV
+vector 478 ONoCMesh.router[9].port[0].inPort router-cumulative-energy ETV
+vector 479 ONoCMesh.router[9].port[0].inPort router-cumulative-static-energy ETV
+vector 480 ONoCMesh.router[9].port[0].inPort router-cumulative-dynamic-energy ETV
+vector 481 ONoCMesh.router[9].port[0].inPort router-window-avg-power ETV
+vector 482 ONoCMesh.router[9].port[1].inPort router-window-energy ETV
+vector 483 ONoCMesh.router[9].port[1].inPort router-window-static-energy ETV
+vector 484 ONoCMesh.router[9].port[1].inPort router-window-dynamic-energy ETV
+vector 485 ONoCMesh.router[9].port[1].inPort router-cumulative-energy ETV
+vector 486 ONoCMesh.router[9].port[1].inPort router-cumulative-static-energy ETV
+vector 487 ONoCMesh.router[9].port[1].inPort router-cumulative-dynamic-energy ETV
+vector 488 ONoCMesh.router[9].port[1].inPort router-window-avg-power ETV
+vector 489 ONoCMesh.router[9].port[2].inPort router-window-energy ETV
+vector 490 ONoCMesh.router[9].port[2].inPort router-window-static-energy ETV
+vector 491 ONoCMesh.router[9].port[2].inPort router-window-dynamic-energy ETV
+vector 492 ONoCMesh.router[9].port[2].inPort router-cumulative-energy ETV
+vector 493 ONoCMesh.router[9].port[2].inPort router-cumulative-static-energy ETV
+vector 494 ONoCMesh.router[9].port[2].inPort router-cumulative-dynamic-energy ETV
+vector 495 ONoCMesh.router[9].port[2].inPort router-window-avg-power ETV
+vector 496 ONoCMesh.router[9].port[3].inPort router-window-energy ETV
+vector 497 ONoCMesh.router[9].port[3].inPort router-window-static-energy ETV
+vector 498 ONoCMesh.router[9].port[3].inPort router-window-dynamic-energy ETV
+vector 499 ONoCMesh.router[9].port[3].inPort router-cumulative-energy ETV
+vector 500 ONoCMesh.router[9].port[3].inPort router-cumulative-static-energy ETV
+vector 501 ONoCMesh.router[9].port[3].inPort router-cumulative-dynamic-energy ETV
+vector 502 ONoCMesh.router[9].port[3].inPort router-window-avg-power ETV
+vector 503 ONoCMesh.router[9].port[4].inPort router-window-energy ETV
+vector 504 ONoCMesh.router[9].port[4].inPort router-window-static-energy ETV
+vector 505 ONoCMesh.router[9].port[4].inPort router-window-dynamic-energy ETV
+vector 506 ONoCMesh.router[9].port[4].inPort router-cumulative-energy ETV
+vector 507 ONoCMesh.router[9].port[4].inPort router-cumulative-static-energy ETV
+vector 508 ONoCMesh.router[9].port[4].inPort router-cumulative-dynamic-energy ETV
+vector 509 ONoCMesh.router[9].port[4].inPort router-window-avg-power ETV
+vector 510 ONoCMesh.router[10].port[0].inPort router-window-energy ETV
+vector 511 ONoCMesh.router[10].port[0].inPort router-window-static-energy ETV
+vector 512 ONoCMesh.router[10].port[0].inPort router-window-dynamic-energy ETV
+vector 513 ONoCMesh.router[10].port[0].inPort router-cumulative-energy ETV
+vector 514 ONoCMesh.router[10].port[0].inPort router-cumulative-static-energy ETV
+vector 515 ONoCMesh.router[10].port[0].inPort router-cumulative-dynamic-energy ETV
+vector 516 ONoCMesh.router[10].port[0].inPort router-window-avg-power ETV
+vector 517 ONoCMesh.router[10].port[1].inPort router-window-energy ETV
+vector 518 ONoCMesh.router[10].port[1].inPort router-window-static-energy ETV
+vector 519 ONoCMesh.router[10].port[1].inPort router-window-dynamic-energy ETV
+vector 520 ONoCMesh.router[10].port[1].inPort router-cumulative-energy ETV
+vector 521 ONoCMesh.router[10].port[1].inPort router-cumulative-static-energy ETV
+vector 522 ONoCMesh.router[10].port[1].inPort router-cumulative-dynamic-energy ETV
+vector 523 ONoCMesh.router[10].port[1].inPort router-window-avg-power ETV
+vector 524 ONoCMesh.router[10].port[2].inPort router-window-energy ETV
+vector 525 ONoCMesh.router[10].port[2].inPort router-window-static-energy ETV
+vector 526 ONoCMesh.router[10].port[2].inPort router-window-dynamic-energy ETV
+vector 527 ONoCMesh.router[10].port[2].inPort router-cumulative-energy ETV
+vector 528 ONoCMesh.router[10].port[2].inPort router-cumulative-static-energy ETV
+vector 529 ONoCMesh.router[10].port[2].inPort router-cumulative-dynamic-energy ETV
+vector 530 ONoCMesh.router[10].port[2].inPort router-window-avg-power ETV
+vector 531 ONoCMesh.router[10].port[3].inPort router-window-energy ETV
+vector 532 ONoCMesh.router[10].port[3].inPort router-window-static-energy ETV
+vector 533 ONoCMesh.router[10].port[3].inPort router-window-dynamic-energy ETV
+vector 534 ONoCMesh.router[10].port[3].inPort router-cumulative-energy ETV
+vector 535 ONoCMesh.router[10].port[3].inPort router-cumulative-static-energy ETV
+vector 536 ONoCMesh.router[10].port[3].inPort router-cumulative-dynamic-energy ETV
+vector 537 ONoCMesh.router[10].port[3].inPort router-window-avg-power ETV
+vector 538 ONoCMesh.router[10].port[4].inPort router-window-energy ETV
+vector 539 ONoCMesh.router[10].port[4].inPort router-window-static-energy ETV
+vector 540 ONoCMesh.router[10].port[4].inPort router-window-dynamic-energy ETV
+vector 541 ONoCMesh.router[10].port[4].inPort router-cumulative-energy ETV
+vector 542 ONoCMesh.router[10].port[4].inPort router-cumulative-static-energy ETV
+vector 543 ONoCMesh.router[10].port[4].inPort router-cumulative-dynamic-energy ETV
+vector 544 ONoCMesh.router[10].port[4].inPort router-window-avg-power ETV
+vector 545 ONoCMesh.router[11].port[0].inPort router-window-energy ETV
+vector 546 ONoCMesh.router[11].port[0].inPort router-window-static-energy ETV
+vector 547 ONoCMesh.router[11].port[0].inPort router-window-dynamic-energy ETV
+vector 548 ONoCMesh.router[11].port[0].inPort router-cumulative-energy ETV
+vector 549 ONoCMesh.router[11].port[0].inPort router-cumulative-static-energy ETV
+vector 550 ONoCMesh.router[11].port[0].inPort router-cumulative-dynamic-energy ETV
+vector 551 ONoCMesh.router[11].port[0].inPort router-window-avg-power ETV
+vector 552 ONoCMesh.router[11].port[1].inPort router-window-energy ETV
+vector 553 ONoCMesh.router[11].port[1].inPort router-window-static-energy ETV
+vector 554 ONoCMesh.router[11].port[1].inPort router-window-dynamic-energy ETV
+vector 555 ONoCMesh.router[11].port[1].inPort router-cumulative-energy ETV
+vector 556 ONoCMesh.router[11].port[1].inPort router-cumulative-static-energy ETV
+vector 557 ONoCMesh.router[11].port[1].inPort router-cumulative-dynamic-energy ETV
+vector 558 ONoCMesh.router[11].port[1].inPort router-window-avg-power ETV
+vector 559 ONoCMesh.router[11].port[2].inPort router-window-energy ETV
+vector 560 ONoCMesh.router[11].port[2].inPort router-window-static-energy ETV
+vector 561 ONoCMesh.router[11].port[2].inPort router-window-dynamic-energy ETV
+vector 562 ONoCMesh.router[11].port[2].inPort router-cumulative-energy ETV
+vector 563 ONoCMesh.router[11].port[2].inPort router-cumulative-static-energy ETV
+vector 564 ONoCMesh.router[11].port[2].inPort router-cumulative-dynamic-energy ETV
+vector 565 ONoCMesh.router[11].port[2].inPort router-window-avg-power ETV
+vector 566 ONoCMesh.router[11].port[3].inPort router-window-energy ETV
+vector 567 ONoCMesh.router[11].port[3].inPort router-window-static-energy ETV
+vector 568 ONoCMesh.router[11].port[3].inPort router-window-dynamic-energy ETV
+vector 569 ONoCMesh.router[11].port[3].inPort router-cumulative-energy ETV
+vector 570 ONoCMesh.router[11].port[3].inPort router-cumulative-static-energy ETV
+vector 571 ONoCMesh.router[11].port[3].inPort router-cumulative-dynamic-energy ETV
+vector 572 ONoCMesh.router[11].port[3].inPort router-window-avg-power ETV
+vector 573 ONoCMesh.router[11].port[4].inPort router-window-energy ETV
+vector 574 ONoCMesh.router[11].port[4].inPort router-window-static-energy ETV
+vector 575 ONoCMesh.router[11].port[4].inPort router-window-dynamic-energy ETV
+vector 576 ONoCMesh.router[11].port[4].inPort router-cumulative-energy ETV
+vector 577 ONoCMesh.router[11].port[4].inPort router-cumulative-static-energy ETV
+vector 578 ONoCMesh.router[11].port[4].inPort router-cumulative-dynamic-energy ETV
+vector 579 ONoCMesh.router[11].port[4].inPort router-window-avg-power ETV
+vector 580 ONoCMesh.router[12].port[0].inPort router-window-energy ETV
+vector 581 ONoCMesh.router[12].port[0].inPort router-window-static-energy ETV
+vector 582 ONoCMesh.router[12].port[0].inPort router-window-dynamic-energy ETV
+vector 583 ONoCMesh.router[12].port[0].inPort router-cumulative-energy ETV
+vector 584 ONoCMesh.router[12].port[0].inPort router-cumulative-static-energy ETV
+vector 585 ONoCMesh.router[12].port[0].inPort router-cumulative-dynamic-energy ETV
+vector 586 ONoCMesh.router[12].port[0].inPort router-window-avg-power ETV
+vector 587 ONoCMesh.router[12].port[1].inPort router-window-energy ETV
+vector 588 ONoCMesh.router[12].port[1].inPort router-window-static-energy ETV
+vector 589 ONoCMesh.router[12].port[1].inPort router-window-dynamic-energy ETV
+vector 590 ONoCMesh.router[12].port[1].inPort router-cumulative-energy ETV
+vector 591 ONoCMesh.router[12].port[1].inPort router-cumulative-static-energy ETV
+vector 592 ONoCMesh.router[12].port[1].inPort router-cumulative-dynamic-energy ETV
+vector 593 ONoCMesh.router[12].port[1].inPort router-window-avg-power ETV
+vector 594 ONoCMesh.router[12].port[2].inPort router-window-energy ETV
+vector 595 ONoCMesh.router[12].port[2].inPort router-window-static-energy ETV
+vector 596 ONoCMesh.router[12].port[2].inPort router-window-dynamic-energy ETV
+vector 597 ONoCMesh.router[12].port[2].inPort router-cumulative-energy ETV
+vector 598 ONoCMesh.router[12].port[2].inPort router-cumulative-static-energy ETV
+vector 599 ONoCMesh.router[12].port[2].inPort router-cumulative-dynamic-energy ETV
+vector 600 ONoCMesh.router[12].port[2].inPort router-window-avg-power ETV
+vector 601 ONoCMesh.router[12].port[3].inPort router-window-energy ETV
+vector 602 ONoCMesh.router[12].port[3].inPort router-window-static-energy ETV
+vector 603 ONoCMesh.router[12].port[3].inPort router-window-dynamic-energy ETV
+vector 604 ONoCMesh.router[12].port[3].inPort router-cumulative-energy ETV
+vector 605 ONoCMesh.router[12].port[3].inPort router-cumulative-static-energy ETV
+vector 606 ONoCMesh.router[12].port[3].inPort router-cumulative-dynamic-energy ETV
+vector 607 ONoCMesh.router[12].port[3].inPort router-window-avg-power ETV
+vector 608 ONoCMesh.router[12].port[4].inPort router-window-energy ETV
+vector 609 ONoCMesh.router[12].port[4].inPort router-window-static-energy ETV
+vector 610 ONoCMesh.router[12].port[4].inPort router-window-dynamic-energy ETV
+vector 611 ONoCMesh.router[12].port[4].inPort router-cumulative-energy ETV
+vector 612 ONoCMesh.router[12].port[4].inPort router-cumulative-static-energy ETV
+vector 613 ONoCMesh.router[12].port[4].inPort router-cumulative-dynamic-energy ETV
+vector 614 ONoCMesh.router[12].port[4].inPort router-window-avg-power ETV
+vector 615 ONoCMesh.router[13].port[0].inPort router-window-energy ETV
+vector 616 ONoCMesh.router[13].port[0].inPort router-window-static-energy ETV
+vector 617 ONoCMesh.router[13].port[0].inPort router-window-dynamic-energy ETV
+vector 618 ONoCMesh.router[13].port[0].inPort router-cumulative-energy ETV
+vector 619 ONoCMesh.router[13].port[0].inPort router-cumulative-static-energy ETV
+vector 620 ONoCMesh.router[13].port[0].inPort router-cumulative-dynamic-energy ETV
+vector 621 ONoCMesh.router[13].port[0].inPort router-window-avg-power ETV
+vector 622 ONoCMesh.router[13].port[1].inPort router-window-energy ETV
+vector 623 ONoCMesh.router[13].port[1].inPort router-window-static-energy ETV
+vector 624 ONoCMesh.router[13].port[1].inPort router-window-dynamic-energy ETV
+vector 625 ONoCMesh.router[13].port[1].inPort router-cumulative-energy ETV
+vector 626 ONoCMesh.router[13].port[1].inPort router-cumulative-static-energy ETV
+vector 627 ONoCMesh.router[13].port[1].inPort router-cumulative-dynamic-energy ETV
+vector 628 ONoCMesh.router[13].port[1].inPort router-window-avg-power ETV
+vector 629 ONoCMesh.router[13].port[2].inPort router-window-energy ETV
+vector 630 ONoCMesh.router[13].port[2].inPort router-window-static-energy ETV
+vector 631 ONoCMesh.router[13].port[2].inPort router-window-dynamic-energy ETV
+vector 632 ONoCMesh.router[13].port[2].inPort router-cumulative-energy ETV
+vector 633 ONoCMesh.router[13].port[2].inPort router-cumulative-static-energy ETV
+vector 634 ONoCMesh.router[13].port[2].inPort router-cumulative-dynamic-energy ETV
+vector 635 ONoCMesh.router[13].port[2].inPort router-window-avg-power ETV
+vector 636 ONoCMesh.router[13].port[3].inPort router-window-energy ETV
+vector 637 ONoCMesh.router[13].port[3].inPort router-window-static-energy ETV
+vector 638 ONoCMesh.router[13].port[3].inPort router-window-dynamic-energy ETV
+vector 639 ONoCMesh.router[13].port[3].inPort router-cumulative-energy ETV
+vector 640 ONoCMesh.router[13].port[3].inPort router-cumulative-static-energy ETV
+vector 641 ONoCMesh.router[13].port[3].inPort router-cumulative-dynamic-energy ETV
+vector 642 ONoCMesh.router[13].port[3].inPort router-window-avg-power ETV
+vector 643 ONoCMesh.router[13].port[4].inPort router-window-energy ETV
+vector 644 ONoCMesh.router[13].port[4].inPort router-window-static-energy ETV
+vector 645 ONoCMesh.router[13].port[4].inPort router-window-dynamic-energy ETV
+vector 646 ONoCMesh.router[13].port[4].inPort router-cumulative-energy ETV
+vector 647 ONoCMesh.router[13].port[4].inPort router-cumulative-static-energy ETV
+vector 648 ONoCMesh.router[13].port[4].inPort router-cumulative-dynamic-energy ETV
+vector 649 ONoCMesh.router[13].port[4].inPort router-window-avg-power ETV
+vector 650 ONoCMesh.router[14].port[0].inPort router-window-energy ETV
+vector 651 ONoCMesh.router[14].port[0].inPort router-window-static-energy ETV
+vector 652 ONoCMesh.router[14].port[0].inPort router-window-dynamic-energy ETV
+vector 653 ONoCMesh.router[14].port[0].inPort router-cumulative-energy ETV
+vector 654 ONoCMesh.router[14].port[0].inPort router-cumulative-static-energy ETV
+vector 655 ONoCMesh.router[14].port[0].inPort router-cumulative-dynamic-energy ETV
+vector 656 ONoCMesh.router[14].port[0].inPort router-window-avg-power ETV
+vector 657 ONoCMesh.router[14].port[1].inPort router-window-energy ETV
+vector 658 ONoCMesh.router[14].port[1].inPort router-window-static-energy ETV
+vector 659 ONoCMesh.router[14].port[1].inPort router-window-dynamic-energy ETV
+vector 660 ONoCMesh.router[14].port[1].inPort router-cumulative-energy ETV
+vector 661 ONoCMesh.router[14].port[1].inPort router-cumulative-static-energy ETV
+vector 662 ONoCMesh.router[14].port[1].inPort router-cumulative-dynamic-energy ETV
+vector 663 ONoCMesh.router[14].port[1].inPort router-window-avg-power ETV
+vector 664 ONoCMesh.router[14].port[2].inPort router-window-energy ETV
+vector 665 ONoCMesh.router[14].port[2].inPort router-window-static-energy ETV
+vector 666 ONoCMesh.router[14].port[2].inPort router-window-dynamic-energy ETV
+vector 667 ONoCMesh.router[14].port[2].inPort router-cumulative-energy ETV
+vector 668 ONoCMesh.router[14].port[2].inPort router-cumulative-static-energy ETV
+vector 669 ONoCMesh.router[14].port[2].inPort router-cumulative-dynamic-energy ETV
+vector 670 ONoCMesh.router[14].port[2].inPort router-window-avg-power ETV
+vector 671 ONoCMesh.router[14].port[3].inPort router-window-energy ETV
+vector 672 ONoCMesh.router[14].port[3].inPort router-window-static-energy ETV
+vector 673 ONoCMesh.router[14].port[3].inPort router-window-dynamic-energy ETV
+vector 674 ONoCMesh.router[14].port[3].inPort router-cumulative-energy ETV
+vector 675 ONoCMesh.router[14].port[3].inPort router-cumulative-static-energy ETV
+vector 676 ONoCMesh.router[14].port[3].inPort router-cumulative-dynamic-energy ETV
+vector 677 ONoCMesh.router[14].port[3].inPort router-window-avg-power ETV
+vector 678 ONoCMesh.router[14].port[4].inPort router-window-energy ETV
+vector 679 ONoCMesh.router[14].port[4].inPort router-window-static-energy ETV
+vector 680 ONoCMesh.router[14].port[4].inPort router-window-dynamic-energy ETV
+vector 681 ONoCMesh.router[14].port[4].inPort router-cumulative-energy ETV
+vector 682 ONoCMesh.router[14].port[4].inPort router-cumulative-static-energy ETV
+vector 683 ONoCMesh.router[14].port[4].inPort router-cumulative-dynamic-energy ETV
+vector 684 ONoCMesh.router[14].port[4].inPort router-window-avg-power ETV
+vector 685 ONoCMesh.router[15].port[0].inPort router-window-energy ETV
+vector 686 ONoCMesh.router[15].port[0].inPort router-window-static-energy ETV
+vector 687 ONoCMesh.router[15].port[0].inPort router-window-dynamic-energy ETV
+vector 688 ONoCMesh.router[15].port[0].inPort router-cumulative-energy ETV
+vector 689 ONoCMesh.router[15].port[0].inPort router-cumulative-static-energy ETV
+vector 690 ONoCMesh.router[15].port[0].inPort router-cumulative-dynamic-energy ETV
+vector 691 ONoCMesh.router[15].port[0].inPort router-window-avg-power ETV
+vector 692 ONoCMesh.router[15].port[1].inPort router-window-energy ETV
+vector 693 ONoCMesh.router[15].port[1].inPort router-window-static-energy ETV
+vector 694 ONoCMesh.router[15].port[1].inPort router-window-dynamic-energy ETV
+vector 695 ONoCMesh.router[15].port[1].inPort router-cumulative-energy ETV
+vector 696 ONoCMesh.router[15].port[1].inPort router-cumulative-static-energy ETV
+vector 697 ONoCMesh.router[15].port[1].inPort router-cumulative-dynamic-energy ETV
+vector 698 ONoCMesh.router[15].port[1].inPort router-window-avg-power ETV
+vector 699 ONoCMesh.router[15].port[2].inPort router-window-energy ETV
+vector 700 ONoCMesh.router[15].port[2].inPort router-window-static-energy ETV
+vector 701 ONoCMesh.router[15].port[2].inPort router-window-dynamic-energy ETV
+vector 702 ONoCMesh.router[15].port[2].inPort router-cumulative-energy ETV
+vector 703 ONoCMesh.router[15].port[2].inPort router-cumulative-static-energy ETV
+vector 704 ONoCMesh.router[15].port[2].inPort router-cumulative-dynamic-energy ETV
+vector 705 ONoCMesh.router[15].port[2].inPort router-window-avg-power ETV
+vector 706 ONoCMesh.router[15].port[3].inPort router-window-energy ETV
+vector 707 ONoCMesh.router[15].port[3].inPort router-window-static-energy ETV
+vector 708 ONoCMesh.router[15].port[3].inPort router-window-dynamic-energy ETV
+vector 709 ONoCMesh.router[15].port[3].inPort router-cumulative-energy ETV
+vector 710 ONoCMesh.router[15].port[3].inPort router-cumulative-static-energy ETV
+vector 711 ONoCMesh.router[15].port[3].inPort router-cumulative-dynamic-energy ETV
+vector 712 ONoCMesh.router[15].port[3].inPort router-window-avg-power ETV
+vector 713 ONoCMesh.router[15].port[4].inPort router-window-energy ETV
+vector 714 ONoCMesh.router[15].port[4].inPort router-window-static-energy ETV
+vector 715 ONoCMesh.router[15].port[4].inPort router-window-dynamic-energy ETV
+vector 716 ONoCMesh.router[15].port[4].inPort router-cumulative-energy ETV
+vector 717 ONoCMesh.router[15].port[4].inPort router-cumulative-static-energy ETV
+vector 718 ONoCMesh.router[15].port[4].inPort router-cumulative-dynamic-energy ETV
+vector 719 ONoCMesh.router[15].port[4].inPort router-window-avg-power ETV
+vector 720 ONoCMesh.router[0].port[4].inPort Inport_total_Queue_Length ETV
+vector 721 ONoCMesh.router[1].port[1].inPort Inport_total_Queue_Length ETV
+vector 722 ONoCMesh.router[1].port[4].inPort Inport_total_Queue_Length ETV
+vector 723 ONoCMesh.router[2].port[1].inPort Inport_total_Queue_Length ETV
+vector 724 ONoCMesh.router[0].port[3].inPort Inport_total_Queue_Length ETV
+vector 725 ONoCMesh.router[2].port[4].inPort Inport_total_Queue_Length ETV
+vector 726 ONoCMesh.router[3].port[1].inPort Inport_total_Queue_Length ETV
+vector 727 ONoCMesh.router[1].port[3].inPort Inport_total_Queue_Length ETV
+vector 728 ONoCMesh.router[3].port[4].inPort Inport_total_Queue_Length ETV
+vector 729 ONoCMesh.router[2].port[3].inPort Inport_total_Queue_Length ETV
+vector 730 ONoCMesh.router[0].port[1].inPort Inport_total_Queue_Length ETV
+vector 731 ONoCMesh.router[5].port[0].inPort Inport_total_Queue_Length ETV
+vector 732 ONoCMesh.router[4].port[0].inPort Inport_total_Queue_Length ETV
+vector 733 ONoCMesh.router[5].port[4].inPort Inport_total_Queue_Length ETV
+vector 734 ONoCMesh.router[4].port[4].inPort Inport_total_Queue_Length ETV
+vector 735 ONoCMesh.router[1].port[2].inPort Inport_total_Queue_Length ETV
+vector 736 ONoCMesh.router[0].port[2].inPort Inport_total_Queue_Length ETV
+0	58623 19844 2138 900490 0.0000001 0.00005 501 0 2.4305153647031e-07 6.9204989165496e-05 1.2460304880585e-11
+1	78467 19841 2138 900490 0.0000001 0.00005 501 0 2.4305153647031e-07 6.9204279165496e-05 1.2460099288733e-11
+2	98308 10923 2138 900490 0.0000001 0.00005 501 0 5.5e-10 7.1e-10 3.145e-19
+3	109231 19866 2138 900490 0.0000001 0.00005 501 5.01e-08 6.9204989165496e-05 0.021900171789036 1.1581435060872e-06
+4	129097 19862 2138 900490 0.0000001 0.00005 501 5e-08 6.9204279165496e-05 0.021899828789036 1.1581129598656e-06
+5	148959 13909 2138 900490 0.0000001 0.00005 501 1e-10 7.1e-10 3.43e-07 2.356032e-16
+6	162868 18143 2138 900490 0.0000001 0.00005 501 0 2.4305153647031 692.04989165496 1246.0304880585
+7	181011 17851 2138 900490 0.0000001 0.00005 501 318.15 327.4726128385 162731.37985389 52858606.270764
+8	198862 19831 2139 900490 0.0000001 0.00005 501 0 2.4860488879464e-07 8.5556843471824e-05 1.8540459730413e-11
+9	218693 19831 2139 900490 0.0000001 0.00005 501 0 2.4860488879464e-07 8.5556801471824e-05 1.854045044549e-11
+10	238524 11416 2139 900490 0.0000001 0.00005 501 0 3.2e-11 4.2e-11 1.124e-21
+11	249940 20362 2139 900490 0.0000001 0.00005 501 5e-08 8.5556843471824e-05 0.015990149221036 8.7145679151887e-07
+12	270302 20362 2139 900490 0.0000001 0.00005 501 5e-08 8.5556801471824e-05 0.015990146167036 8.7145648587688e-07
+13	290664 12606 2139 900490 0.0000001 0.00005 501 0 4.2e-11 3.054e-09 3.3228e-20
+14	303270 18537 2139 900490 0.0000001 0.00005 501 0 2.4860488879464 855.56843471824 1854.0459730413
+15	321807 18346 2139 900490 0.0000001 0.00005 501 318.15 328.3364675557 163006.07233756 53040597.875584
+16	340153 20324 2140 900490 0.0000001 0.00005 501 0 2.54752853485e-07 8.432150868153e-05 1.8386328778946e-11
+17	360477 20324 2140 900490 0.0000001 0.00005 501 0 2.54752853485e-07 8.432149068153e-05 1.8386323096617e-11
+18	380801 11414 2140 900490 0.0000001 0.00005 501 0 1e-11 1.8e-11 1.64e-22
+19	392215 20354 2140 900490 0.0000001 0.00005 501 5e-08 8.432150868153e-05 0.015836092609862 8.6315033666474e-07
+20	412569 20353 2140 900490 0.0000001 0.00005 501 5e-08 8.432149068153e-05 0.015836089533862 8.6315002842026e-07
+21	432922 12622 2140 900490 0.0000001 0.00005 501 0 1.8e-11 3.076e-09 3.2488e-20
+22	445544 18538 2140 900490 0.0000001 0.00005 501 0 2.54752853485 843.2150868153 1838.6328778946
+23	464082 18337 2140 900490 0.0000001 0.00005 501 318.15 329.24371190865 163015.2370193 53048315.683424
+24	482419 20319 2141 900490 0.0000001 0.00005 501 0 2.5629773989404e-07 7.4531814502137e-05 1.5092007687098e-11
+25	502738 20319 2141 900490 0.0000001 0.00005 501 0 2.5629773989404e-07 7.4531790502137e-05 1.5092002610593e-11
+26	523057 11416 2141 900490 0.0000001 0.00005 501 0 1.4e-11 2.4e-11 2.96e-22
+27	534473 20354 2141 900490 0.0000001 0.00005 501 5e-08 7.4531814502137e-05 0.015367096749486 7.9639305457645e-07
+28	554827 20354 2141 900490 0.0000001 0.00005 501 5e-08 7.4531790502137e-05 0.015367092789486 7.9639263117396e-07
+29	575181 12738 2141 900490 0.0000001 0.00005 501 0 2.4e-11 3.96e-09 6.312e-20
+30	587919 18586 2141 900490 0.0000001 0.00005 501 0 2.5629773989404 745.31814502137 1509.2007687098
+31	606505 18349 2141 900490 0.0000001 0.00005 501 318.15 329.46569252017 162851.66340136 52941565.183924
+32	624854 20340 2142 900490 0.0000001 0.00005 501 0 1.2451420699507e-07 3.4378625388676e-05 2.380373842281e-12
+33	645194 20340 2142 900490 0.0000001 0.00005 501 0 1.2450620699507e-07 3.4378617388676e-05 2.3803718501177e-12
+34	665534 11410 2142 900490 0.0000001 0.00005 501 0 8e-12 8e-12 6.4e-23
+35	676944 20361 2142 900490 0.0000001 0.00005 501 5e-08 3.4378625388676e-05 0.0083644530414586 1.9106267121661e-07
+36	697305 20361 2142 900490 0.0000001 0.00005 501 5e-08 3.4378617388676e-05 0.0083644530254586 1.9106267011649e-07
+37	717666 11414 2142 900490 0.0000001 0.00005 501 0 8e-12 1.6e-11 1.28e-22
+38	729080 18840 2142 900490 0.0000001 0.00005 501 0 1.2451420699507 343.78625388676 238.0373842281
+39	747920 18343 2142 900490 0.0000001 0.00005 501 318.15 323.65077036542 161752.04891358 52223774.962885
+40	766263 20346 2143 900490 0.0000001 0.00005 501 0 1.7606297461247e-07 3.4623213262833e-05 2.4299205404585e-12
+41	786609 20346 2143 900490 0.0000001 0.00005 501 0 1.7605497461247e-07 3.4623205262833e-05 2.4299177235149e-12
+42	806955 11410 2143 900490 0.0000001 0.00005 501 0 8e-12 8e-12 6.4e-23
+43	818365 20371 2143 900490 0.0000001 0.00005 501 5e-08 3.4623213262833e-05 0.0082531808773956 1.8760719958203e-07
+44	838736 20371 2143 900490 0.0000001 0.00005 501 5e-08 3.4623205262833e-05 0.0082531808613956 1.8760719847408e-07
+45	859107 11414 2143 900490 0.0000001 0.00005 501 0 8e-12 1.6e-11 1.28e-22
+46	870521 18846 2143 900490 0.0000001 0.00005 501 0 1.7606297461247 346.23213262833 242.99205404585
+47	889367 18336 2143 900490 0.0000001 0.00005 501 318.15 324.32247737621 161783.74733202 52244606.128452
+48	907703 20347 2144 900490 0.0000001 0.00005 501 0 7.6631719673678e-08 3.4562415482597e-05 2.4146047301191e-12
+49	928050 20347 2144 900490 0.0000001 0.00005 501 0 7.6631719673678e-08 3.4562415482597e-05 2.4146047301191e-12
+50	948397 11406 2144 900490 0.0000001 0.00005 501 0 0 0 0
+51	959803 20353 2144 900490 0.0000001 0.00005 501 5e-08 3.4562415482597e-05 0.0082018999785964 1.8579987381555e-07
+52	980156 20353 2144 900490 0.0000001 0.00005 501 5e-08 3.4562415482597e-05 0.0082018999785964 1.8579987381555e-07
+53	1000509 11406 2144 900490 0.0000001 0.00005 501 0 0 0 0
+54	1011915 18847 2144 900490 0.0000001 0.00005 501 0 0.76631719673678 345.62415482597 241.46047301191
+55	1030762 18348 2144 900490 0.0000001 0.00005 501 318.15 324.55482120842 161785.72049112 52246082.051419
+56	1049110 20326 2145 900490 0.0000001 0.00005 501 0 7.7101977502968e-08 3.4479987848589e-05 2.4035412437458e-12
+57	1069436 20326 2145 900490 0.0000001 0.00005 501 0 7.7101977502968e-08 3.4479987848589e-05 2.4035412437458e-12
+58	1089762 11406 2145 900490 0.0000001 0.00005 501 0 0 0 0
+59	1101168 20347 2145 900490 0.0000001 0.00005 501 5e-08 3.4479987848589e-05 0.0081822538571292 1.8498335918185e-07
+60	1121515 20347 2145 900490 0.0000001 0.00005 501 5e-08 3.4479987848589e-05 0.0081822538571292 1.8498335918185e-07
+61	1141862 11406 2145 900490 0.0000001 0.00005 501 0 0 0 0
+62	1153268 18827 2145 900490 0.0000001 0.00005 501 0 0.77101977502968 344.79987848589 240.35412437458
+63	1172095 18350 2145 900490 0.0000001 0.00005 501 318.15 324.64658885039 161766.91480981 52233949.987097
+64	1190445 20328 2146 900490 0.0000001 0.00005 501 0 6.932862230267e-08 3.3092739051487e-05 2.2011054267067e-12
+65	1210773 20328 2146 900490 0.0000001 0.00005 501 0 6.932862230267e-08 3.3092739051487e-05 2.2011054267067e-12
+66	1231101 11406 2146 900490 0.0000001 0.00005 501 0 0 0 0
+67	1242507 20363 2146 900490 0.0000001 0.00005 501 5e-08 3.3092739051487e-05 0.0080538293385291 1.769762777042e-07
+68	1262870 20363 2146 900490 0.0000001 0.00005 501 5e-08 3.3092739051487e-05 0.0080538293385291 1.769762777042e-07
+69	1283233 11406 2146 900490 0.0000001 0.00005 501 0 0 0 0
+70	1294639 18829 2146 900490 0.0000001 0.00005 501 0 0.6932862230267 330.92739051487 220.11054267067
+71	1313468 18337 2146 900490 0.0000001 0.00005 501 318.15 323.05272616368 161480.87272449 52048693.894197
+72	1331805 20344 2147 900490 0.0000001 0.00005 501 0 7.0025159682371e-08 3.3109241562783e-05 2.2041495475585e-12
+73	1352149 20344 2147 900490 0.0000001 0.00005 501 0 7.0025159682371e-08 3.3109241562783e-05 2.2041495475585e-12
+74	1372493 11406 2147 900490 0.0000001 0.00005 501 0 0 0 0
+75	1383899 20352 2147 900490 0.0000001 0.00005 501 5e-08 3.3109241562783e-05 0.0080291997506041 1.7610861842324e-07
+76	1404251 20352 2147 900490 0.0000001 0.00005 501 5e-08 3.3109241562783e-05 0.0080291997506041 1.7610861842324e-07
+77	1424603 11406 2147 900490 0.0000001 0.00005 501 0 0 0 0
+78	1436009 18844 2147 900490 0.0000001 0.00005 501 0 0.70025159682371 331.09241562783 220.41495475585
+79	1454853 18343 2147 900490 0.0000001 0.00005 501 318.15 323.20247394117 161483.31265461 52050310.406521
+80	1473196 20342 2148 900490 0.0000001 0.00005 501 0 7.0453306979558e-08 3.3106869742401e-05 2.2043472756335e-12
+81	1493538 20342 2148 900490 0.0000001 0.00005 501 0 7.0453306979558e-08 3.3106869742401e-05 2.2043472756335e-12
+82	1513880 11406 2148 900490 0.0000001 0.00005 501 0 0 0 0
+83	1525286 20357 2148 900490 0.0000001 0.00005 501 5e-08 3.3106869742401e-05 0.0080125574774714 1.7546876661193e-07
+84	1545643 20357 2148 900490 0.0000001 0.00005 501 5e-08 3.3106869742401e-05 0.0080125574774714 1.7546876661193e-07
+85	1566000 11406 2148 900490 0.0000001 0.00005 501 0 0 0 0
+86	1577406 18843 2148 900490 0.0000001 0.00005 501 0 0.70453306979558 331.06869742401 220.43472756335
+87	1596249 18342 2148 900490 0.0000001 0.00005 501 318.15 323.29390758927 161482.00366205 52049491.571386
+88	1614591 20335 2149 900490 0.0000001 0.00005 501 0 7.0589704987348e-08 3.3093969230589e-05 2.202749813333e-12
+89	1634926 20335 2149 900490 0.0000001 0.00005 501 0 7.0589704987348e-08 3.3093969230589e-05 2.202749813333e-12
+90	1655261 11406 2149 900490 0.0000001 0.00005 501 0 0 0 0
+91	1666667 20358 2149 900490 0.0000001 0.00005 501 5e-08 3.3093969230589e-05 0.0080054716319924 1.7517550793196e-07
+92	1687025 20358 2149 900490 0.0000001 0.00005 501 5e-08 3.3093969230589e-05 0.0080054716319924 1.7517550793196e-07
+93	1707383 11406 2149 900490 0.0000001 0.00005 501 0 0 0 0
+94	1718789 18836 2149 900490 0.0000001 0.00005 501 0 0.70589704987348 330.93969230589 220.2749813333
+95	1737625 18358 2149 900490 0.0000001 0.00005 501 318.15 323.32291960094 161478.86912292 52047475.9811
+96	1755983 20328 2150 900490 0.0000001 0.00005 501 0 6.8537882508981e-08 3.276068316866e-05 2.1563299500756e-12
+97	1776311 20328 2150 900490 0.0000001 0.00005 501 0 6.8537882508981e-08 3.276068316866e-05 2.1563299500756e-12
+98	1796639 11406 2150 900490 0.0000001 0.00005 501 0 0 0 0
+99	1808045 20352 2150 900490 0.0000001 0.00005 501 5e-08 3.276068316866e-05 0.0079813334697831 1.7362737643654e-07
+100	1828397 20853 2150 900490 0.0000001 0.00005 501 5e-08 3.276068316866e-05 0.0079813334697831 1.7362737643654e-07
+101	1849250 11907 2150 900490 0.0000001 0.00005 501 0 0 0 0
+102	1861157 19330 2150 900490 0.0000001 0.00005 501 0 0.68537882508981 327.6068316866 215.63299500756
+103	1880487 18853 2150 900490 0.0000001 0.00005 501 318.15 322.88064205808 161406.74120584 52000862.892882
+104	1899340 20836 2151 900490 0.0000001 0.00005 501 0 6.8728848780668e-08 3.2758455222976e-05 2.1561614070588e-12
+105	1920176 20836 2151 900490 0.0000001 0.00005 501 0 6.8728848780668e-08 3.2758455222976e-05 2.1561614070588e-12
+106	1941012 11907 2151 900490 0.0000001 0.00005 501 0 0 0 0
+107	1952919 20842 2151 900490 0.0000001 0.00005 501 5e-08 3.2758455222976e-05 0.0079743674613588 1.7335471242744e-07
+108	1973761 20842 2151 900490 0.0000001 0.00005 501 5e-08 3.2758455222976e-05 0.0079743674613588 1.7335471242744e-07
+109	1994603 11907 2151 900490 0.0000001 0.00005 501 0 0 0 0
+110	2006510 19335 2151 900490 0.0000001 0.00005 501 0 0.68728848780668 327.58455222976 215.61614070588
+111	2025845 18848 2151 900490 0.0000001 0.00005 501 318.15 322.92234571529 161406.06233248 52000431.725116
+112	2044693 20821 2152 900490 0.0000001 0.00005 501 0 6.887447570556e-08 3.2752745877805e-05 2.1554869137392e-12
+113	2065514 20821 2152 900490 0.0000001 0.00005 501 0 6.887447570556e-08 3.2752745877805e-05 2.1554869137392e-12
+114	2086335 11907 2152 900490 0.0000001 0.00005 501 0 0 0 0
+115	2098242 20847 2152 900490 0.0000001 0.00005 501 5e-08 3.2752745877805e-05 0.0079683644268414 1.7310590006391e-07
+116	2119089 20847 2152 900490 0.0000001 0.00005 501 5e-08 3.2752745877805e-05 0.0079683644268414 1.7310590006391e-07
+117	2139936 11907 2152 900490 0.0000001 0.00005 501 0 0 0 0
+118	2151843 19322 2152 900490 0.0000001 0.00005 501 0 0.6887447570556 327.52745877805 215.54869137392
+119	2171165 18852 2152 900490 0.0000001 0.00005 501 318.15 322.95393974633 161404.6628586 51999533.589915
+120	2190017 20846 2153 900490 0.0000001 0.00005 501 0 6.8919421957361e-08 3.2747739318647e-05 2.1548484757594e-12
+121	2210863 20846 2153 900490 0.0000001 0.00005 501 0 6.8919421957361e-08 3.2747739318647e-05 2.1548484757594e-12
+122	2231709 11907 2153 900490 0.0000001 0.00005 501 0 0 0 0
+123	2243616 20846 2153 900490 0.0000001 0.00005 501 5e-08 3.2747739318647e-05 0.0079654488324697 1.7297972287301e-07
+124	2264462 20846 2153 900490 0.0000001 0.00005 501 5e-08 3.2747739318647e-05 0.0079654488324697 1.7297972287301e-07
+125	2285308 11907 2153 900490 0.0000001 0.00005 501 0 0 0 0
+126	2297215 19346 2153 900490 0.0000001 0.00005 501 0 0.68919421957361 327.47739318647 215.48484757594
+127	2316561 18855 2153 900490 0.0000001 0.00005 501 318.15 322.96372528564 161403.49420317 51998781.36057
+128	2335416 18848 2154 900490 0.0000001 0.00005 501 318.15 325.48238935751 162234.81724923 52535946.822245
+129	2354264 18857 2159 900490 0.0000001 0.00005 501 318.15 326.20342875075 162377.50456332 52629898.506508
+130	2373121 18830 2164 900490 0.0000001 0.00005 501 318.15 326.9740549242 162389.50974326 52638716.731983
+131	2391951 18858 2169 900490 0.0000001 0.00005 501 318.15 327.14273483737 162306.31265529 52584781.853626
+132	2410809 18854 2174 900490 0.0000001 0.00005 501 318.15 323.24402499596 161618.06492958 52137075.951452
+133	2429663 18857 2179 900490 0.0000001 0.00005 501 318.15 323.75766923223 161645.72802558 52155189.339303
+134	2448520 18849 2184 900490 0.0000001 0.00005 501 318.15 324.05154355711 161648.60148684 52157214.167364
+135	2467369 18841 2189 900490 0.0000001 0.00005 501 318.15 324.14804179283 161632.51899636 52146857.042139
+136	2486210 18852 2194 900490 0.0000001 0.00005 501 318.15 322.72802113159 161376.10955898 51980996.625218
+137	2505062 18845 2199 900490 0.0000001 0.00005 501 318.15 322.8623939622 161379.4463445 51983185.149143
+138	2523907 18857 2204 900490 0.0000001 0.00005 501 318.15 322.95045460656 161378.85937636 51982831.137148
+139	2542764 18848 2209 900490 0.0000001 0.00005 501 318.15 322.98286441102 161375.7768885 51980850.559643
+140	2561612 18849 2214 900490 0.0000001 0.00005 501 318.15 322.56128305777 161304.19555344 51934638.300902
+141	2580461 18850 2219 900490 0.0000001 0.00005 501 318.15 322.60061731617 161303.95783511 51934491.615991
+142	2599311 18862 2224 900490 0.0000001 0.00005 501 318.15 322.62978856589 161302.9344798 51933836.71007
+143	2618173 18862 2229 900490 0.0000001 0.00005 501 318.3105 322.63962630238 161306.35878023 51936028.667451
+144	2637035 1945 2628 900361 0.00000012175 0.00005 52 0.75183064042778 2.4297983672363 72.227551954117 129.96259898031
+145	2638980 1938 18325 900362 0.000001 0.00005 52 0.51574270296261 2.4860488879464 88.10603002307 188.86616926826
+146	2640918 1939 18326 900363 0.000001 0.00005 52 0.51516223468531 2.5469285924356 86.95766789375 187.46214184607
+147	2642857 1942 18327 900364 0.000001 0.00005 52 0.51515556040681 2.5611388211003 77.021334503254 153.88858826034
+148	2644799 1925 18328 900365 0.000001 0.00005 51 0.51574270296261 2.2155907810823 38.11679456073 33.097332722778
+149	2646724 1924 18329 900366 0.000001 0.00005 51 0.51516886080416 2.2495378840968 38.358972786346 33.713539633141
+150	2648648 1890 18330 900367 0.000001 0.00005 50 0.51515565607308 0.76628714054219 34.652115444886 24.258716065025
+151	2650538 1885 18331 900368 0.000001 0.00005 50 0.51515551257221 0.77077437215608 34.563415185391 24.138707352371
+152	2652423 1885 18332 900369 0.000001 0.00005 50 0.51516223468531 0.69327812344154 33.160441604838 22.091839363099
+153	2654308 1889 18333 900370 0.000001 0.00005 50 0.51515565607308 0.70024826413859 33.17937584387 22.125669225171
+154	2656197 1886 18334 900371 0.000001 0.00005 50 0.51515551298261 0.70453153483174 33.178222667145 22.129357444826
+155	2658083 1882 18335 900372 0.000001 0.00005 50 0.51515551174771 0.70589670116692 33.164836093381 22.112699371595
+156	2659965 1883 18336 900373 0.000001 0.00005 50 0.51515556040681 0.68537009203164 32.825618306483 21.64026913191
+157	2661848 1884 18337 900374 0.000001 0.00005 50 0.51515551257221 0.68728108901259 32.824058313816 21.639500592743
+158	2663732 1881 18338 900375 0.000001 0.00005 50 0.51515551174771 0.68874459651547 32.818856101055 21.633453495661
+159	2665613 1885 18339 900376 0.000001 0.00005 50 0.51515551174402 0.6891923590146 32.813957385932 21.627217702809
+160	2667498 20479 20152 900490 0.0000011 0.00005 491 1.0940435456901e-10 1.6304009353293e-10 7.2309067525844e-08 1.069066625571e-17
+161	2687977 20479 20152 900490 0.0000011 0.00005 491 1.0940435456901e-10 1.6304009353293e-10 7.2309067525844e-08 1.069066625571e-17
+162	2708456 11683 20152 900490 0.0000011 0.00005 491 0 0 0 0
+163	2720139 20469 20152 900490 0.0000011 0.00005 491 1.0940435456901e-10 7.2309067525844e-08 1.7659954305615e-05 8.5623843051538e-13
+164	2740608 20469 20152 900490 0.0000011 0.00005 491 1.0940435456901e-10 7.2309067525844e-08 1.7659954305615e-05 8.5623843051538e-13
+165	2761077 11683 20152 900490 0.0000011 0.00005 491 0 0 0 0
+166	2772760 19988 20152 900490 0.0000011 0.00005 491 0.0010940435456901 0.0016304009353293 0.72309067525844 0.001069066625571
+167	2792748 20479 20153 900490 0.0000011 0.00005 491 1.0940435456901e-10 1.6304009353293e-10 7.2324067525844e-08 1.0695165500781e-17
+168	2813227 20479 20153 900490 0.0000011 0.00005 491 1.0940435456901e-10 1.6304009353293e-10 7.2309067525844e-08 1.069066625571e-17
+169	2833706 11695 20153 900490 0.0000011 0.00005 491 0 5e-12 1.5e-11 7.5e-23
+170	2845401 20470 20153 900490 0.0000011 0.00005 491 1.0940435456901e-10 7.2324067525844e-08 1.7660719305615e-05 8.5634184220018e-13
+171	2865871 20469 20153 900490 0.0000011 0.00005 491 1.0940435456901e-10 7.2309067525844e-08 1.7659954305615e-05 8.5623843051538e-13
+172	2886340 11993 20153 900490 0.0000011 0.00005 491 0 1.5e-11 7.65e-10 8.575e-21
+173	2898333 19988 20153 900490 0.0000011 0.00005 491 0.0010940435456901 0.0016304009353293 0.72324067525844 0.0010695165500781
+174	2918321 20479 20154 900490 0.0000011 0.00005 491 1.0940435456901e-10 1.6304009353293e-10 7.2314067525844e-08 1.0692167601135e-17
+175	2938800 20479 20154 900490 0.0000011 0.00005 491 1.0940435456901e-10 1.6304009353293e-10 7.2309067525844e-08 1.069066625571e-17
+176	2959279 11687 20154 900490 0.0000011 0.00005 491 0 5e-12 5e-12 2.5e-23
+177	2970966 20469 20154 900490 0.0000011 0.00005 491 1.0940435456901e-10 7.2314067525844e-08 1.7659964305615e-05 8.562398752715e-13
+178	2991435 20469 20154 900490 0.0000011 0.00005 491 1.0940435456901e-10 7.2309067525844e-08 1.7659954305615e-05 8.5623843051538e-13
+179	3011904 11691 20154 900490 0.0000011 0.00005 491 0 5e-12 1e-11 5e-23
+180	3023595 19988 20154 900490 0.0000011 0.00005 491 0.0010940435456901 0.0016304009353293 0.72314067525844 0.0010692167601135
+181	3043583 20479 20155 900490 0.0000011 0.00005 491 1.0940435456901e-10 1.7279756667157e-10 7.2349067525844e-08 1.0703323567452e-17
+182	3064062 20479 20155 900490 0.0000011 0.00005 491 1.0940435456901e-10 1.6304009353293e-10 7.2309067525844e-08 1.069066625571e-17
+183	3084541 11711 20155 900490 0.0000011 0.00005 491 0 1e-11 4e-11 2.5e-22
+184	3096252 20471 20155 900490 0.0000011 0.00005 491 1.0940435456901e-10 7.2349067525844e-08 1.7666694305615e-05 8.5694622109732e-13
+185	3116723 20469 20155 900490 0.0000011 0.00005 491 1.0940435456901e-10 7.2309067525844e-08 1.7659954305615e-05 8.5623843051538e-13
+186	3137192 12907 20155 900490 0.0000011 0.00005 491 0 4e-11 6.74e-09 1.5925e-19
+187	3150099 19988 20155 900490 0.0000011 0.00005 491 0.0010940435456901 0.0017279756667157 0.72349067525844 0.0010703323567452
+188	3170087 20479 20156 900490 0.0000011 0.00005 491 1.0940435456901e-10 1.7691953119811e-10 7.2329067525844e-08 1.0697404242582e-17
+189	3190566 20479 20156 900490 0.0000011 0.00005 491 1.0940435456901e-10 1.6304009353293e-10 7.2309067525844e-08 1.069066625571e-17
+190	3211045 11693 20156 900490 0.0000011 0.00005 491 0 1.5e-11 2e-11 2.5e-22
+191	3222738 20470 20156 900490 0.0000011 0.00005 491 1.0940435456901e-10 7.2329067525844e-08 1.7665944305615e-05 8.5684231568398e-13
+192	3243208 20469 20156 900490 0.0000011 0.00005 491 1.0940435456901e-10 7.2309067525844e-08 1.7659954305615e-05 8.5623843051538e-13
+193	3263677 12887 20156 900490 0.0000011 0.00005 491 0 2e-11 5.99e-09 1.1965e-19
+194	3276564 19988 20156 900490 0.0000011 0.00005 491 0.0010940435456901 0.0017691953119811 0.72329067525844 0.0010697404242582
+195	3296552 20466 20157 900490 0.0000011 0.00005 491 1.0658298546228e-10 1.7106873521126e-10 7.4208709529359e-08 1.1394813174282e-17
+196	3317018 20466 20157 900490 0.0000011 0.00005 491 1.0658298546228e-10 1.7106873521126e-10 7.4208709529359e-08 1.1394813174282e-17
+197	3337484 11683 20157 900490 0.0000011 0.00005 491 0 0 0 0
+198	3349167 20462 20157 900490 0.0000011 0.00005 491 1.0658298546228e-10 7.4208709529359e-08 1.6990718570986e-05 8.2100681257305e-13
+199	3369629 20462 20157 900490 0.0000011 0.00005 491 1.0658298546228e-10 7.4208709529359e-08 1.6990718570986e-05 8.2100681257305e-13
+200	3390091 11683 20157 900490 0.0000011 0.00005 491 0 0 0 0
+201	3401774 19975 20157 900490 0.0000011 0.00005 491 0.0010658298546228 0.0017106873521126 0.74208709529359 0.0011394813174282
+202	3421749 20466 20158 900490 0.0000011 0.00005 491 1.0658298546228e-10 1.7496136812707e-10 7.4248709529359e-08 1.1407534189132e-17
+203	3442215 20466 20158 900490 0.0000011 0.00005 491 1.0658298546228e-10 1.7106873521126e-10 7.4208709529359e-08 1.1394813174282e-17
+204	3462681 11732 20158 900490 0.0000011 0.00005 491 0 1.35e-11 4e-11 2.885e-22
+205	3474413 20462 20158 900490 0.0000011 0.00005 491 1.0658298546228e-10 7.4248709529359e-08 1.6997474070986e-05 8.2170042888198e-13
+206	3494875 20462 20158 900490 0.0000011 0.00005 491 1.0658298546228e-10 7.4208709529359e-08 1.6990718570986e-05 8.2100681257305e-13
+207	3515337 12916 20158 900490 0.0000011 0.00005 491 0 4e-11 6.7555e-09 1.5904675e-19
+208	3528253 19975 20158 900490 0.0000011 0.00005 491 0.0010658298546228 0.0017496136812707 0.74248709529359 0.0011407534189132
+209	3548228 20466 20159 900490 0.0000011 0.00005 491 1.0658298546228e-10 1.7455653481169e-10 7.4213709529359e-08 1.139653373963e-17
+210	3568694 20466 20159 900490 0.0000011 0.00005 491 1.0658298546228e-10 1.7106873521126e-10 7.4208709529359e-08 1.1394813174282e-17
+211	3589160 11687 20159 900490 0.0000011 0.00005 491 0 5e-12 5e-12 2.5e-23
+212	3600847 20462 20159 900490 0.0000011 0.00005 491 1.0658298546228e-10 7.4213709529359e-08 1.6990728570986e-05 8.2100829510849e-13
+213	3621309 20462 20159 900490 0.0000011 0.00005 491 1.0658298546228e-10 7.4208709529359e-08 1.6990718570986e-05 8.2100681257305e-13
+214	3641771 11691 20159 900490 0.0000011 0.00005 491 0 5e-12 1e-11 5e-23
+215	3653462 19975 20159 900490 0.0000011 0.00005 491 0.0010658298546228 0.0017455653481169 0.74213709529359 0.001139653373963
+216	3673437 20466 20160 900490 0.0000011 0.00005 491 1.0658298546228e-10 1.7590706859481e-10 7.4238709529359e-08 1.1404303573946e-17
+217	3693903 20466 20160 900490 0.0000011 0.00005 491 1.0658298546228e-10 1.7106873521126e-10 7.4208709529359e-08 1.1394813174282e-17
+218	3714369 11715 20160 900490 0.0000011 0.00005 491 0 5e-12 3e-11 1.395e-22
+219	3726084 20462 20160 900490 0.0000011 0.00005 491 1.0658298546228e-10 7.4238709529359e-08 1.6995952070986e-05 8.2155187243643e-13
+220	3746546 20462 20160 900490 0.0000011 0.00005 491 1.0658298546228e-10 7.4208709529359e-08 1.6990718570986e-05 8.2100681257305e-13
+221	3767008 13444 20160 900490 0.0000011 0.00005 491 0 3e-11 5.2335e-09 9.843225e-20
+222	3780452 19975 20160 900490 0.0000011 0.00005 491 0.0010658298546228 0.0017590706859481 0.74238709529359 0.0011404303573946
+223	3800427 20466 20161 900490 0.0000011 0.00005 491 1.0658298546228e-10 1.8033202427459e-10 7.4224709529359e-08 1.140008477496e-17
+224	3820893 20466 20161 900490 0.0000011 0.00005 491 1.0658298546228e-10 1.7106873521126e-10 7.4208709529359e-08 1.1394813174282e-17
+225	3841359 11697 20161 900490 0.0000011 0.00005 491 0 1.1e-11 1.6e-11 1.38e-22
+226	3853056 20462 20161 900490 0.0000011 0.00005 491 1.0658298546228e-10 7.4224709529359e-08 1.6992247570986e-05 8.2115861753906e-13
+227	3873518 20462 20161 900490 0.0000011 0.00005 491 1.0658298546228e-10 7.4208709529359e-08 1.6990718570986e-05 8.2100681257305e-13
+228	3893980 12889 20161 900490 0.0000011 0.00005 491 0 1.6e-11 1.529e-09 8.169e-21
+229	3906869 19975 20161 900490 0.0000011 0.00005 491 0.0010658298546228 0.0018033202427459 0.74224709529359 0.001140008477496
+230	3926844 20476 20162 900490 0.0000011 0.00005 491 1.063631329156e-10 1.8008708046519e-10 7.4675812633422e-08 1.1641812541415e-17
+231	3947320 20476 20162 900490 0.0000011 0.00005 491 1.063631329156e-10 1.8008708046519e-10 7.4675812633422e-08 1.1641812541415e-17
+232	3967796 11683 20162 900490 0.0000011 0.00005 491 0 0 0 0
+233	3979479 20464 20162 900490 0.0000011 0.00005 491 1.063631329156e-10 7.4675812633422e-08 1.678476788818e-05 8.0994183574949e-13
+234	3999943 20464 20162 900490 0.0000011 0.00005 491 1.063631329156e-10 7.4675812633422e-08 1.678476788818e-05 8.0994183574949e-13
+235	4020407 11683 20162 900490 0.0000011 0.00005 491 0 0 0 0
+236	4032090 19985 20162 900490 0.0000011 0.00005 491 0.001063631329156 0.0018008708046519 0.74675812633422 0.0011641812541415
+237	4052075 20476 20163 900490 0.0000011 0.00005 491 1.063631329156e-10 1.8508708046519e-10 7.4705812633422e-08 1.1651351989009e-17
+238	4072551 20476 20163 900490 0.0000011 0.00005 491 1.063631329156e-10 1.8008708046519e-10 7.4675812633422e-08 1.1641812541415e-17
+239	4093027 11707 20163 900490 0.0000011 0.00005 491 0 9e-12 3e-11 1.82e-22
+240	4104734 20464 20163 900490 0.0000011 0.00005 491 1.063631329156e-10 7.4705812633422e-08 1.678999888818e-05 8.1048198397849e-13
+241	4125198 20464 20163 900490 0.0000011 0.00005 491 1.063631329156e-10 7.4675812633422e-08 1.678476788818e-05 8.0994183574949e-13
+242	4145662 13451 20163 900490 0.0000011 0.00005 491 0 3e-11 5.231e-09 9.8001e-20
+243	4159113 19985 20163 900490 0.0000011 0.00005 491 0.001063631329156 0.0018508708046519 0.74705812633422 0.0011651351989009
+244	4179098 20476 20164 900490 0.0000011 0.00005 491 1.063631329156e-10 1.8008708046519e-10 7.4675812633422e-08 1.1641812541415e-17
+245	4199574 20476 20164 900490 0.0000011 0.00005 491 1.063631329156e-10 1.8008708046519e-10 7.4675812633422e-08 1.1641812541415e-17
+246	4220050 11683 20164 900490 0.0000011 0.00005 491 0 0 0 0
+247	4231733 20464 20164 900490 0.0000011 0.00005 491 1.063631329156e-10 7.4675812633422e-08 1.678476788818e-05 8.0994183574949e-13
+248	4252197 20464 20164 900490 0.0000011 0.00005 491 1.063631329156e-10 7.4675812633422e-08 1.678476788818e-05 8.0994183574949e-13
+249	4272661 11683 20164 900490 0.0000011 0.00005 491 0 0 0 0
+250	4284344 19985 20164 900490 0.0000011 0.00005 491 0.001063631329156 0.0018008708046519 0.74675812633422 0.0011641812541415
+251	4304329 20476 20165 900490 0.0000011 0.00005 491 1.063631329156e-10 1.8471700903355e-10 7.4695812633422e-08 1.1648181974263e-17
+252	4324805 20476 20165 900490 0.0000011 0.00005 491 1.063631329156e-10 1.8008708046519e-10 7.4675812633422e-08 1.1641812541415e-17
+253	4345281 11703 20165 900490 0.0000011 0.00005 491 0 5e-12 2e-11 9.2e-23
+254	4356984 20464 20165 900490 0.0000011 0.00005 491 1.063631329156e-10 7.4695812633422e-08 1.678845388818e-05 8.1032961291413e-13
+255	4377448 20464 20165 900490 0.0000011 0.00005 491 1.063631329156e-10 7.4675812633422e-08 1.678476788818e-05 8.0994183574949e-13
+256	4397912 12883 20165 900490 0.0000011 0.00005 491 0 2e-11 3.686e-09 5.0976e-20
+257	4410795 19985 20165 900490 0.0000011 0.00005 491 0.001063631329156 0.0018471700903355 0.74695812633422 0.0011648181974263
+258	4430780 20476 20166 900490 0.0000011 0.00005 491 1.063631329156e-10 1.8008708046519e-10 7.4685812633422e-08 1.1644923734812e-17
+259	4451256 20476 20166 900490 0.0000011 0.00005 491 1.063631329156e-10 1.8008708046519e-10 7.4675812633422e-08 1.1641812541415e-17
+260	4471732 11695 20166 900490 0.0000011 0.00005 491 0 5e-12 1e-11 3.8e-23
+261	4483427 20464 20166 900490 0.0000011 0.00005 491 1.063631329156e-10 7.4685812633422e-08 1.678632988818e-05 8.1009720140719e-13
+262	4503891 20464 20166 900490 0.0000011 0.00005 491 1.063631329156e-10 7.4675812633422e-08 1.678476788818e-05 8.0994183574949e-13
+263	4524355 12879 20166 900490 0.0000011 0.00005 491 0 1e-11 1.562e-09 8.474e-21
+264	4537234 19985 20166 900490 0.0000011 0.00005 491 0.001063631329156 0.0018008708046519 0.74685812633422 0.0011644923734812
+265	4557219 20472 20167 900490 0.0000011 0.00005 491 1.0635237122396e-10 1.8212364814535e-10 7.3844636668436e-08 1.1390302697421e-17
+266	4577691 20472 20167 900490 0.0000011 0.00005 491 1.0635237122396e-10 1.8212364814535e-10 7.3844636668436e-08 1.1390302697421e-17
+267	4598163 11683 20167 900490 0.0000011 0.00005 491 0 0 0 0
+268	4609846 20462 20167 900490 0.0000011 0.00005 491 1.0635237122396e-10 7.3844636668436e-08 1.6696700555327e-05 8.0215353102508e-13
+269	4630308 20462 20167 900490 0.0000011 0.00005 491 1.0635237122396e-10 7.3844636668436e-08 1.6696700555327e-05 8.0215353102508e-13
+270	4650770 11683 20167 900490 0.0000011 0.00005 491 0 0 0 0
+271	4662453 19981 20167 900490 0.0000011 0.00005 491 0.0010635237122396 0.0018212364814535 0.73844636668436 0.0011390302697421
+272	4682434 20472 20168 900490 0.0000011 0.00005 491 1.0635237122396e-10 1.8712364814535e-10 7.3864636668436e-08 1.1396685825968e-17
+273	4702906 20472 20168 900490 0.0000011 0.00005 491 1.0635237122396e-10 1.8212364814535e-10 7.3844636668436e-08 1.1390302697421e-17
+274	4723378 11699 20168 900490 0.0000011 0.00005 491 0 5e-12 2e-11 1e-22
+275	4735077 20462 20168 900490 0.0000011 0.00005 491 1.0635237122396e-10 7.3864636668436e-08 1.6700370555327e-05 8.0253705713417e-13
+276	4755539 20462 20168 900490 0.0000011 0.00005 491 1.0635237122396e-10 7.3844636668436e-08 1.6696700555327e-05 8.0215353102508e-13
+277	4776001 12883 20168 900490 0.0000011 0.00005 491 0 2e-11 3.67e-09 5.04e-20
+278	4788884 19981 20168 900490 0.0000011 0.00005 491 0.0010635237122396 0.0018712364814535 0.73864636668436 0.0011396685825968
+279	4808865 20472 20169 900490 0.0000011 0.00005 491 1.0635237122396e-10 1.8212364814535e-10 7.3844636668436e-08 1.1390302697421e-17
+280	4829337 20472 20169 900490 0.0000011 0.00005 491 1.0635237122396e-10 1.8212364814535e-10 7.3844636668436e-08 1.1390302697421e-17
+281	4849809 11683 20169 900490 0.0000011 0.00005 491 0 0 0 0
+282	4861492 20462 20169 900490 0.0000011 0.00005 491 1.0635237122396e-10 7.3844636668436e-08 1.6696700555327e-05 8.0215353102508e-13
+283	4881954 20462 20169 900490 0.0000011 0.00005 491 1.0635237122396e-10 7.3844636668436e-08 1.6696700555327e-05 8.0215353102508e-13
+284	4902416 11683 20169 900490 0.0000011 0.00005 491 0 0 0 0
+285	4914099 19981 20169 900490 0.0000011 0.00005 491 0.0010635237122396 0.0018212364814535 0.73844636668436 0.0011390302697421
+286	4934080 20472 20170 900490 0.0000011 0.00005 491 1.0635237122396e-10 1.8212364814535e-10 7.3844636668436e-08 1.1390302697421e-17
+287	4954552 20472 20170 900490 0.0000011 0.00005 491 1.0635237122396e-10 1.8212364814535e-10 7.3844636668436e-08 1.1390302697421e-17
+288	4975024 11683 20170 900490 0.0000011 0.00005 491 0 0 0 0
+289	4986707 20462 20170 900490 0.0000011 0.00005 491 1.0635237122396e-10 7.3844636668436e-08 1.6696700555327e-05 8.0215353102508e-13
+290	5007169 20462 20170 900490 0.0000011 0.00005 491 1.0635237122396e-10 7.3844636668436e-08 1.6696700555327e-05 8.0215353102508e-13
+291	5027631 11683 20170 900490 0.0000011 0.00005 491 0 0 0 0
+292	5039314 19981 20170 900490 0.0000011 0.00005 491 0.0010635237122396 0.0018212364814535 0.73844636668436 0.0011390302697421
+293	5059295 20472 20171 900490 0.0000011 0.00005 491 1.0635237122396e-10 1.8712364814535e-10 7.3864636668436e-08 1.1396686554619e-17
+294	5079767 20472 20171 900490 0.0000011 0.00005 491 1.0635237122396e-10 1.8212364814535e-10 7.3844636668436e-08 1.1390302697421e-17
+295	5100239 11699 20171 900490 0.0000011 0.00005 491 0 5e-12 2e-11 1e-22
+296	5111938 20462 20171 900490 0.0000011 0.00005 491 1.0635237122396e-10 7.3864636668436e-08 1.6700390555327e-05 8.0253955654494e-13
+297	5132400 20462 20171 900490 0.0000011 0.00005 491 1.0635237122396e-10 7.3844636668436e-08 1.6696700555327e-05 8.0215353102508e-13
+298	5152862 12883 20171 900490 0.0000011 0.00005 491 0 2e-11 3.69e-09 5.1e-20
+299	5165745 19981 20171 900490 0.0000011 0.00005 491 0.0010635237122396 0.0018712364814535 0.73864636668436 0.0011396686554619
+300	5185726 20460 20172 900490 0.0000011 0.00005 491 1.0658298546228e-10 1.4497008122742e-10 6.6488807434072e-08 9.0316923221638e-18
+301	5206186 20460 20172 900490 0.0000011 0.00005 491 1.0658298546228e-10 1.4043880641744e-10 6.6483807434072e-08 9.0302676213515e-18
+302	5226646 11687 20172 900490 0.0000011 0.00005 491 0 5e-12 5e-12 2.5e-23
+303	5238333 20459 20172 900490 0.0000011 0.00005 491 1.0658298546228e-10 6.6488807434072e-08 1.5978709520045e-05 7.0615196442685e-13
+304	5258792 20459 20172 900490 0.0000011 0.00005 491 1.0658298546228e-10 6.6483807434072e-08 1.5978694520045e-05 7.061499740399e-13
+305	5279251 11695 20172 900490 0.0000011 0.00005 491 0 5e-12 1.5e-11 7.5e-23
+306	5290946 19969 20172 900490 0.0000011 0.00005 491 0.0010658298546228 0.0014497008122742 0.66488807434072 0.00090316923221638
+307	5310915 20460 20173 900490 0.0000011 0.00005 491 1.0658298546228e-10 1.4043880641744e-10 6.6483807434072e-08 9.0302676213515e-18
+308	5331375 20460 20173 900490 0.0000011 0.00005 491 1.0658298546228e-10 1.4043880641744e-10 6.6483807434072e-08 9.0302676213515e-18
+309	5351835 11683 20173 900490 0.0000011 0.00005 491 0 0 0 0
+310	5363518 20459 20173 900490 0.0000011 0.00005 491 1.0658298546228e-10 6.6483807434072e-08 1.5978694520045e-05 7.061499740399e-13
+311	5383977 20459 20173 900490 0.0000011 0.00005 491 1.0658298546228e-10 6.6483807434072e-08 1.5978694520045e-05 7.061499740399e-13
+312	5404436 11683 20173 900490 0.0000011 0.00005 491 0 0 0 0
+313	5416119 19969 20173 900490 0.0000011 0.00005 491 0.0010658298546228 0.0014043880641744 0.66483807434072 0.00090302676213515
+314	5436088 20460 20174 900490 0.0000011 0.00005 491 1.0658298546228e-10 1.4043880641744e-10 6.6483807434072e-08 9.0302676213515e-18
+315	5456548 20460 20174 900490 0.0000011 0.00005 491 1.0658298546228e-10 1.4043880641744e-10 6.6483807434072e-08 9.0302676213515e-18
+316	5477008 11683 20174 900490 0.0000011 0.00005 491 0 0 0 0
+317	5488691 20459 20174 900490 0.0000011 0.00005 491 1.0658298546228e-10 6.6483807434072e-08 1.5978694520045e-05 7.061499740399e-13
+318	5509150 20459 20174 900490 0.0000011 0.00005 491 1.0658298546228e-10 6.6483807434072e-08 1.5978694520045e-05 7.061499740399e-13
+319	5529609 11683 20174 900490 0.0000011 0.00005 491 0 0 0 0
+320	5541292 19969 20174 900490 0.0000011 0.00005 491 0.0010658298546228 0.0014043880641744 0.66483807434072 0.00090302676213515
+321	5561261 20460 20175 900490 0.0000011 0.00005 491 1.0658298546228e-10 1.4043880641744e-10 6.6483807434072e-08 9.0302676213515e-18
+322	5581721 20460 20175 900490 0.0000011 0.00005 491 1.0658298546228e-10 1.4043880641744e-10 6.6483807434072e-08 9.0302676213515e-18
+323	5602181 11683 20175 900490 0.0000011 0.00005 491 0 0 0 0
+324	5613864 20459 20175 900490 0.0000011 0.00005 491 1.0658298546228e-10 6.6483807434072e-08 1.5978694520045e-05 7.061499740399e-13
+325	5634323 20459 20175 900490 0.0000011 0.00005 491 1.0658298546228e-10 6.6483807434072e-08 1.5978694520045e-05 7.061499740399e-13
+326	5654782 11683 20175 900490 0.0000011 0.00005 491 0 0 0 0
+327	5666465 19969 20175 900490 0.0000011 0.00005 491 0.0010658298546228 0.0014043880641744 0.66483807434072 0.00090302676213515
+328	5686434 20460 20176 900490 0.0000011 0.00005 491 1.0658298546228e-10 1.4347008122742e-10 6.6488807434072e-08 9.0316823657952e-18
+329	5706894 20460 20176 900490 0.0000011 0.00005 491 1.0658298546228e-10 1.4043880641744e-10 6.6483807434072e-08 9.0302676213515e-18
+330	5727354 11695 20176 900490 0.0000011 0.00005 491 0 3.5e-12 5e-12 1.45e-23
+331	5739049 20459 20176 900490 0.0000011 0.00005 491 1.0658298546228e-10 6.6488807434072e-08 1.5978708020045e-05 7.0615176580325e-13
+332	5759508 20459 20176 900490 0.0000011 0.00005 491 1.0658298546228e-10 6.6483807434072e-08 1.5978694520045e-05 7.061499740399e-13
+333	5779967 11697 20176 900490 0.0000011 0.00005 491 0 5e-12 1.35e-11 6.225e-23
+334	5791664 19969 20176 900490 0.0000011 0.00005 491 0.0010658298546228 0.0014347008122742 0.66488807434072 0.00090316823657952
+335	5811633 20479 20177 900490 0.0000011 0.00005 491 1.0637351773034e-10 1.5020571693742e-10 6.6816762336832e-08 9.141510759091e-18
+336	5832112 20479 20177 900490 0.0000011 0.00005 491 1.0637351773034e-10 1.4533113108342e-10 6.6811762336832e-08 9.1400337019216e-18
+337	5852591 11687 20177 900490 0.0000011 0.00005 491 0 5e-12 5e-12 2.5e-23
+338	5864278 20460 20177 900490 0.0000011 0.00005 491 1.0637351773034e-10 6.6816762336832e-08 1.5797406495597e-05 6.9558783578e-13
+339	5884738 20460 20177 900490 0.0000011 0.00005 491 1.0637351773034e-10 6.6811762336832e-08 1.5797391495597e-05 6.9558583570998e-13
+340	5905198 11695 20177 900490 0.0000011 0.00005 491 0 5e-12 1.5e-11 7.5e-23
+341	5916893 19988 20177 900490 0.0000011 0.00005 491 0.0010637351773034 0.0015020571693742 0.66816762336832 0.0009141510759091
+342	5936881 20479 20178 900490 0.0000011 0.00005 491 1.0637351773034e-10 1.4533113108342e-10 6.6811762336832e-08 9.1400337019216e-18
+343	5957360 20479 20178 900490 0.0000011 0.00005 491 1.0637351773034e-10 1.4533113108342e-10 6.6811762336832e-08 9.1400337019216e-18
+344	5977839 11683 20178 900490 0.0000011 0.00005 491 0 0 0 0
+345	5989522 20460 20178 900490 0.0000011 0.00005 491 1.0637351773034e-10 6.6811762336832e-08 1.5797391495597e-05 6.9558583570998e-13
+346	6009982 20460 20178 900490 0.0000011 0.00005 491 1.0637351773034e-10 6.6811762336832e-08 1.5797391495597e-05 6.9558583570998e-13
+347	6030442 11683 20178 900490 0.0000011 0.00005 491 0 0 0 0
+348	6042125 19988 20178 900490 0.0000011 0.00005 491 0.0010637351773034 0.0014533113108342 0.66811762336832 0.00091400337019216
+349	6062113 20479 20179 900490 0.0000011 0.00005 491 1.0637351773034e-10 1.4533113108342e-10 6.6811762336832e-08 9.1400337019216e-18
+350	6082592 20479 20179 900490 0.0000011 0.00005 491 1.0637351773034e-10 1.4533113108342e-10 6.6811762336832e-08 9.1400337019216e-18
+351	6103071 11683 20179 900490 0.0000011 0.00005 491 0 0 0 0
+352	6114754 20460 20179 900490 0.0000011 0.00005 491 1.0637351773034e-10 6.6811762336832e-08 1.5797391495597e-05 6.9558583570998e-13
+353	6135214 20460 20179 900490 0.0000011 0.00005 491 1.0637351773034e-10 6.6811762336832e-08 1.5797391495597e-05 6.9558583570998e-13
+354	6155674 11683 20179 900490 0.0000011 0.00005 491 0 0 0 0
+355	6167357 19988 20179 900490 0.0000011 0.00005 491 0.0010637351773034 0.0014533113108342 0.66811762336832 0.00091400337019216
+356	6187345 20479 20180 900490 0.0000011 0.00005 491 1.0637351773034e-10 1.4533113108342e-10 6.6811762336832e-08 9.1400337019216e-18
+357	6207824 20479 20180 900490 0.0000011 0.00005 491 1.0637351773034e-10 1.4533113108342e-10 6.6811762336832e-08 9.1400337019216e-18
+358	6228303 11683 20180 900490 0.0000011 0.00005 491 0 0 0 0
+359	6239986 20460 20180 900490 0.0000011 0.00005 491 1.0637351773034e-10 6.6811762336832e-08 1.5797391495597e-05 6.9558583570998e-13
+360	6260446 20460 20180 900490 0.0000011 0.00005 491 1.0637351773034e-10 6.6811762336832e-08 1.5797391495597e-05 6.9558583570998e-13
+361	6280906 11683 20180 900490 0.0000011 0.00005 491 0 0 0 0
+362	6292589 19988 20180 900490 0.0000011 0.00005 491 0.0010637351773034 0.0014533113108342 0.66811762336832 0.00091400337019216
+363	6312577 20479 20181 900490 0.0000011 0.00005 491 1.0637351773034e-10 1.5020571693742e-10 6.6816762336832e-08 9.141510759091e-18
+364	6333056 20479 20181 900490 0.0000011 0.00005 491 1.0637351773034e-10 1.4533113108342e-10 6.6811762336832e-08 9.1400337019216e-18
+365	6353535 11687 20181 900490 0.0000011 0.00005 491 0 5e-12 5e-12 2.5e-23
+366	6365222 20460 20181 900490 0.0000011 0.00005 491 1.0637351773034e-10 6.6816762336832e-08 1.5797406495597e-05 6.9558783578e-13
+367	6385682 20460 20181 900490 0.0000011 0.00005 491 1.0637351773034e-10 6.6811762336832e-08 1.5797391495597e-05 6.9558583570998e-13
+368	6406142 11695 20181 900490 0.0000011 0.00005 491 0 5e-12 1.5e-11 7.5e-23
+369	6417837 19988 20181 900490 0.0000011 0.00005 491 0.0010637351773034 0.0015020571693742 0.66816762336832 0.0009141510759091
+370	6437825 20479 20182 900490 0.0000011 0.00005 491 1.0635309075794e-10 1.4820647800308e-10 6.6889520856736e-08 9.1754743951419e-18
+371	6458304 20479 20182 900490 0.0000011 0.00005 491 1.0635309075794e-10 1.4820647800308e-10 6.6889520856736e-08 9.1754743951419e-18
+372	6478783 11683 20182 900490 0.0000011 0.00005 491 0 0 0 0
+373	6490466 20464 20182 900490 0.0000011 0.00005 491 1.0635309075794e-10 6.6889520856736e-08 1.5704094894194e-05 6.8952520410212e-13
+374	6510930 20464 20182 900490 0.0000011 0.00005 491 1.0635309075794e-10 6.6889520856736e-08 1.5704094894194e-05 6.8952520410212e-13
+375	6531394 11683 20182 900490 0.0000011 0.00005 491 0 0 0 0
+376	6543077 19988 20182 900490 0.0000011 0.00005 491 0.0010635309075794 0.0014820647800308 0.66889520856736 0.00091754743951419
+377	6563065 20479 20183 900490 0.0000011 0.00005 491 1.0635309075794e-10 1.4820647800308e-10 6.6889520856736e-08 9.1754743951419e-18
+378	6583544 20479 20183 900490 0.0000011 0.00005 491 1.0635309075794e-10 1.4820647800308e-10 6.6889520856736e-08 9.1754743951419e-18
+379	6604023 11683 20183 900490 0.0000011 0.00005 491 0 0 0 0
+380	6615706 20464 20183 900490 0.0000011 0.00005 491 1.0635309075794e-10 6.6889520856736e-08 1.5704094894194e-05 6.8952520410212e-13
+381	6636170 20464 20183 900490 0.0000011 0.00005 491 1.0635309075794e-10 6.6889520856736e-08 1.5704094894194e-05 6.8952520410212e-13
+382	6656634 11683 20183 900490 0.0000011 0.00005 491 0 0 0 0
+383	6668317 19988 20183 900490 0.0000011 0.00005 491 0.0010635309075794 0.0014820647800308 0.66889520856736 0.00091754743951419
+384	6688305 20479 20184 900490 0.0000011 0.00005 491 1.0635309075794e-10 1.4820647800308e-10 6.6889520856736e-08 9.1754743951419e-18
+385	6708784 20479 20184 900490 0.0000011 0.00005 491 1.0635309075794e-10 1.4820647800308e-10 6.6889520856736e-08 9.1754743951419e-18
+386	6729263 11683 20184 900490 0.0000011 0.00005 491 0 0 0 0
+387	6740946 20464 20184 900490 0.0000011 0.00005 491 1.0635309075794e-10 6.6889520856736e-08 1.5704094894194e-05 6.8952520410212e-13
+388	6761410 20464 20184 900490 0.0000011 0.00005 491 1.0635309075794e-10 6.6889520856736e-08 1.5704094894194e-05 6.8952520410212e-13
+389	6781874 11683 20184 900490 0.0000011 0.00005 491 0 0 0 0
+390	6793557 19988 20184 900490 0.0000011 0.00005 491 0.0010635309075794 0.0014820647800308 0.66889520856736 0.00091754743951419
+391	6813545 20479 20185 900490 0.0000011 0.00005 491 1.0635309075794e-10 1.4820647800308e-10 6.6889520856736e-08 9.1754743951419e-18
+392	6834024 20479 20185 900490 0.0000011 0.00005 491 1.0635309075794e-10 1.4820647800308e-10 6.6889520856736e-08 9.1754743951419e-18
+393	6854503 11683 20185 900490 0.0000011 0.00005 491 0 0 0 0
+394	6866186 20464 20185 900490 0.0000011 0.00005 491 1.0635309075794e-10 6.6889520856736e-08 1.5704094894194e-05 6.8952520410212e-13
+395	6886650 20464 20185 900490 0.0000011 0.00005 491 1.0635309075794e-10 6.6889520856736e-08 1.5704094894194e-05 6.8952520410212e-13
+396	6907114 11683 20185 900490 0.0000011 0.00005 491 0 0 0 0
+397	6918797 19988 20185 900490 0.0000011 0.00005 491 0.0010635309075794 0.0014820647800308 0.66889520856736 0.00091754743951419
+398	6938785 20479 20186 900490 0.0000011 0.00005 491 1.0635309075794e-10 1.4820647800308e-10 6.6889520856736e-08 9.1754743951419e-18
+399	6959264 20479 20186 900490 0.0000011 0.00005 491 1.0635309075794e-10 1.4820647800308e-10 6.6889520856736e-08 9.1754743951419e-18
+400	6979743 11683 20186 900490 0.0000011 0.00005 491 0 0 0 0
+401	6991426 20464 20186 900490 0.0000011 0.00005 491 1.0635309075794e-10 6.6889520856736e-08 1.5704094894194e-05 6.8952520410212e-13
+402	7011890 20464 20186 900490 0.0000011 0.00005 491 1.0635309075794e-10 6.6889520856736e-08 1.5704094894194e-05 6.8952520410212e-13
+403	7032354 11683 20186 900490 0.0000011 0.00005 491 0 0 0 0
+404	7044037 19988 20186 900490 0.0000011 0.00005 491 0.0010635309075794 0.0014820647800308 0.66889520856736 0.00091754743951419
+405	7064025 20466 20187 900490 0.0000011 0.00005 491 1.0635201081653e-10 1.4916299568986e-10 6.6750965657068e-08 9.1396911027527e-18
+406	7084491 20466 20187 900490 0.0000011 0.00005 491 1.0635201081653e-10 1.4916299568986e-10 6.6750965657068e-08 9.1396911027527e-18
+407	7104957 11683 20187 900490 0.0000011 0.00005 491 0 0 0 0
+408	7116640 20455 20187 900490 0.0000011 0.00005 491 1.0635201081653e-10 6.6750965657068e-08 1.5667401060303e-05 6.8669772480551e-13
+409	7137095 20455 20187 900490 0.0000011 0.00005 491 1.0635201081653e-10 6.6750965657068e-08 1.5667401060303e-05 6.8669772480551e-13
+410	7157550 11683 20187 900490 0.0000011 0.00005 491 0 0 0 0
+411	7169233 19975 20187 900490 0.0000011 0.00005 491 0.0010635201081653 0.0014916299568986 0.66750965657068 0.00091396911027527
+412	7189208 20466 20188 900490 0.0000011 0.00005 491 1.0635201081653e-10 1.4916299568986e-10 6.6750965657068e-08 9.1396911027527e-18
+413	7209674 20466 20188 900490 0.0000011 0.00005 491 1.0635201081653e-10 1.4916299568986e-10 6.6750965657068e-08 9.1396911027527e-18
+414	7230140 11683 20188 900490 0.0000011 0.00005 491 0 0 0 0
+415	7241823 20455 20188 900490 0.0000011 0.00005 491 1.0635201081653e-10 6.6750965657068e-08 1.5667401060303e-05 6.8669772480551e-13
+416	7262278 20455 20188 900490 0.0000011 0.00005 491 1.0635201081653e-10 6.6750965657068e-08 1.5667401060303e-05 6.8669772480551e-13
+417	7282733 11683 20188 900490 0.0000011 0.00005 491 0 0 0 0
+418	7294416 19975 20188 900490 0.0000011 0.00005 491 0.0010635201081653 0.0014916299568986 0.66750965657068 0.00091396911027527
+419	7314391 20466 20189 900490 0.0000011 0.00005 491 1.0635201081653e-10 1.4916299568986e-10 6.6750965657068e-08 9.1396911027527e-18
+420	7334857 20466 20189 900490 0.0000011 0.00005 491 1.0635201081653e-10 1.4916299568986e-10 6.6750965657068e-08 9.1396911027527e-18
+421	7355323 11683 20189 900490 0.0000011 0.00005 491 0 0 0 0
+422	7367006 20455 20189 900490 0.0000011 0.00005 491 1.0635201081653e-10 6.6750965657068e-08 1.5667401060303e-05 6.8669772480551e-13
+423	7387461 20455 20189 900490 0.0000011 0.00005 491 1.0635201081653e-10 6.6750965657068e-08 1.5667401060303e-05 6.8669772480551e-13
+424	7407916 11683 20189 900490 0.0000011 0.00005 491 0 0 0 0
+425	7419599 19975 20189 900490 0.0000011 0.00005 491 0.0010635201081653 0.0014916299568986 0.66750965657068 0.00091396911027527
+426	7439574 20466 20190 900490 0.0000011 0.00005 491 1.0635201081653e-10 1.4916299568986e-10 6.6750965657068e-08 9.1396911027527e-18
+427	7460040 20466 20190 900490 0.0000011 0.00005 491 1.0635201081653e-10 1.4916299568986e-10 6.6750965657068e-08 9.1396911027527e-18
+428	7480506 11683 20190 900490 0.0000011 0.00005 491 0 0 0 0
+429	7492189 20455 20190 900490 0.0000011 0.00005 491 1.0635201081653e-10 6.6750965657068e-08 1.5667401060303e-05 6.8669772480551e-13
+430	7512644 20455 20190 900490 0.0000011 0.00005 491 1.0635201081653e-10 6.6750965657068e-08 1.5667401060303e-05 6.8669772480551e-13
+431	7533099 11683 20190 900490 0.0000011 0.00005 491 0 0 0 0
+432	7544782 19975 20190 900490 0.0000011 0.00005 491 0.0010635201081653 0.0014916299568986 0.66750965657068 0.00091396911027527
+433	7564757 20466 20191 900490 0.0000011 0.00005 491 1.0635201081653e-10 1.4916299568986e-10 6.6750965657068e-08 9.1396911027527e-18
+434	7585223 20466 20191 900490 0.0000011 0.00005 491 1.0635201081653e-10 1.4916299568986e-10 6.6750965657068e-08 9.1396911027527e-18
+435	7605689 11683 20191 900490 0.0000011 0.00005 491 0 0 0 0
+436	7617372 20455 20191 900490 0.0000011 0.00005 491 1.0635201081653e-10 6.6750965657068e-08 1.5667401060303e-05 6.8669772480551e-13
+437	7637827 20455 20191 900490 0.0000011 0.00005 491 1.0635201081653e-10 6.6750965657068e-08 1.5667401060303e-05 6.8669772480551e-13
+438	7658282 11683 20191 900490 0.0000011 0.00005 491 0 0 0 0
+439	7669965 19975 20191 900490 0.0000011 0.00005 491 0.0010635201081653 0.0014916299568986 0.66750965657068 0.00091396911027527
+440	7689940 20480 20192 900490 0.0000011 0.00005 491 1.063631329156e-10 1.3568982667011e-10 6.4321175338872e-08 8.449235006505e-18
+441	7710420 20480 20192 900490 0.0000011 0.00005 491 1.063631329156e-10 1.3568982667011e-10 6.4321175338872e-08 8.449235006505e-18
+442	7730900 11683 20192 900490 0.0000011 0.00005 491 0 0 0 0
+443	7742583 20462 20192 900490 0.0000011 0.00005 491 1.063631329156e-10 6.4321175338872e-08 1.5441384533265e-05 6.5922113284712e-13
+444	7763045 20462 20192 900490 0.0000011 0.00005 491 1.063631329156e-10 6.4321175338872e-08 1.5441384533265e-05 6.5922113284712e-13
+445	7783507 11683 20192 900490 0.0000011 0.00005 491 0 0 0 0
+446	7795190 19989 20192 900490 0.0000011 0.00005 491 0.001063631329156 0.0013568982667011 0.64321175338872 0.0008449235006505
+447	7815179 20480 20193 900490 0.0000011 0.00005 491 1.063631329156e-10 1.3568982667011e-10 6.4321175338872e-08 8.449235006505e-18
+448	7835659 20480 20193 900490 0.0000011 0.00005 491 1.063631329156e-10 1.3568982667011e-10 6.4321175338872e-08 8.449235006505e-18
+449	7856139 11683 20193 900490 0.0000011 0.00005 491 0 0 0 0
+450	7867822 20462 20193 900490 0.0000011 0.00005 491 1.063631329156e-10 6.4321175338872e-08 1.5441384533265e-05 6.5922113284712e-13
+451	7888284 20462 20193 900490 0.0000011 0.00005 491 1.063631329156e-10 6.4321175338872e-08 1.5441384533265e-05 6.5922113284712e-13
+452	7908746 11683 20193 900490 0.0000011 0.00005 491 0 0 0 0
+453	7920429 19989 20193 900490 0.0000011 0.00005 491 0.001063631329156 0.0013568982667011 0.64321175338872 0.0008449235006505
+454	7940418 20480 20194 900490 0.0000011 0.00005 491 1.063631329156e-10 1.3568982667011e-10 6.4321175338872e-08 8.449235006505e-18
+455	7960898 20480 20194 900490 0.0000011 0.00005 491 1.063631329156e-10 1.3568982667011e-10 6.4321175338872e-08 8.449235006505e-18
+456	7981378 11683 20194 900490 0.0000011 0.00005 491 0 0 0 0
+457	7993061 20462 20194 900490 0.0000011 0.00005 491 1.063631329156e-10 6.4321175338872e-08 1.5441384533265e-05 6.5922113284712e-13
+458	8013523 20462 20194 900490 0.0000011 0.00005 491 1.063631329156e-10 6.4321175338872e-08 1.5441384533265e-05 6.5922113284712e-13
+459	8033985 11683 20194 900490 0.0000011 0.00005 491 0 0 0 0
+460	8045668 19989 20194 900490 0.0000011 0.00005 491 0.001063631329156 0.0013568982667011 0.64321175338872 0.0008449235006505
+461	8065657 20480 20195 900490 0.0000011 0.00005 491 1.063631329156e-10 1.3568982667011e-10 6.4321175338872e-08 8.449235006505e-18
+462	8086137 20480 20195 900490 0.0000011 0.00005 491 1.063631329156e-10 1.3568982667011e-10 6.4321175338872e-08 8.449235006505e-18
+463	8106617 11683 20195 900490 0.0000011 0.00005 491 0 0 0 0
+464	8118300 20462 20195 900490 0.0000011 0.00005 491 1.063631329156e-10 6.4321175338872e-08 1.5441384533265e-05 6.5922113284712e-13
+465	8138762 20462 20195 900490 0.0000011 0.00005 491 1.063631329156e-10 6.4321175338872e-08 1.5441384533265e-05 6.5922113284712e-13
+466	8159224 11683 20195 900490 0.0000011 0.00005 491 0 0 0 0
+467	8170907 19989 20195 900490 0.0000011 0.00005 491 0.001063631329156 0.0013568982667011 0.64321175338872 0.0008449235006505
+468	8190896 20480 20196 900490 0.0000011 0.00005 491 1.063631329156e-10 1.3568982667011e-10 6.4321175338872e-08 8.449235006505e-18
+469	8211376 20480 20196 900490 0.0000011 0.00005 491 1.063631329156e-10 1.3568982667011e-10 6.4321175338872e-08 8.449235006505e-18
+470	8231856 11683 20196 900490 0.0000011 0.00005 491 0 0 0 0
+471	8243539 20462 20196 900490 0.0000011 0.00005 491 1.063631329156e-10 6.4321175338872e-08 1.5441384533265e-05 6.5922113284712e-13
+472	8264001 20462 20196 900490 0.0000011 0.00005 491 1.063631329156e-10 6.4321175338872e-08 1.5441384533265e-05 6.5922113284712e-13
+473	8284463 11683 20196 900490 0.0000011 0.00005 491 0 0 0 0
+474	8296146 19989 20196 900490 0.0000011 0.00005 491 0.001063631329156 0.0013568982667011 0.64321175338872 0.0008449235006505
+475	8316135 20473 20197 900490 0.0000011 0.00005 491 1.0635309075794e-10 1.369108225334e-10 6.4361463519228e-08 8.4627061236734e-18
+476	8336608 20473 20197 900490 0.0000011 0.00005 491 1.0635309075794e-10 1.369108225334e-10 6.4361463519228e-08 8.4627061236734e-18
+477	8357081 11683 20197 900490 0.0000011 0.00005 491 0 0 0 0
+478	8368764 20467 20197 900490 0.0000011 0.00005 491 1.0635309075794e-10 6.4361463519228e-08 1.5396617072269e-05 6.5630467515157e-13
+479	8389231 20467 20197 900490 0.0000011 0.00005 491 1.0635309075794e-10 6.4361463519228e-08 1.5396617072269e-05 6.5630467515157e-13
+480	8409698 11683 20197 900490 0.0000011 0.00005 491 0 0 0 0
+481	8421381 19982 20197 900490 0.0000011 0.00005 491 0.0010635309075794 0.001369108225334 0.64361463519228 0.00084627061236734
+482	8441363 20473 20198 900490 0.0000011 0.00005 491 1.0635309075794e-10 1.369108225334e-10 6.4361463519228e-08 8.4627061236734e-18
+483	8461836 20473 20198 900490 0.0000011 0.00005 491 1.0635309075794e-10 1.369108225334e-10 6.4361463519228e-08 8.4627061236734e-18
+484	8482309 11683 20198 900490 0.0000011 0.00005 491 0 0 0 0
+485	8493992 20467 20198 900490 0.0000011 0.00005 491 1.0635309075794e-10 6.4361463519228e-08 1.5396617072269e-05 6.5630467515157e-13
+486	8514459 20467 20198 900490 0.0000011 0.00005 491 1.0635309075794e-10 6.4361463519228e-08 1.5396617072269e-05 6.5630467515157e-13
+487	8534926 11683 20198 900490 0.0000011 0.00005 491 0 0 0 0
+488	8546609 19982 20198 900490 0.0000011 0.00005 491 0.0010635309075794 0.001369108225334 0.64361463519228 0.00084627061236734
+489	8566591 20473 20199 900490 0.0000011 0.00005 491 1.0635309075794e-10 1.369108225334e-10 6.4361463519228e-08 8.4627061236734e-18
+490	8587064 20473 20199 900490 0.0000011 0.00005 491 1.0635309075794e-10 1.369108225334e-10 6.4361463519228e-08 8.4627061236734e-18
+491	8607537 11683 20199 900490 0.0000011 0.00005 491 0 0 0 0
+492	8619220 20467 20199 900490 0.0000011 0.00005 491 1.0635309075794e-10 6.4361463519228e-08 1.5396617072269e-05 6.5630467515157e-13
+493	8639687 20467 20199 900490 0.0000011 0.00005 491 1.0635309075794e-10 6.4361463519228e-08 1.5396617072269e-05 6.5630467515157e-13
+494	8660154 11683 20199 900490 0.0000011 0.00005 491 0 0 0 0
+495	8671837 19982 20199 900490 0.0000011 0.00005 491 0.0010635309075794 0.001369108225334 0.64361463519228 0.00084627061236734
+496	8691819 20473 20200 900490 0.0000011 0.00005 491 1.0635309075794e-10 1.369108225334e-10 6.4361463519228e-08 8.4627061236734e-18
+497	8712292 20473 20200 900490 0.0000011 0.00005 491 1.0635309075794e-10 1.369108225334e-10 6.4361463519228e-08 8.4627061236734e-18
+498	8732765 11683 20200 900490 0.0000011 0.00005 491 0 0 0 0
+499	8744448 20467 20200 900490 0.0000011 0.00005 491 1.0635309075794e-10 6.4361463519228e-08 1.5396617072269e-05 6.5630467515157e-13
+500	8764915 20467 20200 900490 0.0000011 0.00005 491 1.0635309075794e-10 6.4361463519228e-08 1.5396617072269e-05 6.5630467515157e-13
+501	8785382 11683 20200 900490 0.0000011 0.00005 491 0 0 0 0
+502	8797065 19982 20200 900490 0.0000011 0.00005 491 0.0010635309075794 0.001369108225334 0.64361463519228 0.00084627061236734
+503	8817047 20473 20201 900490 0.0000011 0.00005 491 1.0635309075794e-10 1.369108225334e-10 6.4361463519228e-08 8.4627061236734e-18
+504	8837520 20473 20201 900490 0.0000011 0.00005 491 1.0635309075794e-10 1.369108225334e-10 6.4361463519228e-08 8.4627061236734e-18
+505	8857993 11683 20201 900490 0.0000011 0.00005 491 0 0 0 0
+506	8869676 20467 20201 900490 0.0000011 0.00005 491 1.0635309075794e-10 6.4361463519228e-08 1.5396617072269e-05 6.5630467515157e-13
+507	8890143 20467 20201 900490 0.0000011 0.00005 491 1.0635309075794e-10 6.4361463519228e-08 1.5396617072269e-05 6.5630467515157e-13
+508	8910610 11683 20201 900490 0.0000011 0.00005 491 0 0 0 0
+509	8922293 19982 20201 900490 0.0000011 0.00005 491 0.0010635309075794 0.001369108225334 0.64361463519228 0.00084627061236734
+510	8942275 20477 20202 900490 0.0000011 0.00005 491 1.0635202829852e-10 1.3771695017224e-10 6.436344048703e-08 8.465114234376e-18
+511	8962752 20477 20202 900490 0.0000011 0.00005 491 1.0635202829852e-10 1.3771695017224e-10 6.436344048703e-08 8.465114234376e-18
+512	8983229 11683 20202 900490 0.0000011 0.00005 491 0 0 0 0
+513	8994912 20462 20202 900490 0.0000011 0.00005 491 1.0635202829852e-10 6.436344048703e-08 1.5365233964959e-05 6.5406768877822e-13
+514	9015374 20462 20202 900490 0.0000011 0.00005 491 1.0635202829852e-10 6.436344048703e-08 1.5365233964959e-05 6.5406768877822e-13
+515	9035836 11683 20202 900490 0.0000011 0.00005 491 0 0 0 0
+516	9047519 19986 20202 900490 0.0000011 0.00005 491 0.0010635202829852 0.0013771695017224 0.6436344048703 0.0008465114234376
+517	9067505 20477 20203 900490 0.0000011 0.00005 491 1.0635202829852e-10 1.3771695017224e-10 6.436344048703e-08 8.465114234376e-18
+518	9087982 20477 20203 900490 0.0000011 0.00005 491 1.0635202829852e-10 1.3771695017224e-10 6.436344048703e-08 8.465114234376e-18
+519	9108459 11683 20203 900490 0.0000011 0.00005 491 0 0 0 0
+520	9120142 20462 20203 900490 0.0000011 0.00005 491 1.0635202829852e-10 6.436344048703e-08 1.5365233964959e-05 6.5406768877822e-13
+521	9140604 20462 20203 900490 0.0000011 0.00005 491 1.0635202829852e-10 6.436344048703e-08 1.5365233964959e-05 6.5406768877822e-13
+522	9161066 11683 20203 900490 0.0000011 0.00005 491 0 0 0 0
+523	9172749 19986 20203 900490 0.0000011 0.00005 491 0.0010635202829852 0.0013771695017224 0.6436344048703 0.0008465114234376
+524	9192735 20477 20204 900490 0.0000011 0.00005 491 1.0635202829852e-10 1.3771695017224e-10 6.436344048703e-08 8.465114234376e-18
+525	9213212 20477 20204 900490 0.0000011 0.00005 491 1.0635202829852e-10 1.3771695017224e-10 6.436344048703e-08 8.465114234376e-18
+526	9233689 11683 20204 900490 0.0000011 0.00005 491 0 0 0 0
+527	9245372 20462 20204 900490 0.0000011 0.00005 491 1.0635202829852e-10 6.436344048703e-08 1.5365233964959e-05 6.5406768877822e-13
+528	9265834 20462 20204 900490 0.0000011 0.00005 491 1.0635202829852e-10 6.436344048703e-08 1.5365233964959e-05 6.5406768877822e-13
+529	9286296 11683 20204 900490 0.0000011 0.00005 491 0 0 0 0
+530	9297979 19986 20204 900490 0.0000011 0.00005 491 0.0010635202829852 0.0013771695017224 0.6436344048703 0.0008465114234376
+531	9317965 20477 20205 900490 0.0000011 0.00005 491 1.0635202829852e-10 1.3771695017224e-10 6.436344048703e-08 8.465114234376e-18
+532	9338442 20477 20205 900490 0.0000011 0.00005 491 1.0635202829852e-10 1.3771695017224e-10 6.436344048703e-08 8.465114234376e-18
+533	9358919 11683 20205 900490 0.0000011 0.00005 491 0 0 0 0
+534	9370602 20462 20205 900490 0.0000011 0.00005 491 1.0635202829852e-10 6.436344048703e-08 1.5365233964959e-05 6.5406768877822e-13
+535	9391064 20462 20205 900490 0.0000011 0.00005 491 1.0635202829852e-10 6.436344048703e-08 1.5365233964959e-05 6.5406768877822e-13
+536	9411526 11683 20205 900490 0.0000011 0.00005 491 0 0 0 0
+537	9423209 19986 20205 900490 0.0000011 0.00005 491 0.0010635202829852 0.0013771695017224 0.6436344048703 0.0008465114234376
+538	9443195 20477 20206 900490 0.0000011 0.00005 491 1.0635202829852e-10 1.3771695017224e-10 6.436344048703e-08 8.465114234376e-18
+539	9463672 20477 20206 900490 0.0000011 0.00005 491 1.0635202829852e-10 1.3771695017224e-10 6.436344048703e-08 8.465114234376e-18
+540	9484149 11683 20206 900490 0.0000011 0.00005 491 0 0 0 0
+541	9495832 20462 20206 900490 0.0000011 0.00005 491 1.0635202829852e-10 6.436344048703e-08 1.5365233964959e-05 6.5406768877822e-13
+542	9516294 20462 20206 900490 0.0000011 0.00005 491 1.0635202829852e-10 6.436344048703e-08 1.5365233964959e-05 6.5406768877822e-13
+543	9536756 11683 20206 900490 0.0000011 0.00005 491 0 0 0 0
+544	9548439 19986 20206 900490 0.0000011 0.00005 491 0.0010635202829852 0.0013771695017224 0.6436344048703 0.0008465114234376
+545	9568425 20479 20207 900490 0.0000011 0.00005 491 1.0635197424198e-10 1.3801483049291e-10 6.4338212162655e-08 8.4589536753042e-18
+546	9588904 20479 20207 900490 0.0000011 0.00005 491 1.0635197424198e-10 1.3801483049291e-10 6.4338212162655e-08 8.4589536753042e-18
+547	9609383 11683 20207 900490 0.0000011 0.00005 491 0 0 0 0
+548	9621066 20459 20207 900490 0.0000011 0.00005 491 1.0635197424198e-10 6.4338212162655e-08 1.5351588626725e-05 6.530099159609e-13
+549	9641525 20459 20207 900490 0.0000011 0.00005 491 1.0635197424198e-10 6.4338212162655e-08 1.5351588626725e-05 6.530099159609e-13
+550	9661984 11683 20207 900490 0.0000011 0.00005 491 0 0 0 0
+551	9673667 19988 20207 900490 0.0000011 0.00005 491 0.0010635197424198 0.0013801483049291 0.64338212162655 0.00084589536753042
+552	9693655 20479 20208 900490 0.0000011 0.00005 491 1.0635197424198e-10 1.3801483049291e-10 6.4338212162655e-08 8.4589536753042e-18
+553	9714134 20479 20208 900490 0.0000011 0.00005 491 1.0635197424198e-10 1.3801483049291e-10 6.4338212162655e-08 8.4589536753042e-18
+554	9734613 11683 20208 900490 0.0000011 0.00005 491 0 0 0 0
+555	9746296 20459 20208 900490 0.0000011 0.00005 491 1.0635197424198e-10 6.4338212162655e-08 1.5351588626725e-05 6.530099159609e-13
+556	9766755 20459 20208 900490 0.0000011 0.00005 491 1.0635197424198e-10 6.4338212162655e-08 1.5351588626725e-05 6.530099159609e-13
+557	9787214 11683 20208 900490 0.0000011 0.00005 491 0 0 0 0
+558	9798897 19988 20208 900490 0.0000011 0.00005 491 0.0010635197424198 0.0013801483049291 0.64338212162655 0.00084589536753042
+559	9818885 20479 20209 900490 0.0000011 0.00005 491 1.0635197424198e-10 1.3801483049291e-10 6.4338212162655e-08 8.4589536753042e-18
+560	9839364 20479 20209 900490 0.0000011 0.00005 491 1.0635197424198e-10 1.3801483049291e-10 6.4338212162655e-08 8.4589536753042e-18
+561	9859843 11683 20209 900490 0.0000011 0.00005 491 0 0 0 0
+562	9871526 20459 20209 900490 0.0000011 0.00005 491 1.0635197424198e-10 6.4338212162655e-08 1.5351588626725e-05 6.530099159609e-13
+563	9891985 20459 20209 900490 0.0000011 0.00005 491 1.0635197424198e-10 6.4338212162655e-08 1.5351588626725e-05 6.530099159609e-13
+564	9912444 11683 20209 900490 0.0000011 0.00005 491 0 0 0 0
+565	9924127 19988 20209 900490 0.0000011 0.00005 491 0.0010635197424198 0.0013801483049291 0.64338212162655 0.00084589536753042
+566	9944115 20479 20210 900490 0.0000011 0.00005 491 1.0635197424198e-10 1.3801483049291e-10 6.4338212162655e-08 8.4589536753042e-18
+567	9964594 20479 20210 900490 0.0000011 0.00005 491 1.0635197424198e-10 1.3801483049291e-10 6.4338212162655e-08 8.4589536753042e-18
+568	9985073 11683 20210 900490 0.0000011 0.00005 491 0 0 0 0
+569	9996756 20459 20210 900490 0.0000011 0.00005 491 1.0635197424198e-10 6.4338212162655e-08 1.5351588626725e-05 6.530099159609e-13
+570	10017215 20459 20210 900490 0.0000011 0.00005 491 1.0635197424198e-10 6.4338212162655e-08 1.5351588626725e-05 6.530099159609e-13
+571	10037674 11683 20210 900490 0.0000011 0.00005 491 0 0 0 0
+572	10049357 19988 20210 900490 0.0000011 0.00005 491 0.0010635197424198 0.0013801483049291 0.64338212162655 0.00084589536753042
+573	10069345 20479 20211 900490 0.0000011 0.00005 491 1.0635197424198e-10 1.3801483049291e-10 6.4338212162655e-08 8.4589536753042e-18
+574	10089824 20479 20211 900490 0.0000011 0.00005 491 1.0635197424198e-10 1.3801483049291e-10 6.4338212162655e-08 8.4589536753042e-18
+575	10110303 11683 20211 900490 0.0000011 0.00005 491 0 0 0 0
+576	10121986 20459 20211 900490 0.0000011 0.00005 491 1.0635197424198e-10 6.4338212162655e-08 1.5351588626725e-05 6.530099159609e-13
+577	10142445 20459 20211 900490 0.0000011 0.00005 491 1.0635197424198e-10 6.4338212162655e-08 1.5351588626725e-05 6.530099159609e-13
+578	10162904 11683 20211 900490 0.0000011 0.00005 491 0 0 0 0
+579	10174587 19988 20211 900490 0.0000011 0.00005 491 0.0010635197424198 0.0013801483049291 0.64338212162655 0.00084589536753042
+580	10194575 20472 20212 900490 0.0000011 0.00005 491 1.0635237122396e-10 1.3418986809937e-10 6.3687887933443e-08 8.2817650169868e-18
+581	10215047 20472 20212 900490 0.0000011 0.00005 491 1.0635237122396e-10 1.3418986809937e-10 6.3687887933443e-08 8.2817650169868e-18
+582	10235519 11683 20212 900490 0.0000011 0.00005 491 0 0 0 0
+583	10247202 20467 20212 900490 0.0000011 0.00005 491 1.0635237122396e-10 6.3687887933443e-08 1.5301368107901e-05 6.4682401258714e-13
+584	10267669 20467 20212 900490 0.0000011 0.00005 491 1.0635237122396e-10 6.3687887933443e-08 1.5301368107901e-05 6.4682401258714e-13
+585	10288136 11683 20212 900490 0.0000011 0.00005 491 0 0 0 0
+586	10299819 19981 20212 900490 0.0000011 0.00005 491 0.0010635237122396 0.0013418986809937 0.63687887933443 0.00082817650169868
+587	10319800 20472 20213 900490 0.0000011 0.00005 491 1.0635237122396e-10 1.3418986809937e-10 6.3687887933443e-08 8.2817650169868e-18
+588	10340272 20472 20213 900490 0.0000011 0.00005 491 1.0635237122396e-10 1.3418986809937e-10 6.3687887933443e-08 8.2817650169868e-18
+589	10360744 11683 20213 900490 0.0000011 0.00005 491 0 0 0 0
+590	10372427 20467 20213 900490 0.0000011 0.00005 491 1.0635237122396e-10 6.3687887933443e-08 1.5301368107901e-05 6.4682401258714e-13
+591	10392894 20467 20213 900490 0.0000011 0.00005 491 1.0635237122396e-10 6.3687887933443e-08 1.5301368107901e-05 6.4682401258714e-13
+592	10413361 11683 20213 900490 0.0000011 0.00005 491 0 0 0 0
+593	10425044 19981 20213 900490 0.0000011 0.00005 491 0.0010635237122396 0.0013418986809937 0.63687887933443 0.00082817650169868
+594	10445025 20472 20214 900490 0.0000011 0.00005 491 1.0635237122396e-10 1.3418986809937e-10 6.3687887933443e-08 8.2817650169868e-18
+595	10465497 20472 20214 900490 0.0000011 0.00005 491 1.0635237122396e-10 1.3418986809937e-10 6.3687887933443e-08 8.2817650169868e-18
+596	10485969 11683 20214 900490 0.0000011 0.00005 491 0 0 0 0
+597	10497652 20467 20214 900490 0.0000011 0.00005 491 1.0635237122396e-10 6.3687887933443e-08 1.5301368107901e-05 6.4682401258714e-13
+598	10518119 20467 20214 900490 0.0000011 0.00005 491 1.0635237122396e-10 6.3687887933443e-08 1.5301368107901e-05 6.4682401258714e-13
+599	10538586 11683 20214 900490 0.0000011 0.00005 491 0 0 0 0
+600	10550269 19981 20214 900490 0.0000011 0.00005 491 0.0010635237122396 0.0013418986809937 0.63687887933443 0.00082817650169868
+601	10570250 20472 20215 900490 0.0000011 0.00005 491 1.0635237122396e-10 1.3418986809937e-10 6.3687887933443e-08 8.2817650169868e-18
+602	10590722 20472 20215 900490 0.0000011 0.00005 491 1.0635237122396e-10 1.3418986809937e-10 6.3687887933443e-08 8.2817650169868e-18
+603	10611194 11683 20215 900490 0.0000011 0.00005 491 0 0 0 0
+604	10622877 20467 20215 900490 0.0000011 0.00005 491 1.0635237122396e-10 6.3687887933443e-08 1.5301368107901e-05 6.4682401258714e-13
+605	10643344 20467 20215 900490 0.0000011 0.00005 491 1.0635237122396e-10 6.3687887933443e-08 1.5301368107901e-05 6.4682401258714e-13
+606	10663811 11683 20215 900490 0.0000011 0.00005 491 0 0 0 0
+607	10675494 19981 20215 900490 0.0000011 0.00005 491 0.0010635237122396 0.0013418986809937 0.63687887933443 0.00082817650169868
+608	10695475 20472 20216 900490 0.0000011 0.00005 491 1.0635237122396e-10 1.3418986809937e-10 6.3687887933443e-08 8.2817650169868e-18
+609	10715947 20472 20216 900490 0.0000011 0.00005 491 1.0635237122396e-10 1.3418986809937e-10 6.3687887933443e-08 8.2817650169868e-18
+610	10736419 11683 20216 900490 0.0000011 0.00005 491 0 0 0 0
+611	10748102 20467 20216 900490 0.0000011 0.00005 491 1.0635237122396e-10 6.3687887933443e-08 1.5301368107901e-05 6.4682401258714e-13
+612	10768569 20467 20216 900490 0.0000011 0.00005 491 1.0635237122396e-10 6.3687887933443e-08 1.5301368107901e-05 6.4682401258714e-13
+613	10789036 11683 20216 900490 0.0000011 0.00005 491 0 0 0 0
+614	10800719 19981 20216 900490 0.0000011 0.00005 491 0.0010635237122396 0.0013418986809937 0.63687887933443 0.00082817650169868
+615	10820700 20469 20217 900490 0.0000011 0.00005 491 1.0635201081653e-10 1.3454221380242e-10 6.3687690641008e-08 8.2821990253928e-18
+616	10841169 20469 20217 900490 0.0000011 0.00005 491 1.0635201081653e-10 1.3454221380242e-10 6.3687690641008e-08 8.2821990253928e-18
+617	10861638 11683 20217 900490 0.0000011 0.00005 491 0 0 0 0
+618	10873321 20461 20217 900490 0.0000011 0.00005 491 1.0635201081653e-10 6.3687690641008e-08 1.5288193024839e-05 6.4586666191165e-13
+619	10893782 20461 20217 900490 0.0000011 0.00005 491 1.0635201081653e-10 6.3687690641008e-08 1.5288193024839e-05 6.4586666191165e-13
+620	10914243 11683 20217 900490 0.0000011 0.00005 491 0 0 0 0
+621	10925926 19978 20217 900490 0.0000011 0.00005 491 0.0010635201081653 0.0013454221380242 0.63687690641008 0.00082821990253928
+622	10945904 20469 20218 900490 0.0000011 0.00005 491 1.0635201081653e-10 1.3454221380242e-10 6.3687690641008e-08 8.2821990253928e-18
+623	10966373 20469 20218 900490 0.0000011 0.00005 491 1.0635201081653e-10 1.3454221380242e-10 6.3687690641008e-08 8.2821990253928e-18
+624	10986842 11683 20218 900490 0.0000011 0.00005 491 0 0 0 0
+625	10998525 20461 20218 900490 0.0000011 0.00005 491 1.0635201081653e-10 6.3687690641008e-08 1.5288193024839e-05 6.4586666191165e-13
+626	11018986 20461 20218 900490 0.0000011 0.00005 491 1.0635201081653e-10 6.3687690641008e-08 1.5288193024839e-05 6.4586666191165e-13
+627	11039447 11683 20218 900490 0.0000011 0.00005 491 0 0 0 0
+628	11051130 19978 20218 900490 0.0000011 0.00005 491 0.0010635201081653 0.0013454221380242 0.63687690641008 0.00082821990253928
+629	11071108 20469 20219 900490 0.0000011 0.00005 491 1.0635201081653e-10 1.3454221380242e-10 6.3687690641008e-08 8.2821990253928e-18
+630	11091577 20469 20219 900490 0.0000011 0.00005 491 1.0635201081653e-10 1.3454221380242e-10 6.3687690641008e-08 8.2821990253928e-18
+631	11112046 11683 20219 900490 0.0000011 0.00005 491 0 0 0 0
+632	11123729 20461 20219 900490 0.0000011 0.00005 491 1.0635201081653e-10 6.3687690641008e-08 1.5288193024839e-05 6.4586666191165e-13
+633	11144190 20461 20219 900490 0.0000011 0.00005 491 1.0635201081653e-10 6.3687690641008e-08 1.5288193024839e-05 6.4586666191165e-13
+634	11164651 11683 20219 900490 0.0000011 0.00005 491 0 0 0 0
+635	11176334 19978 20219 900490 0.0000011 0.00005 491 0.0010635201081653 0.0013454221380242 0.63687690641008 0.00082821990253928
+636	11196312 20469 20220 900490 0.0000011 0.00005 491 1.0635201081653e-10 1.3454221380242e-10 6.3687690641008e-08 8.2821990253928e-18
+637	11216781 20469 20220 900490 0.0000011 0.00005 491 1.0635201081653e-10 1.3454221380242e-10 6.3687690641008e-08 8.2821990253928e-18
+638	11237250 11683 20220 900490 0.0000011 0.00005 491 0 0 0 0
+639	11248933 20461 20220 900490 0.0000011 0.00005 491 1.0635201081653e-10 6.3687690641008e-08 1.5288193024839e-05 6.4586666191165e-13
+640	11269394 20461 20220 900490 0.0000011 0.00005 491 1.0635201081653e-10 6.3687690641008e-08 1.5288193024839e-05 6.4586666191165e-13
+641	11289855 11683 20220 900490 0.0000011 0.00005 491 0 0 0 0
+642	11301538 19978 20220 900490 0.0000011 0.00005 491 0.0010635201081653 0.0013454221380242 0.63687690641008 0.00082821990253928
+643	11321516 20469 20221 900490 0.0000011 0.00005 491 1.0635201081653e-10 1.3454221380242e-10 6.3687690641008e-08 8.2821990253928e-18
+644	11341985 20469 20221 900490 0.0000011 0.00005 491 1.0635201081653e-10 1.3454221380242e-10 6.3687690641008e-08 8.2821990253928e-18
+645	11362454 11683 20221 900490 0.0000011 0.00005 491 0 0 0 0
+646	11374137 20461 20221 900490 0.0000011 0.00005 491 1.0635201081653e-10 6.3687690641008e-08 1.5288193024839e-05 6.4586666191165e-13
+647	11394598 20461 20221 900490 0.0000011 0.00005 491 1.0635201081653e-10 6.3687690641008e-08 1.5288193024839e-05 6.4586666191165e-13
+648	11415059 11683 20221 900490 0.0000011 0.00005 491 0 0 0 0
+649	11426742 19978 20221 900490 0.0000011 0.00005 491 0.0010635201081653 0.0013454221380242 0.63687690641008 0.00082821990253928
+650	11446720 20484 20222 900490 0.0000011 0.00005 491 1.0635197424198e-10 1.3480411935803e-10 6.3680073046367e-08 8.2805476758151e-18
+651	11467204 20484 20222 900490 0.0000011 0.00005 491 1.0635197424198e-10 1.3480411935803e-10 6.3680073046367e-08 8.2805476758151e-18
+652	11487688 11683 20222 900490 0.0000011 0.00005 491 0 0 0 0
+653	11499371 20476 20222 900490 0.0000011 0.00005 491 1.0635197424198e-10 6.3680073046367e-08 1.5276682732065e-05 6.4497671739043e-13
+654	11519847 20476 20222 900490 0.0000011 0.00005 491 1.0635197424198e-10 6.3680073046367e-08 1.5276682732065e-05 6.4497671739043e-13
+655	11540323 11683 20222 900490 0.0000011 0.00005 491 0 0 0 0
+656	11552006 19993 20222 900490 0.0000011 0.00005 491 0.0010635197424198 0.0013480411935803 0.63680073046367 0.00082805476758151
+657	11571999 20484 20223 900490 0.0000011 0.00005 491 1.0635197424198e-10 1.3480411935803e-10 6.3680073046367e-08 8.2805476758151e-18
+658	11592483 20484 20223 900490 0.0000011 0.00005 491 1.0635197424198e-10 1.3480411935803e-10 6.3680073046367e-08 8.2805476758151e-18
+659	11612967 11683 20223 900490 0.0000011 0.00005 491 0 0 0 0
+660	11624650 20476 20223 900490 0.0000011 0.00005 491 1.0635197424198e-10 6.3680073046367e-08 1.5276682732065e-05 6.4497671739043e-13
+661	11645126 20476 20223 900490 0.0000011 0.00005 491 1.0635197424198e-10 6.3680073046367e-08 1.5276682732065e-05 6.4497671739043e-13
+662	11665602 11683 20223 900490 0.0000011 0.00005 491 0 0 0 0
+663	11677285 19993 20223 900490 0.0000011 0.00005 491 0.0010635197424198 0.0013480411935803 0.63680073046367 0.00082805476758151
+664	11697278 20484 20224 900490 0.0000011 0.00005 491 1.0635197424198e-10 1.3480411935803e-10 6.3680073046367e-08 8.2805476758151e-18
+665	11717762 20484 20224 900490 0.0000011 0.00005 491 1.0635197424198e-10 1.3480411935803e-10 6.3680073046367e-08 8.2805476758151e-18
+666	11738246 11683 20224 900490 0.0000011 0.00005 491 0 0 0 0
+667	11749929 20476 20224 900490 0.0000011 0.00005 491 1.0635197424198e-10 6.3680073046367e-08 1.5276682732065e-05 6.4497671739043e-13
+668	11770405 20476 20224 900490 0.0000011 0.00005 491 1.0635197424198e-10 6.3680073046367e-08 1.5276682732065e-05 6.4497671739043e-13
+669	11790881 11683 20224 900490 0.0000011 0.00005 491 0 0 0 0
+670	11802564 19993 20224 900490 0.0000011 0.00005 491 0.0010635197424198 0.0013480411935803 0.63680073046367 0.00082805476758151
+671	11822557 20484 20225 900490 0.0000011 0.00005 491 1.0635197424198e-10 1.3480411935803e-10 6.3680073046367e-08 8.2805476758151e-18
+672	11843041 20484 20225 900490 0.0000011 0.00005 491 1.0635197424198e-10 1.3480411935803e-10 6.3680073046367e-08 8.2805476758151e-18
+673	11863525 11683 20225 900490 0.0000011 0.00005 491 0 0 0 0
+674	11875208 20476 20225 900490 0.0000011 0.00005 491 1.0635197424198e-10 6.3680073046367e-08 1.5276682732065e-05 6.4497671739043e-13
+675	11895684 20476 20225 900490 0.0000011 0.00005 491 1.0635197424198e-10 6.3680073046367e-08 1.5276682732065e-05 6.4497671739043e-13
+676	11916160 11683 20225 900490 0.0000011 0.00005 491 0 0 0 0
+677	11927843 19993 20225 900490 0.0000011 0.00005 491 0.0010635197424198 0.0013480411935803 0.63680073046367 0.00082805476758151
+678	11947836 20484 20226 900490 0.0000011 0.00005 491 1.0635197424198e-10 1.3480411935803e-10 6.3680073046367e-08 8.2805476758151e-18
+679	11968320 20484 20226 900490 0.0000011 0.00005 491 1.0635197424198e-10 1.3480411935803e-10 6.3680073046367e-08 8.2805476758151e-18
+680	11988804 11683 20226 900490 0.0000011 0.00005 491 0 0 0 0
+681	12000487 20476 20226 900490 0.0000011 0.00005 491 1.0635197424198e-10 6.3680073046367e-08 1.5276682732065e-05 6.4497671739043e-13
+682	12020963 20476 20226 900490 0.0000011 0.00005 491 1.0635197424198e-10 6.3680073046367e-08 1.5276682732065e-05 6.4497671739043e-13
+683	12041439 11683 20226 900490 0.0000011 0.00005 491 0 0 0 0
+684	12053122 19993 20226 900490 0.0000011 0.00005 491 0.0010635197424198 0.0013480411935803 0.63680073046367 0.00082805476758151
+685	12073115 20467 20227 900490 0.0000011 0.00005 491 1.0635197266147e-10 1.3489255951684e-10 6.3671282537394e-08 8.2783629099097e-18
+686	12093582 20467 20227 900490 0.0000011 0.00005 491 1.0635197266147e-10 1.3489255951684e-10 6.3671282537394e-08 8.2783629099097e-18
+687	12114049 11683 20227 900490 0.0000011 0.00005 491 0 0 0 0
+688	12125732 20455 20227 900490 0.0000011 0.00005 491 1.0635197266147e-10 6.3671282537394e-08 1.5271033080576e-05 6.445179417567e-13
+689	12146187 20455 20227 900490 0.0000011 0.00005 491 1.0635197266147e-10 6.3671282537394e-08 1.5271033080576e-05 6.445179417567e-13
+690	12166642 11683 20227 900490 0.0000011 0.00005 491 0 0 0 0
+691	12178325 19976 20227 900490 0.0000011 0.00005 491 0.0010635197266147 0.0013489255951684 0.63671282537394 0.00082783629099097
+692	12198301 20467 20228 900490 0.0000011 0.00005 491 1.0673730883314e-10 1.3489255951684e-10 6.3699760016979e-08 8.2852311490138e-18
+693	12218768 20467 20228 900490 0.0000011 0.00005 491 1.0673730883314e-10 1.3489255951684e-10 6.3699760016979e-08 8.2852311490138e-18
+694	12239235 11683 20228 900490 0.0000011 0.00005 491 0 0 0 0
+695	12250918 20485 20228 900490 0.0000011 0.00005 491 1.0673730883314e-10 6.3699760016979e-08 1.5282514022017e-05 6.4533294577189e-13
+696	12271403 20485 20228 900490 0.0000011 0.00005 491 1.0673730883314e-10 6.3699760016979e-08 1.5282514022017e-05 6.4533294577189e-13
+697	12291888 11683 20228 900490 0.0000011 0.00005 491 0 0 0 0
+698	12303571 19976 20228 900490 0.0000011 0.00005 491 0.0010673730883314 0.0013489255951684 0.63699760016979 0.00082852311490138
+699	12323547 20467 20229 900490 0.0000011 0.00005 491 1.0673730883314e-10 1.3489255951684e-10 6.3699760016979e-08 8.2852311490138e-18
+700	12344014 20467 20229 900490 0.0000011 0.00005 491 1.0673730883314e-10 1.3489255951684e-10 6.3699760016979e-08 8.2852311490138e-18
+701	12364481 11683 20229 900490 0.0000011 0.00005 491 0 0 0 0
+702	12376164 20485 20229 900490 0.0000011 0.00005 491 1.0673730883314e-10 6.3699760016979e-08 1.5282514022017e-05 6.4533294577189e-13
+703	12396649 20485 20229 900490 0.0000011 0.00005 491 1.0673730883314e-10 6.3699760016979e-08 1.5282514022017e-05 6.4533294577189e-13
+704	12417134 11683 20229 900490 0.0000011 0.00005 491 0 0 0 0
+705	12428817 19976 20229 900490 0.0000011 0.00005 491 0.0010673730883314 0.0013489255951684 0.63699760016979 0.00082852311490138
+706	12448793 20467 20230 900490 0.0000011 0.00005 491 1.0673730883314e-10 1.3489255951684e-10 6.3699760016979e-08 8.2852311490138e-18
+707	12469260 20467 20230 900490 0.0000011 0.00005 491 1.0673730883314e-10 1.3489255951684e-10 6.3699760016979e-08 8.2852311490138e-18
+708	12489727 11683 20230 900490 0.0000011 0.00005 491 0 0 0 0
+709	12501410 20485 20230 900490 0.0000011 0.00005 491 1.0673730883314e-10 6.3699760016979e-08 1.5282514022017e-05 6.4533294577189e-13
+710	12521895 20485 20230 900490 0.0000011 0.00005 491 1.0673730883314e-10 6.3699760016979e-08 1.5282514022017e-05 6.4533294577189e-13
+711	12542380 11683 20230 900490 0.0000011 0.00005 491 0 0 0 0
+712	12554063 19976 20230 900490 0.0000011 0.00005 491 0.0010673730883314 0.0013489255951684 0.63699760016979 0.00082852311490138
+713	12574039 20467 20231 900490 0.0000011 0.00005 491 1.0673730883314e-10 1.3489255951684e-10 6.3699760016979e-08 8.2852311490138e-18
+714	12594506 20467 20231 900490 0.0000011 0.00005 491 1.0673730883314e-10 1.3489255951684e-10 6.3699760016979e-08 8.2852311490138e-18
+715	12614973 11683 20231 900490 0.0000011 0.00005 491 0 0 0 0
+716	12626656 20485 20231 900490 0.0000011 0.00005 491 1.0673730883314e-10 6.3699760016979e-08 1.5282514022017e-05 6.4533294577189e-13
+717	12647141 20485 20231 900490 0.0000011 0.00005 491 1.0673730883314e-10 6.3699760016979e-08 1.5282514022017e-05 6.4533294577189e-13
+718	12667626 11683 20231 900490 0.0000011 0.00005 491 0 0 0 0
+719	12679309 19976 20231 900490 0.0000011 0.00005 491 0.0010673730883314 0.0013489255951684 0.63699760016979 0.00082852311490138
+720	12699285 417 362291 366543 0.00002012975 0.000020346 16 0 1 8 8
+721	12699702 827 362740 899563 0.000020154 0.000049954 32 0 2 32 48
+722	12700529 339 363493 897263 0.000020194 0.000049834 13 0 2 13 19
+723	12700868 619 363494 881232 0.000020194 0.000048946 24 0 2 24 36
+724	12701487 827 364044 897408 0.000020218 0.000049842 32 0 2 32 48
+725	12702314 209 364344 878736 0.000020234 0.00004881 8 0 2 6 8
+726	12702523 413 364345 780602 0.000020234 0.000043354 16 0 2 16 24
+727	12702936 617 364820 879161 0.000020258 0.000048834 24 0 2 24 36
+728	12703553 415 365110 777152 0.000020274 0.00004317 16 0 2 12 16
+729	12703968 416 365551 777585 0.000020298 0.000043194 16 0 2 16 24
+730	12704384 311 775202 880286 0.000043066 0.000048898 12 0 1 6 6
+731	12704695 102 897413 897705 0.000049842 0.000049858 4 0 2 4 6
+732	12704797 103 897562 897850 0.00004985 0.000049866 4 0 2 4 6
+733	12704900 103 898139 898426 0.000049882 0.000049898 4 0 1 2 2
+734	12705003 103 898284 898668 0.00004989 0.000049906 4 0 1 2 2
+735	12705106 104 898673 898965 0.000049906 0.000049922 4 0 2 4 6
+736	12705210 103 898822 899110 0.000049914 0.00004993 4 0 2 4 6
+
