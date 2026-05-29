@@ -84,6 +84,9 @@ class LogicalTopologyManager : public cSimpleModule {
     double totalSoaEnergy_J;
     long long totalSoaCircuitHops;
 
+    // Laser electrical energy (off-chip, not in thermal model)
+    double opticalLaserWPE;
+
     // Waveguide distance parameters (cm)
     OpticalWaveguideDistances wgDistances;
 

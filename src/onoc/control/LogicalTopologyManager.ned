@@ -46,6 +46,7 @@ simple LogicalTopologyManager
     double opticalThermoOpticCoeff_nm_per_K = default(0.1);
     double opticalTuningEfficiency_mW_per_nm = default(0.5);
     double opticalSoaPumpPower_mW = default(80.0);   // SOA electrical pump power per device (256 Gbps PAM4: ~80 mW for 13 dB gain, 128 GBaud)
+    double opticalLaserWPE = default(0.20);          // Laser wall-plug efficiency (0=disabled). P_elec = P_opt / WPE. Off-chip: not in thermal model
     double opticalRingIL_TempCoeff_dB_per_K = default(0.02);
     double opticalSoaGain_TempCoeff_dB_per_K = default(0.05);
     double opticalWaveguideLoss_TempCoeff_dB_per_cm_per_K = default(0.001);

@@ -181,6 +181,7 @@ class NoCSimulator:
                  energy_window=100e-9,
                  # Optical device power
                  optical_soa_pump_mW=80.0,
+                 optical_laser_wpe=0.20,
                  optical_ring_tuning_mW_per_ring=0.0,
                  optical_num_rings_per_router=0,
                  # Compute density (ns/B, 0 = use CSV compute time)
@@ -228,6 +229,7 @@ class NoCSimulator:
 
         # Optical device power parameters
         self.optical_soa_pump_mW = optical_soa_pump_mW
+        self.optical_laser_wpe = optical_laser_wpe
         self.optical_ring_tuning_mW_per_ring = optical_ring_tuning_mW_per_ring
         self.optical_num_rings_per_router = optical_num_rings_per_router
 
@@ -676,6 +678,12 @@ class NoCSimulator:
         soa_energy_per_hop_J = (self.total_soa_energy_J / self.total_soa_circuit_hops
                                 if self.total_soa_circuit_hops > 0 else 0.0)
 
+        # Laser electrical energy (off-chip, CW, not in thermal model)
+        laser_wpe = self.optical_laser_wpe
+        laser_opt_mW = 10.0 ** (self.op.launchPower_dBm / 10.0)
+        laser_elec_mW = laser_opt_mW / laser_wpe if laser_wpe > 0 else 0.0
+        laser_energy_J = laser_elec_mW * 1e-3 * self.t
+
         return {"t": self.t, "ack": self.ack_ok, "stale": self.ack_st,
                 "to": self.to, "fail": self.sf, "ofl": self.ofl,
                 "evals": self.wl._evaluations, "events": n,
@@ -685,7 +693,11 @@ class NoCSimulator:
                 "soa_total_energy_J": self.total_soa_energy_J,
                 "soa_total_circuit_hops": self.total_soa_circuit_hops,
                 "soa_avg_power_W": soa_avg_power_W,
-                "soa_energy_per_hop_J": soa_energy_per_hop_J}
+                "soa_energy_per_hop_J": soa_energy_per_hop_J,
+                "laser_wpe": laser_wpe,
+                "laser_optical_power_mW": laser_opt_mW,
+                "laser_electrical_power_mW": laser_elec_mW,
+                "laser_total_energy_J": laser_energy_J}
 
     # ═══════════════ Task execution ═══════════════
 

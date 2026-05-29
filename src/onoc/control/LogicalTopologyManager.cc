@@ -61,6 +61,7 @@ LogicalTopologyManager::LogicalTopologyManager() {
     totalRingTuningEnergy_J = 0.0;
     totalSoaEnergy_J = 0.0;
     totalSoaCircuitHops = 0;
+    opticalLaserWPE = 0.0;
 }
 
 // Cancel and delete all scheduled topology switch messages.
@@ -811,6 +812,7 @@ void LogicalTopologyManager::initialize() {
     opticalThermoOpticCoeff_nm_per_K = par("opticalThermoOpticCoeff_nm_per_K");
     opticalTuningEfficiency_mW_per_nm = par("opticalTuningEfficiency_mW_per_nm");
     opticalSoaPumpPower_mW = par("opticalSoaPumpPower_mW");
+    opticalLaserWPE = par("opticalLaserWPE");
     opticalRingIL_TempCoeff_dB_per_K = par("opticalRingIL_TempCoeff_dB_per_K");
     opticalSoaGain_TempCoeff_dB_per_K = par("opticalSoaGain_TempCoeff_dB_per_K");
     opticalWaveguideLoss_TempCoeff_dB_per_cm_per_K = par("opticalWaveguideLoss_TempCoeff_dB_per_cm_per_K");
@@ -1017,6 +1019,17 @@ void LogicalTopologyManager::finish() {
     if (totalSoaCircuitHops > 0) {
         recordScalar("onoc-soa-energy-per-hop-J",
                 totalSoaEnergy_J / static_cast<double>(totalSoaCircuitHops));
+    }
+
+    // ── Laser electrical energy (off-chip, CW, not in thermal model) ──
+    if (opticalLaserWPE > 0.0) {
+        double laserOpticalPower_mW = std::pow(10.0, opticalLaunchPower_dBm / 10.0);
+        double laserElectricalPower_mW = laserOpticalPower_mW / opticalLaserWPE;
+        double laserEnergy_J = laserElectricalPower_mW * 1e-3 * simTime().dbl();
+        recordScalar("onoc-laser-wpe", opticalLaserWPE);
+        recordScalar("onoc-laser-optical-power-mW", laserOpticalPower_mW);
+        recordScalar("onoc-laser-electrical-power-mW", laserElectricalPower_mW);
+        recordScalar("onoc-laser-total-energy-J", laserEnergy_J);
     }
 }
 
