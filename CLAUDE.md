@@ -142,6 +142,28 @@ onoc-soa-average-power-W     0.00360       # 时间平均功率
 onoc-soa-energy-per-hop-J    1.57e-08      # 每 SOA·跳 平均 15.7 nJ
 ```
 
+### 激光器 WPE 电功耗（2026-05-29 新增）
+
+片外 CW 激光器，常亮。不计入芯片热模型，仅做电能统计：
+```
+P_opt_mW = 10^(launchPower_dBm/10) = 1 mW
+P_elec_mW = P_opt_mW / opticalLaserWPE = 1 / 0.20 = 5 mW
+Energy_J = P_elec_mW × 1e-3 × simTime
+```
+
+验证命令：
+```bash
+grep "onoc-laser" results/ONoC_MPEG4-#0.sca
+```
+
+输出示例：
+```
+onoc-laser-wpe                    0.2
+onoc-laser-optical-power-mW       1
+onoc-laser-electrical-power-mW    5
+onoc-laser-total-energy-J         9.58e-07
+```
+
 ### 日志控制
 
 - `**.cmdenv-log-level = off` → 压制所有 `EV <<` 日志
@@ -169,6 +191,7 @@ PE 调制 → WDM 波导 → 5×5 微环路由器 (XY) → 目的 PE 解调 → 
 | `opticalCouplingLoss_dB` | 3.0 | 光栅耦合损耗 |
 | `opticalSplitterExcessLoss_dB` | 1.0 | 分光器额外损耗 |
 | `opticalSoaPumpPower_mW` | 80.0 | SOA 电泵浦功耗（256 Gbps PAM4 128 GBaud，13 dB 增益） |
+| `opticalLaserWPE` | 0.20 | 激光器 wall-plug 效率。P_elec = P_opt / WPE。片外，不计入热模型 |
 
 ### TaskPE 参数
 
@@ -254,13 +277,13 @@ onoc-ring-tuning-total-energy-J            0.000923
 - 光器件电功耗入热模型（调制器、微环热调谐、SOA、PD+TIA；激光器不计入芯片热模型）
 - 微环静态热调谐功耗（160 环/路由器，常驻 320mW/路由器，16 路由器共 5.12W）
 - SOA 电能耗追踪（按电路持续时间累计，5 个 scalar：pump-power / total-energy / circuit-hops / average-power / energy-per-hop）
+- 激光器 WPE 电功耗模型（片外，P_elec = P_opt / WPE = 5 mW @ 20% 效率，4 个 scalar：wpe / optical-power / electrical-power / total-energy）
 
 ### 待实现
 
 - 微环动态热调谐（温度漂移补偿、谐振波长 detuning → 额外插入损耗）
 - 波导交叉损耗
 - 链路预算驱动丢包/重路由（当前 budget 只统计不阻断）
-- 激光器电功耗模型（WPE）
 
 ## Python mapping 仿真器 (mapping/)
 
