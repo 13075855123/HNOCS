@@ -25,10 +25,10 @@ from .noc_simulator import NoCSimulator
 SIM_PARAMS = dict(
     rows=4, cols=4, en_opt=True,
     energy_window=100e-9, pend_to=200e-9, retry_dt=50e-9,
-    power_idle=0.5, power_compute=2.0,
-    RconvPE=8.0, RconvRouter=10.0, RlateralPE=15.0, RlateralRouter=15.0,
-    Rpe2router=3.0, Cpe=1e-6, Crouter=2e-7, Tambient=318.15,
-    T_throttle=320.0, throttle_beta=0.05,
+    power_idle=0.3, power_compute=2.5,
+    RconvPE=8.0, RconvRouter=10.0, RlateralPE=10.0, RlateralRouter=10.0,
+    Rpe2router=3.0, Cpe=1e-6, Crouter=1e-7, Tambient=318.15,
+    T_throttle=327.15, throttle_beta=0.1,
     optical_ring_tuning_mW_per_ring=2.0, optical_num_rings_per_router=160,
 )
 

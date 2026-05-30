@@ -40,7 +40,7 @@ private:
     bool enableSetupHandshake;
     bool enableOpticalBypass;
     int numPEs;
-    LogicalTopologyManager *topologyManager;
+    LogicalTopologyManager *topologyManager = nullptr;
     std::vector<unsigned char> circuitReadyByDst;
     std::vector<unsigned char> setupPendingByDst;
     std::vector<simtime_t> nextSetupAttemptByDst;
@@ -49,9 +49,9 @@ private:
     std::vector<int> activeCircuitTokenByDst;
     std::vector<std::vector<TaskMsg*>> pendingDataQ;
     cQueue opticalDataQ;                // data flits for sendDirect
-    cMessage* opticalPopMsg;            // paces optical send
+    cMessage* opticalPopMsg = nullptr;  // paces optical send
     std::vector<cQueue> controlQ;       // per-connector ACK queue
-    cMessage* optPopMsg;
+    cMessage* optPopMsg = nullptr;
     simtime_t setupRetryDelay;
     simtime_t setupPendingTimeout;
     int opticalRequiredWavelengths;

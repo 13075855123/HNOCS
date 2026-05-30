@@ -277,9 +277,10 @@ void GlobalBuffer::sendFlitOptical() {
     int dstPE = flit->getDstId();
     if (dstPE < 0 || dstPE >= numPEs || !circuitReadyByDst[dstPE]) return;
     opticalDataQ.pop();
+    int flitType = flit->getType();  // save before sendDirect transfers ownership
     if (!sendFlitDirectToPE(flit)) return;
     totalFlitsSent++;
-    if (flit->getType() == NOC_END_FLIT) {
+    if (flitType == NOC_END_FLIT) {
         int token = activeCircuitTokenByDst[dstPE];
         if (token > 0 && topologyManager) topologyManager->releaseOpticalPathByToken(token);
         circuitReadyByDst[dstPE] = 0;

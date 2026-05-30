@@ -99,6 +99,10 @@ class PE:
     last_event_time: float = 0.0
     is_idle: bool = True
 
+    # Periodic DVFS throttling
+    remaining_nominal: float = 0.0       # nominal compute work remaining
+    dvfs_active: bool = False            # currently computing (periodic DVFS)
+
     # Energy tracking (matches OMNeT++ energy window model)
     last_energy_update: float = 0.0
     window_send_flits: int = 0
@@ -166,17 +170,17 @@ class NoCSimulator:
                  wl_br=256e9, init_c=8,
                  # Thermal parameters (match OMNeT++ INI defaults)
                  RconvPE=8.0, RconvRouter=10.0,
-                 RlateralPE=15.0, RlateralRouter=15.0,
-                 Rpe2router=3.0, Cpe=1e-6, Crouter=2e-7,
+                 RlateralPE=10.0, RlateralRouter=10.0,
+                 Rpe2router=3.0, Cpe=1e-6, Crouter=1e-7,
                  Tambient=318.15,
                  # Power parameters
-                 power_idle=0.5, power_compute=2.0,
-                 power_send_per_flit=5e-12,
-                 power_recv_per_flit=3e-12,
+                 power_idle=0.3, power_compute=2.5,
+                 power_send_per_flit=2e-10,
+                 power_recv_per_flit=1e-10,
                  optical_modulator_energy=2e-12,
                  optical_receiver_energy=1e-12,
                  # DVFS
-                 T_throttle=320.0, throttle_beta=0.05,
+                 T_throttle=327.15, throttle_beta=0.1,
                  # Energy window
                  energy_window=100e-9,
                  # Optical device power
@@ -730,17 +734,18 @@ class NoCSimulator:
         else:
             nominal_time = t.compute_time_ns * 1e-9
 
-        # DVFS thermal throttling
-        dvfs_scale = self._get_dvfs_scale(pe.pid)
-        actual_time = nominal_time * dvfs_scale
-
-        self._s(self.t + actual_time, EvT.TASK, pe.pid, pe.pid)
+        # Periodic DVFS thermal throttling: re-check each energy_window tick
+        pe.remaining_nominal = nominal_time
+        pe.dvfs_active = True
 
     def _on_done(self, ev: Ev):
         """Task completed → send data, schedule next.
         Matches TaskPE::completeComputation().
         """
-        pe = self.pes[ev.src]
+        self._complete_task(self.pes[ev.src])
+
+    def _complete_task(self, pe: PE):
+        """Core completion logic — called from both EvT.TASK and dvfs tick."""
         t = pe.cur
         if not t:
             return
@@ -748,6 +753,7 @@ class NoCSimulator:
         t.state = "DONE"
         pe.done += 1
         pe.cur = None
+        pe.dvfs_active = False
 
         now = self.t
         self._accumulate_pe_static_energy(pe)
@@ -771,6 +777,10 @@ class NoCSimulator:
         for sid in t.successors:
             gb = (sid == -1)
             dp = (self._gb_bid + self._row(pe.pid)) if gb else t.successor_pe.get(sid, -1)
+            # dstPE == -1 means successor is at GB (e.g., HNN succ 33:-1)
+            if dp == -1:
+                dp = self._gb_bid + self._row(pe.pid)
+                gb = True
             if dp < 0 or dp == pe.pid:
                 continue
             self._tx(pe, dp, t, sid, gb, t.output_data_size)
@@ -1347,9 +1357,19 @@ class NoCSimulator:
                 self._gb_drain()
 
     def _on_tick(self, ev: Ev):
-        """Periodic tick — energy window handler + queue draining + setup retry.
+        """Periodic tick — DVFS advancement + energy window + queue draining + setup retry.
         Fires every self.energy_window (100ns matching OMNeT++).
         """
+        # ── Periodic DVFS throttling: advance nominal work for active PEs ──
+        for pid, pe in self.pes.items():
+            if pe.dvfs_active and pe.remaining_nominal > 0.0:
+                dvfs_scale = self._get_dvfs_scale(pid)
+                work_done = self.energy_window / dvfs_scale
+                pe.remaining_nominal -= work_done
+                if pe.remaining_nominal <= 0.0:
+                    # Task completed during this tick
+                    self._complete_task(pe)
+
         for pid, pe in self.pes.items():
             # Drain control queue first (priority)
             self._drain_control(pe)

@@ -74,15 +74,15 @@ network ONoCMesh
         // ── RC thermal model ──
         double RconvPE = default(10);
         double RconvRouter = default(10);
-        double RlateralPE = default(5);
-        double RlateralRouter = default(5);
-        double Rpe2router = default(2);
+        double RlateralPE = default(10);
+        double RlateralRouter = default(10);
+        double Rpe2router = default(3);
         double Cpe = default(1e-6);
         double Crouter = default(1e-7);
         double Tambient = default(318.15);
 
         // ── DVFS thermal throttling ──
-        double Tthrottle = default(333.15);
+        double Tthrottle = default(326.15);
         double throttleBeta = default(0.1);
 
         // ── Task-driven ──

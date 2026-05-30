@@ -40,7 +40,7 @@ private:
 
     // === Optical state ===
     int numNodes;
-    LogicalTopologyManager *topologyManager;
+    LogicalTopologyManager *topologyManager = nullptr;
     std::vector<unsigned char> circuitReadyByDst;
     std::vector<unsigned char> setupPendingByDst;
     std::vector<simtime_t> nextSetupAttemptByDst;
@@ -71,12 +71,17 @@ private:
     std::map<int, int> receivedDependencies;
 
     // === Self-messages ===
-    cMessage* computeCompleteMsg;
-    cMessage* powerSampleMsg;
-    cMessage* injectPopMsg;
-    cMessage* energyWindowMsg;
-    cMessage* controlPopMsg;   // drives controlQ (SETUP_REQ/ACK)
-    cMessage* opticalPopMsg;   // drives opticalDataQ (sendDirect)
+    cMessage* computeCompleteMsg = nullptr;
+    cMessage* powerSampleMsg = nullptr;
+    cMessage* injectPopMsg = nullptr;
+    cMessage* energyWindowMsg = nullptr;
+    cMessage* controlPopMsg = nullptr;   // drives controlQ (SETUP_REQ/ACK)
+    cMessage* opticalPopMsg = nullptr;   // drives opticalDataQ (sendDirect)
+    cMessage* dvfsTickMsg = nullptr;     // periodic DVFS temperature re-check
+
+    // === Periodic DVFS throttling ===
+    simtime_t remainingNominalWork;  // how much nominal compute time left
+    simtime_t dvfsTickInterval;      // interval between DVFS re-checks (default 100ns)
 
     // === Injection-side state ===
     std::queue<TaskMsg*> injectQ;       // regular data via router (GB)
@@ -163,6 +168,7 @@ private:
 
     void scheduleNextTask();
     void startComputation(TaskDescriptor* task);
+    void handleDvfsTick();
     void completeComputation();
     void sendTaskData(TaskDescriptor* task);
     void sendFlitFromQ();

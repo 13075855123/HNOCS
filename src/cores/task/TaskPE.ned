@@ -23,16 +23,16 @@ simple TaskPE like hnocs.cores.NI_Ifc
         int id;
         int numVCs = default(2);
         int flitSize @unit(byte) = default(4B);
-        double statStartTime @unit(s) = default(1us);
+        double statStartTime @unit(s) = default(100ns);
 
         string application = default("matrix_multiply");
         string csvFile = default("");
         int    bufferBaseId = default(1000);
 
         double powerIdle    @unit(W) = default(0.1W);
-        double powerCompute @unit(W) = default(2.0W);
-        double powerSendPerFlit @unit(J) = default(0.1e-9 J);
-        double powerRecvPerFlit @unit(J) = default(0.05e-9 J);
+        double powerCompute @unit(W) = default(2.5W);
+        double powerSendPerFlit @unit(J) = default(2e-10 J);
+        double powerRecvPerFlit @unit(J) = default(1e-10 J);
 
         bool   enablePowerTrace    = default(true);
         string powerTraceFile      = default("results/power_trace.csv");

@@ -158,6 +158,7 @@ void TaskPE::initialize() {
 
     // NEW
     energyWindow = par("energyWindow");
+    dvfsTickInterval = energyWindow;  // re-check temperature each energy window
 
     currentTask   = nullptr;
     currentPower  = powerIdle;
@@ -249,6 +250,7 @@ void TaskPE::initialize() {
     computeCompleteMsg = new cMessage("computeComplete");
     powerSampleMsg     = new cMessage("powerSample");
     injectPopMsg       = new cMessage("injectPop");
+    dvfsTickMsg        = new cMessage("dvfsTick");
 
     // NEW
     energyWindowMsg    = new cMessage("energyWindow");
@@ -357,6 +359,11 @@ void TaskPE::initialize() {
 void TaskPE::handleMessage(cMessage* msg) {
     if (msg == computeCompleteMsg) {
         completeComputation();
+        return;
+    }
+
+    if (msg == dvfsTickMsg) {
+        handleDvfsTick();
         return;
     }
 
@@ -576,6 +583,7 @@ TaskPE::~TaskPE() {
     cancelAndDelete(powerSampleMsg);
     cancelAndDelete(injectPopMsg);
     cancelAndDelete(energyWindowMsg);
+    cancelAndDelete(dvfsTickMsg);
     if (controlPopMsg) cancelAndDelete(controlPopMsg);
     if (opticalPopMsg) cancelAndDelete(opticalPopMsg);
 
@@ -726,7 +734,6 @@ void TaskPE::sendOpticalFlitFromQ() {
 
     // Find the first flit whose circuit is ready
     TaskMsg *flit = nullptr;
-    int foundIdx = -1;
     for (int i = 0; i < opticalDataQ.getLength(); i++) {
         TaskMsg *candidate = check_and_cast<TaskMsg *>(opticalDataQ.get(i));
         int rawDst = candidate->getDstId();
@@ -737,7 +744,6 @@ void TaskPE::sendOpticalFlitFromQ() {
         }
         if (dstPE >= 0 && dstPE < numNodes && circuitReadyByDst[dstPE]) {
             flit = candidate;
-            foundIdx = i;
             break;
         }
     }
@@ -745,22 +751,27 @@ void TaskPE::sendOpticalFlitFromQ() {
 
     opticalDataQ.remove(flit);
 
-    int dstPE = flit->getDstId();
+    int dstPE_orig = flit->getDstId();
     int numPEs_release = numRows * numColumns;
-    int dstIdx = dstPE;
-    if (dstPE >= bufferBaseId && dstPE < bufferBaseId + numRows) {
-        dstIdx = numPEs_release + (dstPE - bufferBaseId);
+    int dstIdx = dstPE_orig;
+    if (dstPE_orig >= bufferBaseId && dstPE_orig < bufferBaseId + numRows) {
+        dstIdx = numPEs_release + (dstPE_orig - bufferBaseId);
     }
 
-    printf("[OPTICAL] PE%d SEND-OPTICAL pktId=%d flitIdx=%d/%d dstPE=%d at t=%.6fus\n",
-           peId, flit->getPktId(), flit->getFlitIdx(),
-           flit->getFlits() - 1, dstPE, simTime().dbl() * 1e6);
+    if (flit->getFlitIdx() % 100 == 0 || flit->getType() == NOC_END_FLIT) {
+        printf("[OPTICAL] PE%d SEND-OPTICAL pktId=%d flitIdx=%d/%d dstPE=%d at t=%.6fus\n",
+               peId, flit->getPktId(), flit->getFlitIdx(),
+               flit->getFlits() - 1, dstPE_orig, simTime().dbl() * 1e6);
+    }
 
     flit->setInjectTime(simTime());
     lastOpticalSendTime = simTime();
 
+    int flitType = flit->getType();  // save before sendDirect transfers ownership
+    simtime_t txDuration = computeOpticalTxDuration(flit);  // save before sendDirect transfers ownership
+
     if (!sendFlitDirectToSink(flit)) {
-        throw cRuntimeError("TaskPE[%d] optical sendDirect failed to PE%d", peId, dstPE);
+        throw cRuntimeError("TaskPE[%d] optical sendDirect failed to PE%d", peId, dstPE_orig);
     }
 
     totalFlitsSent++;
@@ -769,7 +780,7 @@ void TaskPE::sendOpticalFlitFromQ() {
     updateOpticalLabel();   // update Qtenv display
 
     // On END flit, release circuit
-    if (flit->getType() == NOC_END_FLIT) {
+    if (flitType == NOC_END_FLIT) {
         int token = activeCircuitTokenByDst[dstIdx];
         if (token > 0 && topologyManager) {
             topologyManager->releaseOpticalPathByToken(token);
@@ -781,8 +792,7 @@ void TaskPE::sendOpticalFlitFromQ() {
         updateOpticalLabel();
     }
 
-    simtime_t txFinish = simTime() + computeOpticalTxDuration(flit);
-    scheduleAt(txFinish, opticalPopMsg);
+    scheduleAt(simTime() + txDuration, opticalPopMsg);
 }
 
 void TaskPE::flushPendingData(int dst) {
@@ -951,30 +961,54 @@ void TaskPE::startComputation(TaskDescriptor* task) {
         nominalTime = task->computeTime;
     }
 
-    // DVFS thermal throttling: scale compute time by temperature
-    double dvfsScale = getDvfsScaleFactor();
-    simtime_t actualTime  = nominalTime * dvfsScale;
+    // Periodic DVFS thermal throttling: re-check temperature each tick
+    // Instead of computing a fixed actualTime once, advance nominal work
+    // per tick: remainingNominalWork -= dvfsTickInterval / dvfsScale(T_current)
+    remainingNominalWork = nominalTime;
     totalComputeTimeNominal += nominalTime;
-    totalThrottlePenalty    += (actualTime - nominalTime);
 
     if (powerTrace) {
         powerTrace->recordPEEvent(peId, PE_COMPUTE_START, now, powerCompute);
     }
 
-    printf("[PE%d] task=%d START at t=%.3fus nominalTime=%.3fus dvfs=%.3f Tpe=%.1fC\n",
+    double dvfsScale = getDvfsScaleFactor();
+    double TpeC = getThermalModel()->getPEPerature(peId) - 273.15;
+    printf("[PE%d] task=%d START at t=%.3fus nominalTime=%.3fus dvfs=%.3f Tpe=%.1fC (periodic)\n",
            peId, task->taskId, now.dbl()*1e6, nominalTime.dbl()*1e6,
-           dvfsScale, getThermalModel()->getPEPerature(peId) - 273.15);
+           dvfsScale, TpeC);
 
-    EV << "-I- TaskPE[" << peId << "] starts task " << task->taskId
-       << " at " << simTime()
-       << " nominalTime=" << nominalTime
-       << " dvfsScale=" << dvfsScale
-       << " actualTime=" << actualTime
-       << " Tpe=" << getThermalModel()->getPEPerature(peId)
-       << " outputDataSize=" << task->outputDataSize
-       << "B pendingDeps=" << task->pendingDependencies << endl;
+    scheduleAt(simTime() + dvfsTickInterval, dvfsTickMsg);
+}
 
-    scheduleAt(simTime() + actualTime, computeCompleteMsg);
+// -----------------------------------------------------------------------
+// handleDvfsTick — periodic DVFS re-check during computation
+// -----------------------------------------------------------------------
+void TaskPE::handleDvfsTick() {
+    if (!currentTask || remainingNominalWork <= 0.0) {
+        // Task completed or was preempted — fall through to complete
+        completeComputation();
+        return;
+    }
+
+    // Read current PE temperature and compute DVFS scale
+    double dvfsScale = getDvfsScaleFactor();
+    double Tpe = getThermalModel()->getPEPerature(peId);
+
+    // Advance nominal work: dt_real / dvfsScale
+    // At dvfsScale=1.0, 100ns tick → 100ns nominal progress
+    // At dvfsScale=2.0, 100ns tick → 50ns nominal progress (slower)
+    double workDone = dvfsTickInterval.dbl() / dvfsScale;
+    remainingNominalWork -= workDone;
+
+    // Track throttle penalty: the extra real time spent this tick
+    // penalty = real_time - nominal_progress = dt - workDone
+    totalThrottlePenalty += dvfsTickInterval - workDone;
+
+    if (remainingNominalWork <= 0.0) {
+        completeComputation();
+    } else {
+        scheduleAt(simTime() + dvfsTickInterval, dvfsTickMsg);
+    }
 }
 
 // -----------------------------------------------------------------------
@@ -1045,9 +1079,16 @@ void TaskPE::sendTaskData(TaskDescriptor* task) {
             dstPE = it->second;
         }
 
+        // dstPE == -1 means the successor PE is the GlobalBuffer (GB sink);
+        // convert to the actual GB network address for this PE's row.
+        if (dstPE == -1) {
+            int row = peId / numColumns;
+            dstPE = bufferBaseId + row;
+        }
+
         if (dstPE == peId) continue;
 
-        bool toGB = (succTaskId == -1);
+        bool toGB = (dstPE >= bufferBaseId && dstPE < bufferBaseId + numRows);
         int numPEs = numRows * numColumns;
         int optIdx = toGB ? (numPEs + (dstPE - bufferBaseId)) : dstPE;
 

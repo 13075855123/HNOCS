@@ -2,10 +2,6 @@
 
 > **语言**：用中文回答。
 
-> **行为准则**：每次执行文件操作（删除、修改、创建）后，必须用 `test`/`grep`/`ls` 等独立命令验证结果是否真正生效，不得仅凭命令输出（如 `echo "done"`）判断成功。
-> 
-> **测试文件清理**：如果生成测试文件，在测试完成、确定功能实现正确后删去。
-
 ## Project Overview
 
 OMNeT++ simulation framework for **Hybrid Electrical-Optical Network-on-Chip (HNOCS)**.
@@ -19,67 +15,59 @@ OMNeT++ simulation framework for **Hybrid Electrical-Optical Network-on-Chip (HN
 
 ### 关键约定
 
-| 项目 | 值/含义 |
-|------|--------|
+| 项目 | 值 |
+|------|----|
 | flitSize | 16B |
-| Flit 数计算 | `max(2, ceil(dataSize / 16B))` — 最小 2 flit（START + END） |
-| CSV `peId = -1` | GB 预载任务（模拟片外 DRAM 注入初始数据） |
-| CSV `successor = -1:-1` | 输出发往 GlobalBuffer（最终结果收集），不是错误 |
-| 光路带宽 | 2 波长 × 256Gbps = **512Gbps**，每 flit 传输 0.25ns |
+| Flit 数计算 | `max(2, ceil(dataSize / 16B))` |
+| CSV `peId = -1` | GB 预载任务（片外 DRAM 注入初始数据） |
+| CSV `successor = -1:-1` / `N:-1` | 输出发往 GlobalBuffer |
+| 光路带宽 | 2 波长 × 256Gbps = 512Gbps，每 flit 0.25ns |
 | 电层带宽 | 单链路 16Gbps（光路是电层的 32 倍） |
 
 ## Build & Run
 
-### IDE 运行
+### IDE
 
-1. OMNeT++ IDE 打开 `D:\HNOCS` 作为项目
-2. `examples/task_driven/omnetpp.ini` → Run As → OMNeT++ Simulation
-3. 选择 Config name：
+OMNeT++ IDE 打开 `D:\HNOCS`，`examples/task_driven/omnetpp.ini` → Run As → OMNeT++ Simulation，选 Config。推荐 Cmdenv 模式。
 
-| Config | 网络 | 特点 |
-|--------|------|------|
-| `General` | TaskMesh | 纯电基线 |
-| `ONoCGeneral` | ONoCMesh | 光电混合 |
-| `ONoC_MPEG4` | extends ONoCGeneral | MPEG4 任务图 |
-| `ONoC_GEMM` | extends ONoCGeneral | GEMM 任务图 |
-| `ONoC_VOPD` | extends ONoCGeneral | VOPD 任务图 |
-| `ONoC_Optic` | extends ONoCGeneral | Optic 任务图 |
-
-- Run Configuration 中 **Additional arguments** 保持清空
-- 如需干净的控制台输出：Run Configuration → User interface 选 **Cmdenv**
-
-### 终端编译与运行
+### 终端
 
 ```bash
-# 设置 OMNeT++ 工具链 PATH
 export TOOLS="/d/omnetpp/omnetpp-6.3.0/tools/win32.x86_64"
 export OMNETPP_ROOT="/d/omnetpp/omnetpp-6.3.0"
 export PATH="$TOOLS/clang64/bin:$TOOLS/usr/bin:$OMNETPP_ROOT/bin:$PATH"
 
-# 编译
 cd /d/HNOCS
 make MODE=debug -j4
 
-# 运行（Cmdenv 模式）
 cd examples/task_driven
 ../../out/clang-debug/libhnocs_dbg.exe -c ONoC_MPEG4 -u Cmdenv -n ../../src omnetpp.ini
 ```
+
+### Config 列表
+
+| Config | 说明 |
+|--------|------|
+| `ONoCGeneral` | 抽象基类（不直接运行） |
+| `ONoC_MPEG4` | MPEG4 任务图 |
+| `ONoC_GEMM` | GEMM 任务图 |
+| `ONoC_VOPD` | VOPD 任务图 |
+| `ONoC_Optic` | Optic 任务图 |
+| `ONoC_HNN` | HNN 高并发应力测试（33 任务） |
 
 ## Source Tree
 
 ```
 src/
-├── cores/task/      # TaskPE (task-driven PE), PowerTrace
-├── cores/sinks/     # InfiniteBWMultiVCSink
-├── cores/sources/   # PktFifoSrc
+├── cores/task/      # TaskPE, PowerTrace
 ├── routers/hier/    # Wormhole routers: InPort, OPCalc, Sched, VCCalc
 ├── onoc/control/    # LogicalTopologyManager (波长分配、拓扑管理)
 ├── onoc/optical/    # OpticalCircuitController (光路建链/拆链)
 ├── onoc/routing/    # ReconfigurableOPCalc (光路感知路由)
 ├── onoc/common/     # OpticalDeviceModel, OpticalParamLoader
 ├── thermal/         # ThermalTrace — RC thermal solver
-├── topologies/      # Mesh.ned, TaskMesh.ned, ONoCMesh.ned
-├── globalbuffer/    # GlobalBuffer (片外 DRAM 接口，初始数据注入)
+├── topologies/      # TaskMesh.ned, ONoCMesh.ned
+├── globalbuffer/    # GlobalBuffer (片外 DRAM 接口)
 └── utils/           # TaskGraphParser (CSV 加载)
 ```
 
@@ -88,7 +76,7 @@ src/
 ### 数据流
 
 ```
-Task完成 → data flit 全部进 pendingDataQ
+Task完成 → data flit 进 pendingDataQ
   → SETUP_REQ (2 flit, 电路由器) → dst PE
   → SETUP_ACK (2 flit, 电路由器) → src PE
   → circuitReady = true → flushPendingData → opticalDataQ
@@ -98,297 +86,143 @@ Task完成 → data flit 全部进 pendingDataQ
 
 ### 验证命令
 
-仿真结束时 `TaskPE::finish()` 通过 `printf` 输出 `[OPTICAL-STATS]`（`printf` 不受 `cmdenv-log-level` 控制）：
-
 ```bash
 ./libhnocs_dbg.exe -c ONoC_MPEG4 -u Cmdenv -n ../../src omnetpp.ini 2>&1 | grep OPTICAL-STATS
 ```
 
-输出示例：
-```
-[OPTICAL-STATS] PE0  optical-flits=30  setup-req-rx=1  setup-ack-rx=8  setup-ack-ok=3
-[OPTICAL-STATS] PE7  optical-flits=27  setup-req-rx=2  setup-ack-rx=8  setup-ack-ok=3
-...
-[OPTICAL-STATS] ===== GRAND TOTAL: 153 optical flits sent via sendDirect =====
-```
+### 能耗模型
 
-### 关键计数器
-
-| 变量 | 含义 | 代码位置 |
-|------|------|---------|
-| `opticalPacketsSent` | **仅光路** `sendDirect()` flit 数 | `TaskPE.cc:768` |
-| `totalFlitsSent` | 电层+光层 flit 总数 | `sendFlitFromQ()` + `sendOpticalFlitFromQ()` |
-| `opticalModulatorEnergyPerFlit` | 调制器驱动能耗 (2pJ/flit) | NED 参数 |
-| `opticalReceiverEnergyPerFlit` | PD+TIA 能耗 (1pJ/flit) | NED 参数 |
-
-### SOA 电能耗追踪（2026-05-29 新增）
-
-每条光路建立时记录 `setupTime`，拆除时按电路持续时间累计 SOA 电能：
-```
-energy_J = SOA数量(跳数) × opticalSoaPumpPower_mW × 1e-3 × 持续时间(s)
-```
-
-验证命令：
-```bash
-grep "onoc-soa" results/ONoC_MPEG4-#0.sca
-```
-
-输出示例：
-```
-onoc-soa-pump-power-mW       80
-onoc-soa-total-energy-J      6.89e-07      # 全仿真 SOA 总电能
-onoc-soa-total-circuit-hops  44            # 所有光路 SOA·跳 累计
-onoc-soa-average-power-W     0.00360       # 时间平均功率
-onoc-soa-energy-per-hop-J    1.57e-08      # 每 SOA·跳 平均 15.7 nJ
-```
-
-### 激光器 WPE 电功耗（2026-05-29 新增）
-
-片外 CW 激光器，常亮。不计入芯片热模型，仅做电能统计：
-```
-P_opt_mW = 10^(launchPower_dBm/10) = 1 mW
-P_elec_mW = P_opt_mW / opticalLaserWPE = 1 / 0.20 = 5 mW
-Energy_J = P_elec_mW × 1e-3 × simTime
-```
-
-验证命令：
-```bash
-grep "onoc-laser" results/ONoC_MPEG4-#0.sca
-```
-
-输出示例：
-```
-onoc-laser-wpe                    0.2
-onoc-laser-optical-power-mW       1
-onoc-laser-electrical-power-mW    5
-onoc-laser-total-energy-J         9.58e-07
-```
+| 项目 | 值 | 说明 |
+|------|----|------|
+| 调制器驱动 | 2 pJ/flit | 电→光转换 |
+| PD+TIA 接收 | 1 pJ/flit | 光→电转换 |
+| 电层发送 | 200 pJ/flit | SETUP_REQ/ACK |
+| 电层接收 | 100 pJ/flit | Credit 返回 |
+| SOA 泵浦 | 80 mW/器件 | 逐跳放大，按电路持续时间累计 |
+| 激光器 WPE | 20% | 片外 CW 常亮，P_elec = 5 mW，不计入热模型 |
+| 微环热调谐 | 320 mW/路由器 | 160 环 × 2 mW/环，常驻 |
 
 ### 日志控制
 
-- `**.cmdenv-log-level = off` → 压制所有 `EV <<` 日志
-- `printf()` → 不受 log-level 影响，始终输出
-- `[OPTICAL]` 前缀 printf 覆盖全生命周期：SETUP_REQ → ACK → CIRCUIT READY → SEND-OPTICAL → TEARDOWN
-- 在 `omnetpp.ini` 的 `[ONoCGeneral]` 段中已设置 `**.cmdenv-log-level = off`
+- `**.cmdenv-log-level = off` → 压制 `EV <<` 日志
+- `printf()` → 不受影响，始终输出
+- `[OPTICAL]` 前缀覆盖全生命周期
 
-## 光路架构与 NED 参数
+## 光路架构与参数
 
 ```
 片外 CW 激光器 (常亮)
   │  光栅耦合损耗: 3 dB
-  ▼  1×16 分光器: 10×log10(16) + 1dB excess
+  ▼  1×16 分光器
   ▼
 PE 调制 → WDM 波导 → 5×5 微环路由器 (XY) → 目的 PE 解调 → PD
        ↕                                      ↕
   调制器驱动 (2pJ/flit)               PD+TIA (1pJ/flit)
 ```
 
-### 网络级参数（ONoCMesh / LogicalTopologyManager）
+### 光层参数
 
-| 参数 | 默认值 | 说明 |
-|------|--------|------|
-| `opticalNumSplitBranches` | 16 | 1×N 分光器路数 |
+| 参数 | 值 | 说明 |
+|------|----|------|
+| `opticalNumSplitBranches` | 16 | 1×N 分光器 |
 | `opticalCouplingLoss_dB` | 3.0 | 光栅耦合损耗 |
-| `opticalSplitterExcessLoss_dB` | 1.0 | 分光器额外损耗 |
-| `opticalSoaPumpPower_mW` | 80.0 | SOA 电泵浦功耗（256 Gbps PAM4 128 GBaud，13 dB 增益） |
-| `opticalLaserWPE` | 0.20 | 激光器 wall-plug 效率。P_elec = P_opt / WPE。片外，不计入热模型 |
+| `opticalSoaPumpPower_mW` | 80.0 | SOA 泵浦功耗 |
+| `opticalLaserWPE` | 0.20 | 激光器 wall-plug 效率 |
+| `opticalRingTuningPower_mW_per_ring` | 2.0 | 每微环调谐功率 |
+| `opticalNumRingsPerRouter` | 160 | 每路由器微环数 |
 
-### TaskPE 参数
+### 电层与热参数（当前设计值）
 
-| 参数 | 默认值 | 说明 |
-|------|--------|------|
-| `opticalModulatorEnergyPerFlit` | 2e-12 J | 调制器驱动能耗 |
-| `opticalReceiverEnergyPerFlit` | 1e-12 J | PD+TIA 能耗 |
+| 参数 | 值 | 说明 |
+|------|----|------|
+| `powerIdle` | 0.3 W | 空闲功耗 |
+| `powerCompute` | 2.5 W | 计算功耗 |
+| `powerSendPerFlit` | 2e-10 J | 电层发送 |
+| `powerRecvPerFlit` | 1e-10 J | 电层接收 |
+| `RconvPE` / `RconvRouter` | 8 / 10 K/W | 垂直热阻 |
+| `RlateralPE` / `RlateralRouter` | 10 / 10 K/W | 横向热阻 |
+| `Rpe2router` | 3 K/W | PE-Router 热阻 |
+| `Cpe` / `Crouter` | 1e-6 / 1e-7 J/K | 热容 |
+| `Tambient` | 318.15 K (45°C) | 环境温度 |
+| `Tthrottle` | **327.15 K (54°C)** | DVFS 节流阈值 |
+| `throttleBeta` | 0.1 | DVFS 减速系数 (10%/°C) |
 
-### ThermalModel 新增接口
+## 微环热调谐
 
-```cpp
-void addRouterOpticalPower(int routerId, double power_W);    // 建链时调用
-void removeRouterOpticalPower(int routerId, double power_W); // 拆链时调用
-```
+5 端口路由器（0=Local, 1=West, 2=North, 3=East, 4=South）：**20 有效交叉点 × 8 波长 = 160 微环/路由器**。全芯片 16 路由器共 2560 微环。
 
-## 微环热调谐功耗
+各路径微环数（through + 1 drop）：
 
-### 微环数量
+| 方向组 | 最长(i=8) |
+|--------|:---:|
+| L→W, W→S, N→L, E→N | 8 |
+| L→S, N→W, E→L, S→E | 24 |
+| L→N, L→E, W→L, S→L | 32 |
+| W→E, N→S, E→W, S→N | 33 |
+| W→N, E→S | 40 |
+| **N→E, S→W** | **56** |
 
-5 端口（0=Local, 1=West, 2=North, 3=East, 4=South），每交叉点 8 个微环（每波长一个）：
+- **静态热调谐**（已实现）：每环 2mW 常驻加热，320mW/路由器，`initialize()` 注入 RC 热模型
+- **动态热调谐**（待实现）：温度漂移补偿，需 `opticalEnableThermalEffects=true`
 
-> **20 有效交叉点 × 8 波长 = 160 微环/路由器**
-
-各方向路径经过的微环数（through + 1 drop）：
-
-| 方向组 | 公式类型 | through 范围(i=1..8) | 最长(i=8) |
-|--------|:---:|:---|:---:|
-| L→W, W→S, N→L, E→N | Type 0: i−1 | 0–7 | 8 |
-| L→S, N→W, E→L, S→E | Type 1: 2n+i−1 | 16–23 | 24 |
-| L→N, L→E, W→L, S→L | Type 2: 3n+i−1 | 24–31 | 32 |
-| W→E, N→S, E→W, S→N | Type 3: 4n | 32（恒定） | 33 |
-| W→N, E→S | Type 4: 4n+i−1 | 32–39 | 40 |
-| **N→E, S→W** | **Type 5: 6n+i−1** | 48–55 | **56** |
-
-（代码位置：`OpticalDeviceModel.cc:70-128`、`buildWavelengthDependentRouterMatrix()`）
-
-### 静态热调谐（已实现）
-
-每个微环需要恒定的加热功率将谐振波长对准目标，这是**常开功耗**，与建链/拆链无关。实现方式：
-
-- **`LogicalTopologyManager::initialize()`** — 计算每路由器调谐功率（`numRings × powerPerRing`），通过 `addRouterOpticalPower()` 注入 RC 热模型（永久，不 remove）
-- **`LogicalTopologyManager::finish()`** — 计算累计能耗 `energy = totalPower × simTime`，记录 scalars
-
-### 相关参数（ONoCGeneral / LogicalTopologyManager）
-
-| 参数 | 默认值 | 说明 |
-|------|--------|------|
-| `opticalRingTuningPower_mW_per_ring` | 2.0 | 每微环静态调谐功率（Dong 2010: 21mW/FSR → ~2mW baseline） |
-| `opticalNumRingsPerRouter` | 160 | 每路由器微环总数（20 交叉点 × 8 波长） |
-
-### 验证命令
-
-```bash
-grep "ring-tuning" results/ONoC_MPEG4-#0.sca
-```
-
-输出示例：
-
-```
-onoc-ring-tuning-rings-per-router          160
-onoc-ring-tuning-power-per-ring-mW         2
-onoc-ring-tuning-power-per-router-mW       320
-onoc-ring-tuning-total-power-W             5.12
-onoc-ring-tuning-total-energy-J            0.000923
-```
-
-### 静态 vs 动态热调谐
-
-| | 静态（已实现） | 动态（待实现） |
-|------|:---:|:---:|
-| 触发条件 | 始终在线 | 温度漂移时动态补偿 |
-| 功耗 | 恒定 = numRings × powerPerRing | 随 ΔT 变化 |
-| 注入方式 | `initialize()` 一次性加入 | 建链/拆链时 add/remove |
-| 代码位置 | `LogicalTopologyManager` | `OpticalDeviceModel` (需 `opticalEnableThermalEffects=true`) |
-
-## 已实现 / 待实现
-
-### 已实现
+## 已实现功能
 
 - 纯电 NoC + PE/路由器能耗 + RC 热求解器（100ns 粒度）
-- 光旁路：`sendDirect()` 数据直传 + 电层 SETUP_REQ/ACK 握手 + 建链/拆链
-- 光功率分光（耦合损耗 + 分光器损耗计入链路预算）
-- 光器件电功耗入热模型（调制器、微环热调谐、SOA、PD+TIA；激光器不计入芯片热模型）
-- 微环静态热调谐功耗（160 环/路由器，常驻 320mW/路由器，16 路由器共 5.12W）
-- SOA 电能耗追踪（按电路持续时间累计，5 个 scalar：pump-power / total-energy / circuit-hops / average-power / energy-per-hop）
-- 激光器 WPE 电功耗模型（片外，P_elec = P_opt / WPE = 5 mW @ 20% 效率，4 个 scalar：wpe / optical-power / electrical-power / total-energy）
+- 光旁路：`sendDirect()` 直传 + SETUP_REQ/ACK 握手 + 建链/拆链
+- 光功率预算（耦合损耗、分光器、SOA ASE、PAM4 BER）
+- 微环静态热调谐（160 环/路由器，5.12W 全芯片）
+- SOA 逐跳放大 + 电能耗追踪（5 个 scalar）
+- 激光器 WPE 电功耗（片外常亮，4 个 scalar）
+- 周期性 DVFS 热节流（每 100ns 重检温度，`1 + 0.1×(T-54°C)` @ T>54°C）
+- 可重构波长分配（lowest 优先策略）
+- HNN 高并发应力测试 benchmark（33 任务，16 PE 全激活）
 
 ### 待实现
 
-- 微环动态热调谐（温度漂移补偿、谐振波长 detuning → 额外插入损耗）
+- 微环动态热调谐
 - 波导交叉损耗
-- 链路预算驱动丢包/重路由（当前 budget 只统计不阻断）
+- 链路预算驱动丢包/重路由
 
-## Python mapping 仿真器 (mapping/)
+## Python 仿真器 (mapping/)
 
-### 本次对话（2026-05-28）实现/修改
+事件驱动 Python 版 NoC 仿真器，支持离线任务重映射优化。与 OMNeT++ 交叉验证：
 
-| 文件 | 改动 | 说明 |
-|------|------|------|
-| `mapping/noc_simulator.py` | **重大重写** | 事件驱动 NoC 仿真器，完整移植 OMNeT++ TaskPE + ThermalTrace |
-| `mapping/thermal_simulator.py` | 更新 | 温度修正漏电功率、DVFS、路由器光器件功耗 |
-| `mapping/optical_budget.py` | 更新 | 分光器功率、波导交叉损耗、温度感知效应 |
-| `mapping/cost_model.py` | 更新 | 温度修正有效温度（漏电模型） |
-| `mapping/compare_omnet.py` | **新建** | OMNeT++ vs Python 自动对比工具 |
-| `mapping/__init__.py` | 更新 | 包导出符号 |
-| `mapping/tests/test_cost_model.py` | 修复 | 适配新的漏电模型 |
-| `src/onoc/topologies/ONoCMesh.ned` | **Bug 修复** | pe[] 移到 topologyManager 前，修复 ring tuning 初始化顺序 |
-
-### 本次对话（2026-05-29）实现/修改
-
-| 文件 | 改动 | 说明 |
-|------|------|------|
-| `src/onoc/control/LogicalTopologyManager.h` | 新增字段 | `OpticalPacketAllocation.setupTime`，`totalSoaEnergy_J`，`totalSoaCircuitHops` |
-| `src/onoc/control/LogicalTopologyManager.cc` | SOA 能耗追踪 | 建链记录时间、拆链累计、finish 残留处理、5 个 scalar |
-| `src/onoc/control/LogicalTopologyManager.ned` | 参数更新 | `opticalSoaPumpPower_mW` 15→80 |
-| `mapping/noc_simulator.py` | SOA 能耗同步 | 泵浦功率 15→80，新增 `_circuit_soa` 追踪，run() 输出 5 个 SOA 统计 |
-| `mapping/thermal_simulator.py` | 参数同步 | `opticalSoaPump_mW` 15→80 |
-| `paper/20260529.md` | **新建** | SOA 放置分析 + 能耗追踪实现文档 |
-
-### Python 仿真器能力对照
-
-| 功能 | OMNeT++ 对应 | 验证状态 |
-|------|-------------|:---:|
-| 事件驱动任务调度 + DAG 依赖 | TaskPE | 完成时间偏差 <0.2% |
-| 光握手建链 (SETUP_REQ/ACK) + 波长分配 + 光路直传 + 拆链 | TaskPE + LTM | 光 flit 数精确匹配 |
-| 双层 RC 热模型（PE + Router，邻居耦合） | ThermalTrace | PE 温度峰值偏差 <0.3K |
-| 温度修正漏电功率 exp((T-Tamb)/15) | TaskPE::getTemperatureCorrectedPower | 路由器温度峰值偏差 <0.3K |
-| DVFS 热节流 1+beta*(T-Tthrottle) | TaskPE::getDvfsScaleFactor | DVFS 因子精确匹配 |
-| 能量窗口追踪 100ns（静态+动态分离） | TaskPE::finalizeEnergyWindow | 能耗偏差 <2% |
-| 路由器 InPort 电功耗 (pLeak + buffer + crossbar) | InPortSync | 已实现 |
-| 路由器光器件功耗 (ring tuning 320mW/router) | LTM + ThermalModel | 已实现 |
-| 光功率预算（分光器、SOA ASE、PAM4 BER） | OpticalDeviceModel | 已实现 |
-| Wormhole 切换电气 flit 延迟 | InPortSync + SchedSync | 已实现 |
-
-### 关键参数（匹配 omnetpp.ini [ONoCGeneral]）
-
-| 参数 | 值 | 说明 |
-|------|-----|------|
-| `energy_window` | 100e-9 | 能量窗口周期 |
-| `pend_to` | 200e-9 | SETUP 超时 |
-| `retry_dt` | 50e-9 | SETUP 重试间隔 |
-| `router_pipeline` | 2e-9 | 路由器内部流水线延迟 |
-| `inport_pLeak` | 1e-3 | 每 InPort 漏电功率 |
-| `inport_eBufferWrite` | 1e-12 | Buffer 写能耗 |
-| `inport_eBufferRead` | 1e-12 | Buffer 读能耗 |
-| `inport_eCrossbar` | 0.5e-12 | Crossbar 能耗 |
-| `inport_num_per_router` | 5 | 每路由器 InPort 数 |
-| `optical_ring_tuning_mW_per_ring` | 2.0 | 每微环调谐功率 |
-| `optical_num_rings_per_router` | 160 | 每路由器微环数 |
-
-### OMNeT++ Ring Tuning Bug（已修复）
-
-**问题**：`LogicalTopologyManager::initialize()` 在 `ThermalModel::open()` 之前调用 `addRouterOpticalPower()`，此时 `numRouters==0`（构造器默认值），`addRouterOpticalPower` 中 `routerId >= numRouters` 检查（0>=0）为 true，静默返回，ring tuning 功率从未注入热模型。
-
-**修复**：`ONoCMesh.ned` 中将 `pe[]` 子模块移到 `topologyManager` 之前，确保 `pe[0].initialize()` → `ThermalModel::open()` → `numRouters=16` 先于 `addRouterOpticalPower()` 执行。
-
-**影响**：修复前 OMNeT++ 的 ring tuning 仅有 scalar 报告（参数×时间），无实际热效应。修复后路由器温度提升 ~2.4°C，PE 温度提升 ~1.5°C，DVFS 因子从 1.108 升至 1.182，完成时间从 179.7μs 增至 191.5μs（MPEG4）。
-
-### compare_omnet.py 用法
+| 功能 | 偏差 |
+|------|:---:|
+| 任务调度 + DAG 依赖 | 完成时间 <0.2% |
+| 光握手 + 波长分配 + sendDirect | 光 flit 精确匹配 |
+| 双层 RC 热模型 | PE 峰值 <0.3K |
+| DVFS 热节流 | 因子精确匹配 |
+| 能量窗口 100ns | 能耗 <2% |
 
 ```bash
-python -m mapping.compare_omnet --all          # 对比全部四个任务图
-python -m mapping.compare_omnet --csv tasks_gemm_static.csv --config ONoC_GEMM
+python -m mapping.compare_omnet --all    # 对比全部任务图
 ```
 
-自动提取 OMNeT++ `.sca/.vec` 结果 → 运行 Python 仿真 → 对比完成时间/PE温度/路由器温度/光flit数 → 输出 PASS/FAIL 报告。
+## 最终仿真结果（Tthrottle=54°C, powerCompute=2.5W）
 
-## 能耗统计
+| Config | t_end | PE Tmax | 光 flit | Ring Tuning | SOA | Laser |
+|--------|-------|---------|---------|-------------|------|-------|
+| ONoC_MPEG4 | 167.66μs | 56.1°C | 1,475 | 0.86mJ | 0.69μJ | 0.84μJ |
+| ONoC_GEMM | 130.23μs | 56.4°C | 1,920 | 0.67mJ | 1.18μJ | 0.65μJ |
+| ONoC_VOPD | 237.70μs | 54.4°C | 2,774 | 1.22mJ | 0.86μJ | 1.19μJ |
+| ONoC_HNN | 228.12μs | 57.1°C | 26,624 | 1.26mJ | 3.28μJ | 1.23μJ |
 
-- 握手阶段（SETUP_REQ/ACK）：电路由器，使用 `powerSendPerFlit` / `powerRecvPerFlit`
-- 光数据面（`sendDirect`）：使用 `opticalModulatorEnergyPerFlit` / `opticalReceiverEnergyPerFlit`
-- `finalizeEnergyWindow()` 叠加两者：光路动态能耗 + 电层 flit 能耗
+### DVFS 行为
 
-## 已知问题与修复记录
+周期性 DVFS 在所有 benchmark 中生效。MPEG4/GEMM/VOPD 在任务 START 时 dvfs=1.0（PE 尚未升温），`handleDvfsTick` 在任务执行中逐 tick 减速（GEMM 最强 +15-30%）。HNN 因 16 PE 同时计算，START 时温度已达 57°C，dvfs=1.30。
 
-### 2026-05-26：`powerTraceFile` 默认路径无目录
+## 关键文件索引
 
-**现象**：`Cannot open power trace file: results/power_trace.csv`
-
-**修复**：`omnetpp.ini` 中设置 `**.pe[*].powerTraceFile = "power_trace.csv"`（输出到当前目录）。
-
-### 2026-05-26：NED 文件格式损坏导致 IDE Syntax Error
-
-**现象**：IDE 报 18 个 .ned "NED Syntax Problem"，但 `make` 编译通过。
-
-**原因**：`gates:` / `submodules:` / `}` 关键字被塞进 `//` 注释，IDE 解析器找不到。
-
-### 2026-05-26：IDE 缓存旧 INI 导致 "Unknown parameter"
-
-**现象**：运行时报 `Unknown parameter 'wTemperature' / 'remapToDynamic'`。
-
-**原因**：旧 `.vci` 文件（来自不存在的 `omnetpp_bench.ini`）含 `config **.wTemperature 1.0` 等通配符。IDE 会读取 `.vci` 作为可选配置源。
-
-**修复**：删除旧 `.vci`/`.sca`/`.vec`；为全部 21 个模块 NED 添加废弃参数声明作为 IDE 兼容占位。
-
-### 废弃参数
-
-`remapToDynamic` / `wTemperature` / `wHopCount` → 21 个 NED 中有声明，C++ 中**零引用**。当初 `remapToDynamic=true` 时 GB 动态改写 CSV peId（在线重映射），现已不用。保留只为防 IDE 报错。
-
-`GlobalBuffer::distributeTasks()` → 处理 CSV `peId=-1` 的初始数据注入，不是在线重映射。
+| 组件 | 文件 |
+|------|------|
+| 波长分配 | `src/onoc/control/LogicalTopologyManager.cc` |
+| 光路由触发 | `src/onoc/routing/ReconfigurableOPCalc.cc` |
+| PE 能耗 + 握手 | `src/cores/task/TaskPE.cc` |
+| Router 能耗 | `src/routers/hier/inPort/InPortSync.cc` |
+| RC 热模型 | `src/thermal/ThermalTrace.cc` |
+| 微环损耗模型 | `src/onoc/common/OpticalDeviceModel.cc` |
+| 配置文件 | `examples/task_driven/omnetpp.ini` |
+| Python 仿真器 | `mapping/noc_simulator.py` |
+| 自动对比工具 | `mapping/compare_omnet.py` |
+| 设计文档 | `paper/20260529.md` |

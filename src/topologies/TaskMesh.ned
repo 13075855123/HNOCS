@@ -33,15 +33,15 @@ network TaskMesh
         // RC thermal model parameters
         double RconvPE        = default(10);      // K/W
         double RconvRouter    = default(10);      // K/W
-        double RlateralPE     = default(5);       // K/W
-        double RlateralRouter = default(5);       // K/W
-        double Rpe2router     = default(2);       // K/W
+        double RlateralPE     = default(10);      // K/W
+        double RlateralRouter = default(10);      // K/W
+        double Rpe2router     = default(3);       // K/W
         double Cpe            = default(1e-6);    // J/K
         double Crouter        = default(1e-7);    // J/K
         double Tambient       = default(318.15);  // K
 
         // DVFS thermal throttling
-        double Tthrottle      = default(333.15);  // K (60°C)
+        double Tthrottle      = default(326.15);  // K (53°C)
         double throttleBeta   = default(0.1);     // 1/K, slowdown per degree above threshold
 
         @display("bgb=750,700");

@@ -39,20 +39,20 @@ class SimParams:
     # Thermal (K/W, J/K, K)
     RconvPE:        float = 8.0
     RconvRouter:    float = 10.0
-    RlateralPE:     float = 15.0
-    RlateralRouter: float = 15.0
+    RlateralPE:     float = 10.0
+    RlateralRouter: float = 10.0
     Rpe2router:     float = 3.0
     Cpe:            float = 1e-6
-    Crouter:        float = 2e-7
+    Crouter:        float = 1e-7
     Tambient:       float = 318.15
 
     # Power (W)
-    powerIdle:      float = 0.5
-    powerCompute:   float = 2.0
+    powerIdle:      float = 0.3
+    powerCompute:   float = 2.5
 
     # DVFS throttling (matches OMNeT++ TaskPE)
-    Tthrottle:      float = 320.0    # K  (46.85 C)
-    throttleBeta:   float = 0.05     # 5 % slowdown per K above threshold
+    Tthrottle:      float = 327.15  # K  (54 C)
+    throttleBeta:   float = 0.1     # 10 % slowdown per K above threshold
 
     # Temperature-corrected leakage: factor = exp((T - Tamb) / leakage_divisor)
     leakageDivisor: float = 15.0
