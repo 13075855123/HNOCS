@@ -36,7 +36,6 @@ private:
     double opticalWavelengthBitrate;
     simtime_t opticalBasePropagationDelay;
     simtime_t opticalPerHopDelay;
-    int opticalBurstSize;
 
     // === Optical state ===
     int numNodes;
@@ -71,7 +70,6 @@ private:
     std::map<int, int> receivedDependencies;
 
     // === Self-messages ===
-    cMessage* computeCompleteMsg = nullptr;
     cMessage* powerSampleMsg = nullptr;
     cMessage* injectPopMsg = nullptr;
     cMessage* energyWindowMsg = nullptr;

@@ -247,7 +247,6 @@ void TaskPE::initialize() {
     }
 
     // Self-messages
-    computeCompleteMsg = new cMessage("computeComplete");
     powerSampleMsg     = new cMessage("powerSample");
     injectPopMsg       = new cMessage("injectPop");
     dvfsTickMsg        = new cMessage("dvfsTick");
@@ -301,7 +300,6 @@ void TaskPE::initialize() {
         opticalWavelengthBitrate = par("opticalWavelengthBitrate");
         opticalBasePropagationDelay = par("opticalBasePropagationDelay");
         opticalPerHopDelay = par("opticalPerHopDelay");
-        opticalBurstSize = par("opticalBurstSize");
 
         circuitReadyByDst.assign(numNodes, 0);
         setupPendingByDst.assign(numNodes, 0);
@@ -357,11 +355,6 @@ void TaskPE::initialize() {
 // handleMessage
 // -----------------------------------------------------------------------
 void TaskPE::handleMessage(cMessage* msg) {
-    if (msg == computeCompleteMsg) {
-        completeComputation();
-        return;
-    }
-
     if (msg == dvfsTickMsg) {
         handleDvfsTick();
         return;
@@ -573,13 +566,15 @@ void TaskPE::finish() {
         delete powerTrace;
         powerTrace = nullptr;
     }
+
+    // Ensure thermal snapshot is written (singleton destructor never runs in OMNeT++)
+    getThermalModel()->close();
 }
 
 // -----------------------------------------------------------------------
 // Destructor
 // -----------------------------------------------------------------------
 TaskPE::~TaskPE() {
-    cancelAndDelete(computeCompleteMsg);
     cancelAndDelete(powerSampleMsg);
     cancelAndDelete(injectPopMsg);
     cancelAndDelete(energyWindowMsg);
@@ -698,7 +693,7 @@ void TaskPE::sendControlFlitFromQ() {
                     sflit->setFirstNet(true); sflit->setSchedulingPriority(0);
                     sflit->setType(fi == 0 ? NOC_START_FLIT : NOC_END_FLIT);
                     sflit->setTaskId(-1); sflit->setProducerPE(peId);
-                    sflit->setConsumerPE(d); sflit->setProducerTaskId(-1);
+                    sflit->setConsumerPE(netDst); sflit->setProducerTaskId(-1);
                     sflit->setDataSize(0); sflit->setComputeTime(0);
                     controlQ.insert(sflit);
                 }
@@ -787,6 +782,7 @@ void TaskPE::sendOpticalFlitFromQ() {
         }
         circuitReadyByDst[dstIdx] = 0;
         activeCircuitTokenByDst[dstIdx] = 0;
+        nextSetupAttemptByDst[dstIdx] = SIMTIME_ZERO;
         printf("[OPTICAL] PE%d TEARDOWN circuit to dst=%d token=%d at t=%.6fus\n",
                peId, dstIdx, token, simTime().dbl() * 1e6);
         updateOpticalLabel();
@@ -811,8 +807,24 @@ void TaskPE::flushPendingData(int dst) {
 
 int TaskPE::meshHopDistance(int src, int dst) const {
     if (numRows <= 0 || numColumns <= 0) return 0;
-    int srcRow = src / numColumns, srcCol = src % numColumns;
-    int dstRow = dst / numColumns, dstCol = dst % numColumns;
+
+    // Map an address to its physical mesh (row, col).
+    // GB addresses (bufferBaseId+row) correspond to the column-0 router of that row.
+    auto toMeshCoord = [&](int addr) -> std::pair<int,int> {
+        int numPEs = numRows * numColumns;
+        if (addr >= bufferBaseId && addr < bufferBaseId + numRows) {
+            int row = addr - bufferBaseId;
+            return {row, 0};
+        } else if (addr >= numPEs && addr < numPEs + numRows) {
+            int row = addr - numPEs;
+            return {row, 0};
+        } else {
+            return {addr / numColumns, addr % numColumns};
+        }
+    };
+
+    auto [srcRow, srcCol] = toMeshCoord(src);
+    auto [dstRow, dstCol] = toMeshCoord(dst);
     return abs(srcRow - dstRow) + abs(srcCol - dstCol);
 }
 
@@ -997,12 +1009,16 @@ void TaskPE::handleDvfsTick() {
     // Advance nominal work: dt_real / dvfsScale
     // At dvfsScale=1.0, 100ns tick → 100ns nominal progress
     // At dvfsScale=2.0, 100ns tick → 50ns nominal progress (slower)
-    double workDone = dvfsTickInterval.dbl() / dvfsScale;
-    remainingNominalWork -= workDone;
+    double fullWorkDone = dvfsTickInterval.dbl() / dvfsScale;
+    double actualWork = std::min(fullWorkDone, remainingNominalWork.dbl());
+    remainingNominalWork -= actualWork;
 
-    // Track throttle penalty: the extra real time spent this tick
-    // penalty = real_time - nominal_progress = dt - workDone
-    totalThrottlePenalty += dvfsTickInterval - workDone;
+    // Throttle penalty: the extra real time spent due to DVFS slowdown.
+    // Only count the work we actually did (avoid inflating penalty with
+    // unused tick capacity in the final partial tick).
+    // penalty = real_time_for_work - nominal_work
+    double realTimeForWork = actualWork * dvfsScale;
+    totalThrottlePenalty += realTimeForWork - actualWork;
 
     if (remainingNominalWork <= 0.0) {
         completeComputation();
@@ -1155,6 +1171,7 @@ void TaskPE::sendTaskData(TaskDescriptor* task) {
 
         pktIdCounter++;
         int pktId = pktIdCounter;
+        ASSERT((pktId >> 16) == peId);  // high 16 bits must match peId to avoid collision
 
         for (int fi = 0; fi < numFlits; fi++) {
             char name[128];
@@ -1452,7 +1469,8 @@ void TaskPE::handleDataArrival(TaskMsg* msg) {
     }
 
     receivedDependencies[targetTaskId]++;
-    task->pendingDependencies--;
+    if (task->pendingDependencies > 0)
+        task->pendingDependencies--;
 
     EV << "-I- TaskPE[" << peId << "] dependency update"
        << " targetTask=" << targetTaskId

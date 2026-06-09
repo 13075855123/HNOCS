@@ -161,7 +161,7 @@ void expandRouterTurnToSegments(const RouterTurnMetadata &meta,
     {
         OpticalDeviceSegment seg;
         seg.deviceType = DEV_RING_DROP;
-        seg.deviceIndex = nodeId * 100 + inPort * 10 + outPort;
+        seg.deviceIndex = nodeId * 1000 + inPort * 100 + outPort * 10;
         seg.wavelengthIndex = wavelengthIndex;
         segments.push_back(seg);
     }
@@ -340,9 +340,9 @@ void populateDefaultOpticalParams(OpticalParamTable &table, int numWavelengths) 
         {
             DevicePerWavelengthParams p;
             p.insertionLoss_dB = 0.0;           // gain is handled separately
-            p.soaGain_dB = 13.0;
+            p.soaGain_dB = 10.0;
             p.soaNoiseFigure_dB = 7.0;
-            p.soaSaturationPower_dBm = 15.0;
+            p.soaSaturationPower_dBm = 12.0;
             p.crosstalkToAdjacent_dB = -50.0;
             p.crosstalkToNonAdjacent_dB = -60.0;
             table[key] = p;
@@ -354,7 +354,7 @@ void populateDefaultOpticalParams(OpticalParamTable &table, int numWavelengths) 
             DevicePerWavelengthParams p;
             p.insertionLoss_dB = 0.5;           // coupling loss to PD
             p.pdResponsivity_AW = 1.0;
-            p.pdSensitivity_dBm = -15.0;        // PAM4 ≈128 GBaud
+            p.pdSensitivity_dBm = -12.0;        // PAM4 128 GBaud (256 Gbps)
             p.crosstalkToAdjacent_dB = -40.0;
             p.crosstalkToNonAdjacent_dB = -60.0;
             table[key] = p;
@@ -420,11 +420,10 @@ void computeDeviceLevelBudget(const OpticalDevicePath &path,
     result.worstSNR_dB = 99.0;
     result.worstBER = 0.0;
     result.signalMargin_dB = 99.0;
-    // Track total insertion loss (positive) separately from net budget
-    double totalInsertionLoss_dB = 0.0;
     // Per-wavelength accumulators
     for (size_t wi = 0; wi < activeWavelengths.size(); ++wi) {
         int wl = activeWavelengths[wi];
+        double totalInsertionLoss_dB = 0.0;  // reset per wavelength
         double currentPower_dBm = constraints.launchPower_dBm;
         double accumulatedCrosstalk_dB = -199.0; // linear-sum later, track in dB
         double accumulatedNoisePower_mW = 0.0;    // mW
@@ -451,21 +450,27 @@ void computeDeviceLevelBudget(const OpticalDevicePath &path,
                     segLoss_dB = params.insertionLoss_dB * seg.waveguideLength_cm;
                     break;
 
-                case DEV_SOA:
-                    // SOA: apply gain (negative loss) and accumulate ASE noise
-                    segLoss_dB = -params.soaGain_dB; // gain is positive, loss is negative
+                case DEV_SOA: {
+                    // SOA: apply gain (negative loss) and accumulate ASE noise.
+                    // Gain saturation: if output would exceed saturation power,
+                    // the actual gain is reduced (output clipped to Psat).
+                    // ASE must be computed from the *actual* (post-saturation)
+                    // gain, not the small-signal gain — otherwise ASE is
+                    // overestimated by up to ~8 dB in deep saturation.
+                    segLoss_dB = -params.soaGain_dB; // small-signal gain
+                    double actualGain_dB = params.soaGain_dB;
+                    if (currentPower_dBm - segLoss_dB > params.soaSaturationPower_dBm) {
+                        segLoss_dB = currentPower_dBm - params.soaSaturationPower_dBm;
+                        actualGain_dB = params.soaSaturationPower_dBm - currentPower_dBm;
+                    }
                     {
                         double aseNoise_dBm = computeSOAASENoisePower_dBm(
-                                params.soaGain_dB, params.soaNoiseFigure_dB);
+                                actualGain_dB, params.soaNoiseFigure_dB);
                         double aseNoise_mW = std::pow(10.0, aseNoise_dBm / 10.0);
                         accumulatedNoisePower_mW += aseNoise_mW;
                     }
-                    // Gain saturation check
-                    if (currentPower_dBm - segLoss_dB > params.soaSaturationPower_dBm) {
-                        // Clip to saturation power
-                        segLoss_dB = currentPower_dBm - params.soaSaturationPower_dBm;
-                    }
                     break;
+                }
 
                 case DEV_MODULATOR:
                 case DEV_RING_THROUGH:
@@ -494,7 +499,9 @@ void computeDeviceLevelBudget(const OpticalDevicePath &path,
                     double excessIL = constraints.ringIL_TempCoeff_dB_per_K * absDetuning;
                     tempExtraLoss_dB += excessIL;
                     // Tuning power to compensate detuning
-                    result.totalTuningPower_mW += constraints.tuningEfficiency_mW_per_nm * absDetuning;
+                    double ringTuningPower = constraints.tuningEfficiency_mW_per_nm * absDetuning;
+                    result.totalTuningPower_mW += ringTuningPower;
+                    result.perRouterTuningPower_mW[nodeId] += ringTuningPower;
                     if (absDetuning > result.maxRingDetuning_nm)
                         result.maxRingDetuning_nm = absDetuning;
                 }

@@ -80,6 +80,12 @@ class LogicalTopologyManager : public cSimpleModule {
     int    opticalNumRingsPerRouter;
     double totalRingTuningEnergy_J;
 
+    // Dynamic (per-circuit, temperature-aware) tuning energy tracking
+    double totalDynamicTuningEnergy_J;
+
+    // C-band wavelength definitions
+    std::vector<double> opticalCentreWavelengthsNm;
+
     // SOA electrical energy tracking
     double totalSoaEnergy_J;
     long long totalSoaCircuitHops;
@@ -103,8 +109,8 @@ class LogicalTopologyManager : public cSimpleModule {
       std::vector<int> wavelengths; // 1-based wavelength ids
       std::vector<long long> pathEdges;
       std::vector<int> pathRouters;     // routers on the optical path
-      double tuningPowerPerRouter_mW;   // tuning power added to each router
-      double soaPowerPerRouter_mW;      // SOA pump power added to each router
+      std::vector<double> tuningPowerPerRouter_mW; // per-router dynamic tuning power
+      std::vector<double> soaPowerPerRouter_mW;    // per-router SOA power
       simtime_t setupTime;              // simtime when circuit was established
     };
     std::map<int, OpticalPacketAllocation> opticalPacketAllocations;

@@ -41,6 +41,7 @@ ThermalModel::ThermalModel()
     Tambient       = 318.15;    // 45 °C
 
     lastTempTime   = 0.0;
+    pendingDt      = 0.0;
 }
 
 ThermalModel::~ThermalModel()
@@ -63,6 +64,12 @@ void ThermalModel::open(const char* filename, int r, int c)
     routerOpticalPower.assign(numRouters, 0.0);
     peReady.assign(numPEs, false);
     routerReady.assign(numRouters, false);
+
+    // Flush any optical power submitted before open() was called
+    // (solves the LTM/TaskPE initialization order race)
+    for (size_t i = 0; i < pendingOpticalPower.size() && i < (size_t)numRouters; ++i)
+        routerOpticalPower[i] += pendingOpticalPower[i];
+    pendingOpticalPower.clear();
 
     // Start all nodes at ambient temperature (steady-state assumption)
     peTemp.assign(numPEs, Tambient);
@@ -199,7 +206,19 @@ void ThermalModel::submitRouterPower(int routerId, simtime_t t, double avgPower)
 // ---- optical device power on routers --------------------------------------
 void ThermalModel::addRouterOpticalPower(int routerId, double power_W)
 {
-    if (routerId < 0 || routerId >= numRouters)
+    if (routerId < 0)
+        return;
+
+    // Buffer submissions that arrive before open() has initialised the arrays
+    // (LogicalTopologyManager may initialise before TaskPE[0] calls open()).
+    if (numRouters == 0) {
+        if (routerId >= (int)pendingOpticalPower.size())
+            pendingOpticalPower.resize(routerId + 1, 0.0);
+        pendingOpticalPower[routerId] += power_W;
+        return;
+    }
+
+    if (routerId >= numRouters)
         return;
     routerOpticalPower[routerId] += power_W;
 }
@@ -217,7 +236,14 @@ void ThermalModel::removeRouterOpticalPower(int routerId, double power_W)
 void ThermalModel::tryFlush(simtime_t t)
 {
     if (!opened) return;
-    if (!allReady()) return;
+
+    // Window not yet complete: accumulate its time span so the next
+    // successful flush can account for all skipped windows in one Euler step.
+    if (!allReady()) {
+        pendingDt += t - lastTempTime;
+        lastTempTime = t;
+        return;
+    }
 
     // 1) Incorporate persistent optical device power into router power
     //    (electrical router power is overwritten each window; optical power
@@ -228,7 +254,8 @@ void ThermalModel::tryFlush(simtime_t t)
     // 2) Update temperatures BEFORE writing trace
     //    (temperature always reflects "just computed" state after this window)
     if (currentWindowTime > 0.0) {
-        simtime_t dt = t - lastTempTime;
+        simtime_t dt = t - lastTempTime + pendingDt;
+        pendingDt = 0.0;
         if (dt > 0.0)
             updateTemperature(dt);
     }
@@ -257,60 +284,82 @@ void ThermalModel::tryFlush(simtime_t t)
     currentWindowTime = t.dbl();
 }
 
-// ---- RC thermal solver (explicit Euler step) -----------------------------
+// ---- RC thermal solver (explicit Euler step with stability sub-stepping) -----
 void ThermalModel::updateTemperature(simtime_t dt)
 {
     double dt_s = dt.dbl();
     if (dt_s <= 0.0) return;
 
-    std::vector<double> dTpe(numPEs, 0.0);
-    std::vector<double> dTrouter(numRouters, 0.0);
+    // Compute the most restrictive thermal time constant across all nodes
+    // for Forward Euler stability: dt < 2 * C_i / G_i  where G_i = sum(1/R_ij)
+    double minTau = 1e100;
+    double maxNeighbours = 4.0;  // interior mesh node
 
-    // === PE layer =========================================================
-    for (int i = 0; i < numPEs; i++) {
-        double heatIn = pePower[i];   // W = J/s
+    // Router layer (smaller C → more restrictive)
+    double G_router = 1.0 / RconvRouter + 1.0 / Rpe2router + maxNeighbours / RlateralRouter;
+    double tau_router = Crouter / G_router;
+    if (tau_router < minTau) minTau = tau_router;
 
-        // Vertical: convection to ambient
-        heatIn -= (peTemp[i] - Tambient) / RconvPE;
+    // PE layer
+    double G_pe = 1.0 / RconvPE + 1.0 / Rpe2router + maxNeighbours / RlateralPE;
+    double tau_pe = Cpe / G_pe;
+    if (tau_pe < minTau) minTau = tau_pe;
 
-        // Vertical: coupling to local router
-        heatIn -= (peTemp[i] - routerTemp[i]) / Rpe2router;
+    double maxStableDt = 2.0 * minTau;  // Forward Euler stability limit
 
-        // Lateral: coupling to neighbour PEs
-        std::vector<int> neighbours;
-        getPENeighbours(i, neighbours);
-        for (int n : neighbours) {
-            heatIn -= (peTemp[i] - peTemp[n]) / RlateralPE;
+    // Sub-step if needed
+    int nSteps = 1;
+    if (dt_s > maxStableDt) {
+        nSteps = static_cast<int>(std::ceil(dt_s / (maxStableDt * 0.9)));  // 10% margin
+    }
+    double subDt = dt_s / nSteps;
+
+    for (int step = 0; step < nSteps; step++) {
+        std::vector<double> dTpe(numPEs, 0.0);
+        std::vector<double> dTrouter(numRouters, 0.0);
+
+        // === PE layer =========================================================
+        for (int i = 0; i < numPEs; i++) {
+            double heatIn = pePower[i];
+
+            heatIn -= (peTemp[i] - Tambient) / RconvPE;
+            heatIn -= (peTemp[i] - routerTemp[i]) / Rpe2router;
+
+            std::vector<int> neighbours;
+            getPENeighbours(i, neighbours);
+            for (int n : neighbours) {
+                heatIn -= (peTemp[i] - peTemp[n]) / RlateralPE;
+            }
+
+            dTpe[i] = (heatIn / Cpe) * subDt;
         }
 
-        dTpe[i] = (heatIn / Cpe) * dt_s;
-    }
+        // === Router layer =====================================================
+        for (int i = 0; i < numRouters; i++) {
+            double heatIn = routerPower[i];
 
-    // === Router layer =====================================================
-    for (int i = 0; i < numRouters; i++) {
-        double heatIn = routerPower[i];
+            heatIn -= (routerTemp[i] - Tambient) / RconvRouter;
+            heatIn -= (routerTemp[i] - peTemp[i]) / Rpe2router;
 
-        // Vertical: convection to ambient
-        heatIn -= (routerTemp[i] - Tambient) / RconvRouter;
+            std::vector<int> neighbours;
+            getRouterNeighbours(i, neighbours);
+            for (int n : neighbours) {
+                heatIn -= (routerTemp[i] - routerTemp[n]) / RlateralRouter;
+            }
 
-        // Vertical: coupling to local PE
-        heatIn -= (routerTemp[i] - peTemp[i]) / Rpe2router;
-
-        // Lateral: coupling to neighbour routers
-        std::vector<int> neighbours;
-        getRouterNeighbours(i, neighbours);
-        for (int n : neighbours) {
-            heatIn -= (routerTemp[i] - routerTemp[n]) / RlateralRouter;
+            dTrouter[i] = (heatIn / Crouter) * subDt;
         }
 
-        dTrouter[i] = (heatIn / Crouter) * dt_s;
+        // Apply sub-step
+        for (int i = 0; i < numPEs; i++) {
+            peTemp[i] += dTpe[i];
+            if (peTemp[i] < Tambient) peTemp[i] = Tambient;
+        }
+        for (int i = 0; i < numRouters; i++) {
+            routerTemp[i] += dTrouter[i];
+            if (routerTemp[i] < Tambient) routerTemp[i] = Tambient;
+        }
     }
-
-    // Apply Euler step
-    for (int i = 0; i < numPEs; i++)
-        peTemp[i] += dTpe[i];
-    for (int i = 0; i < numRouters; i++)
-        routerTemp[i] += dTrouter[i];
 }
 
 // ---- mesh neighbour helpers ----------------------------------------------

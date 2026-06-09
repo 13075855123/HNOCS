@@ -43,13 +43,13 @@ network ONoCMesh
 
         // ── Optical layer ──
         int defaultOpticalWavelengths = default(2);
-        int maxOpticalWavelengths = default(16);
+        int maxOpticalWavelengths = default(8);
         int numOpticalSpatialChannels = default(1);
         double opticalLaunchPower_dBm = default(0.0);
         int opticalNumSplitBranches = default(16);
         double opticalSplitterExcessLoss_dB = default(1.0);
         double opticalCouplingLoss_dB = default(3.0);
-        double opticalReceiverSensitivity_dBm = default(-18.0);
+        double opticalReceiverSensitivity_dBm = default(-12.0);
         double opticalSourceModulatorLoss_dB = default(0.0);
         double opticalHopInsertionLoss_dB = default(0.0);
         double opticalHopCrosstalkLoss_dB = default(0.0);

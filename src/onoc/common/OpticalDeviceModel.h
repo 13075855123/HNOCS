@@ -200,6 +200,10 @@ struct OpticalDevicePath {
     double maxRingDetuning_nm;       // Peak ring detuning along the path
     double tempAdjustedLoss_dB;      // Additional loss from temperature effects
 
+    // Per-router tuning power breakdown: routerId → tuning power (mW)
+    // Populated by computeDeviceLevelBudget via deviceIndex/1000 grouping.
+    std::map<int, double> perRouterTuningPower_mW;
+
     OpticalDevicePath() : totalLoss_dB(0.0), totalCrosstalk_dB(0.0),
           worstReceivedPower_dBm(0.0), worstSNR_dB(99.0),
           worstBER(0.0), signalMargin_dB(0.0),
@@ -237,11 +241,14 @@ struct OpticalBudgetConstraints {
     // Callback: nodeId (0..numPEs-1 → PE, numPEs+ → router) → temperature (K)
     std::function<double(int)> getNodeTemperature;
 
+    // Centre wavelengths (nm) for the WDM grid — index 0 = λ₁, …, index n-1 = λ_n
+    std::vector<double> centreWavelengths_nm;
+
     OpticalBudgetConstraints()
         : launchPower_dBm(0.0), waveguideMaxPower_dBm(14.0),
-          receiverSensitivity_dBm(-18.0), thermalNoiseFloor_dBm(-50.0),
+          receiverSensitivity_dBm(-12.0), thermalNoiseFloor_dBm(-50.0),
           modulationBitsPerSymbol(2), enableSOA(true), soaNoiseFigure_dB(7.0),
-          totalWavelengths(16), enableDemodCrosstalk(true),
+          totalWavelengths(8), enableDemodCrosstalk(true),
           singleDestinationPerWavelength(false),
           enableThermalEffects(false), Tambient_K(318.15),
           thermoOpticCoeff_nm_per_K(0.1), tuningEfficiency_mW_per_nm(0.5),
@@ -271,9 +278,19 @@ double computeDemodulatorCrosstalk_dBm(int wavelengthIndex,
         const OpticalParamTable &paramTable);
 
 // ────────────────────────────────────────────────────────────
-//  8. PAM4 BER utility
-//     BER_PAM4 ≈ (3/4) * erfc( sqrt( SNR_linear / 10 ) )
-//     where SNR_linear = 10^(SNR_dB / 10)
+//  8. PAM4 BER utility (ITU-T G.Sup39, optical SNR definition)
+//     BER_PAM4 = (3/4) * erfc( sqrt( SNR_optical_linear / 10 ) )
+//     where SNR_optical_linear = P_signal / P_noise (linear ratio)
+//     and   SNR_optical_dB     = 10 * log10( SNR_optical_linear )
+//
+//     This formulation uses the optical-domain SNR where the noise
+//     bandwidth is already accounted for in the SNR definition.
+//     Equivalent per-bit formulations (e.g., Griffin 2005) use a
+//     different pre-factor (3/8 instead of 3/4) because they define
+//     SNR on a per-bit basis with a 2x scaling difference.
+//
+//     Reference: ITU-T G.Sup39 (2016), "Optical system design
+//     and engineering considerations", Sec. 9.2.
 // ────────────────────────────────────────────────────────────
 inline double computePAM4BER(double snr_dB) {
     if (snr_dB <= -99.0) return 0.5;    // effectively no signal
@@ -285,8 +302,10 @@ inline double computePAM4BER(double snr_dB) {
 
 // ────────────────────────────────────────────────────────────
 //  9. SOA ASE noise power (dBm)
-//     P_ASE_dBm = 10*log10( h*nu * (G-1) * NF * BW )
-//     Simplified for simulation: ASE accumulated linearly.
+//     Standard formula: P_ASE = h*nu * n_sp * (G-1) * B_o
+//     where n_sp = NF_linear / 2  (population inversion factor)
+//     i.e.  P_ASE = h*nu * (NF_linear/2) * (G-1) * B_o
+//     Simplified for simulation: ASE accumulated linearly per SOA.
 // ────────────────────────────────────────────────────────────
 inline double computeSOAASENoisePower_dBm(double soaGain_dB, double noiseFigure_dB,
         double bandwidth_Hz = 30e9) {
@@ -295,7 +314,7 @@ inline double computeSOAASENoisePower_dBm(double soaGain_dB, double noiseFigure_
     double nfLinear = std::pow(10.0, noiseFigure_dB / 10.0);
     double h = 6.62607015e-34;   // Planck constant
     double nu = 193.4e12;        // 1550 nm centre frequency
-    double aseWatts = h * nu * (gainLinear - 1.0) * nfLinear * bandwidth_Hz;
+    double aseWatts = h * nu * (gainLinear - 1.0) * (nfLinear / 2.0) * bandwidth_Hz;
     if (aseWatts <= 0.0) return -199.0;
     return 10.0 * std::log10(aseWatts * 1000.0);  // convert W → dBm
 }

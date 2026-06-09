@@ -54,7 +54,7 @@ simple TaskPE like hnocs.cores.NI_Ifc
         double opticalWavelengthBitrate @unit(bps) = default(256Gbps);
         double opticalBasePropagationDelay @unit(s) = default(0.5ns);
         double opticalPerHopDelay @unit(s) = default(0.1ns);
-        int opticalBurstSize = default(1);
+
         double opticalModulatorEnergyPerFlit @unit(J) = default(2e-12 J);
         double opticalReceiverEnergyPerFlit  @unit(J) = default(1e-12 J);
 

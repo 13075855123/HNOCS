@@ -180,6 +180,7 @@ void GlobalBuffer::handleMessage(cMessage* msg) {
                     if (!circuitReadyByDst[srcPE] && setupPendingByDst[srcPE]) {
                         circuitReadyByDst[srcPE] = 1;
                         setupPendingByDst[srcPE] = 0;
+                        activeCircuitTokenByDst[srcPE] = pktId;
                         pendingSetupTokenByDst[srcPE] = 0;
                         flushPendingData(srcPE);
                     }
@@ -193,6 +194,16 @@ void GlobalBuffer::handleMessage(cMessage* msg) {
                     return;
                 }
 
+                // Return credit for PE→GB SETUP_REQ START_FLIT
+                // (END_FLIT credit is returned at line 153 above)
+                {
+                    int gIdS = msg->getArrivalGateId();
+                    int connIdxS = -1;
+                    for (int iS = 0; iS < numConnections; iS++) {
+                        if (gIdS == gateHalf("in", cGate::INPUT, iS)->getId()) { connIdxS = iS; break; }
+                    }
+                    if (connIdxS >= 0) sendCredit(connIdxS, taskMsg->getVC(), 1);
+                }
                 delete taskMsg;
                 return;
             }
@@ -222,7 +233,7 @@ void GlobalBuffer::handleMessage(cMessage* msg) {
 void GlobalBuffer::finish() {
     int completedCount = 0;
     for (TaskDescriptor* t : taskList) {
-        if (t->assignedPE >= 0) completedCount++;
+        if (t->state == TASK_COMPLETED) completedCount++;
     }
     recordScalar("totalFlitsSent",     totalFlitsSent);
     recordScalar("totalFlitsReceived", totalFlitsReceived);
@@ -233,10 +244,16 @@ void GlobalBuffer::finish() {
 void GlobalBuffer::flushPendingData(int peId) {
     if (pendingDataQ[peId].empty()) return;
     if (circuitReadyByDst[peId]) {
-        for (TaskMsg* flit : pendingDataQ[peId]) {
-            opticalDataQ.insert(flit);
+        // Move at most ONE complete packet (up to first END_FLIT)
+        // to avoid HoL blocking when multiple packets are pending for the same PE.
+        auto &q = pendingDataQ[peId];
+        size_t count = 0;
+        for (size_t i = 0; i < q.size(); i++) {
+            opticalDataQ.insert(q[i]);
+            count++;
+            if (q[i]->getType() == NOC_END_FLIT) break;
         }
-        pendingDataQ[peId].clear();
+        q.erase(q.begin(), q.begin() + count);
         sendFlitOptical();
     }
 }
@@ -260,7 +277,11 @@ bool GlobalBuffer::sendFlitDirectToPE(TaskMsg *flit) {
     cSimpleModule *targetMod = check_and_cast<cSimpleModule *>(
             getSystemModule()->getSubmodule("pe", dst));
     flit->setInjectTime(simTime());
-    int hops = abs(flit->getSrcId()/numColumns - dst/numColumns) + abs(flit->getSrcId()%numColumns - dst%numColumns);
+    // Map GB source address to its physical router (column 0 of the GB's row).
+    // getSrcId() returns baseId+row; the corresponding router is at (row, col=0).
+    int gbRow = flit->getSrcId() - baseId;
+    int gbRouter = gbRow * numColumns;
+    int hops = abs(gbRouter/numColumns - dst/numColumns) + abs(gbRouter%numColumns - dst%numColumns);
     simtime_t propDelay = opticalBasePropagationDelay + opticalPerHopDelay * hops;
     double effRate = opticalWavelengthBitrate * opticalRequiredWavelengths;
     double txSec = (8.0 * flit->getByteLength()) / effRate;
@@ -285,6 +306,7 @@ void GlobalBuffer::sendFlitOptical() {
         if (token > 0 && topologyManager) topologyManager->releaseOpticalPathByToken(token);
         circuitReadyByDst[dstPE] = 0;
         activeCircuitTokenByDst[dstPE] = 0;
+        nextSetupAttemptByDst[dstPE] = SIMTIME_ZERO;
     }
 }
 
@@ -483,6 +505,22 @@ void GlobalBuffer::sendFlitFromQ(int connIdx) {
                 setupPendingExpiryByDst[d] = SIMTIME_ZERO;
                 pendingSetupTokenByDst[d] = 0;
                 nextSetupAttemptByDst[d] = simTime() + setupRetryDelay;
+                // Remove stale SETUP_REQ flits from injectQ to prevent
+                // interleaving with the next setup's flits. If left in the
+                // queue, a stale END_FLIT could trigger an ACK that the GB
+                // misattributes to the new pending setup, establishing a
+                // circuit with the wrong (already-released) token.
+                int dstConn = d / numColumns;
+                std::queue<TaskMsg*> cleanQ;
+                while (!injectQ[dstConn].empty()) {
+                    TaskMsg* f = injectQ[dstConn].front();
+                    injectQ[dstConn].pop();
+                    if (f->getDstId() == d && f->getTaskId() == -1)
+                        delete f;
+                    else
+                        cleanQ.push(f);
+                }
+                injectQ[dstConn] = cleanQ;
             }
         }
         for (int d = 0; d < numPEs; d++) {

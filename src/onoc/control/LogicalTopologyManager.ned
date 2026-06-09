@@ -13,10 +13,10 @@ simple LogicalTopologyManager
     int starLeafLimit = default(-1);            // Star max leaves; <=0 means all leaves
     string starLeafOrderMode = default("physical"); // Star leaf selection: physical or id
     int defaultOpticalWavelengths = default(2); // Default wavelengths per source-destination pair
-    int maxOpticalWavelengths = default(16);    // Hard cap for configured wavelengths per pair
+    int maxOpticalWavelengths = default(8);    // Hard cap for configured wavelengths per pair
     int numOpticalSpatialChannels = default(1); // Number of spatial channels per physical link
     double opticalLaunchPower_dBm = default(0.0); // Optical launch power used for budget accounting
-    double opticalReceiverSensitivity_dBm = default(-18.0); // Receive sensitivity threshold in dBm
+    double opticalReceiverSensitivity_dBm = default(-12.0); // Receive sensitivity threshold in dBm
     double opticalSourceModulatorLoss_dB = default(0.0); // Source-side modulator loss in dB
     double opticalHopInsertionLoss_dB = default(0.0); // Per-hop insertion loss in dB
     double opticalHopCrosstalkLoss_dB = default(0.0); // Per-hop equivalent crosstalk loss in dB
@@ -40,6 +40,7 @@ simple LogicalTopologyManager
     bool logOpticalAllocDecisions = default(false); // Log parsed pair wavelength requirements
     bool logTopologyTransitions = default(true); // Enable transition logs
     string opticalWavelengthStrategy = default("lowest"); // "lowest" or "thermal"
+    string opticalCentreWavelengthsNm = default("1544.53,1546.12,1547.72,1549.32,1550.92,1552.52,1554.13,1555.75"); // 8λ C-band ITU-T 200GHz grid
     // Temperature-aware optical effects
     bool opticalEnableThermalEffects = default(false);
     double opticalTambient_K = default(318.15);
@@ -50,8 +51,8 @@ simple LogicalTopologyManager
     double opticalRingIL_TempCoeff_dB_per_K = default(0.02);
     double opticalSoaGain_TempCoeff_dB_per_K = default(0.05);
     double opticalWaveguideLoss_TempCoeff_dB_per_cm_per_K = default(0.001);
-        // Baseline microring thermal tuning — static always-on power per ring
-        double opticalRingTuningPower_mW_per_ring = default(2.0);
+        // Baseline microring thermal tuning — static always-on power per ring (set 0 for dynamic only)
+        double opticalRingTuningPower_mW_per_ring = default(0.0);
         int opticalNumRingsPerRouter = default(160);
         @display("i=block/cogwheel");
 

@@ -52,13 +52,14 @@ LogicalTopologyManager::LogicalTopologyManager() {
     ringMode = "snake";
     physicalTopology = "mesh";
     totalOpticalTuningPower_mW = 0.0;
-    opticalSoaPumpPower_mW = 15.0;
+    opticalSoaPumpPower_mW = 80.0;
     opticalBudgetComputations = 0;
     opticalWavelengthEvaluations = 0;
     opticalWavelengthStrategy = "lowest";
     opticalRingTuningPower_mW_per_ring = 0.0;
     opticalNumRingsPerRouter = 0;
     totalRingTuningEnergy_J = 0.0;
+    totalDynamicTuningEnergy_J = 0.0;
     totalSoaEnergy_J = 0.0;
     totalSoaCircuitHops = 0;
     opticalLaserWPE = 0.0;
@@ -825,8 +826,31 @@ void LogicalTopologyManager::initialize() {
     opticalRingTuningPower_mW_per_ring = par("opticalRingTuningPower_mW_per_ring");
     opticalNumRingsPerRouter = par("opticalNumRingsPerRouter");
     totalRingTuningEnergy_J = 0.0;
+    totalDynamicTuningEnergy_J = 0.0;
     logOpticalAllocDecisions = par("logOpticalAllocDecisions");
     logTopologyTransitions = par("logTopologyTransitions");
+
+    // Parse C-band centre wavelengths
+    {
+        std::string wlSpec = par("opticalCentreWavelengthsNm").stringValue();
+        opticalCentreWavelengthsNm.clear();
+        if (!wlSpec.empty()) {
+            size_t pos = 0;
+            while (pos < wlSpec.size()) {
+                size_t next = wlSpec.find(',', pos);
+                if (next == std::string::npos) next = wlSpec.size();
+                std::string token = wlSpec.substr(pos, next - pos);
+                double val = std::atof(token.c_str());
+                if (val > 0.0) opticalCentreWavelengthsNm.push_back(val);
+                pos = next + 1;
+            }
+        }
+        if (opticalCentreWavelengthsNm.empty()) {
+            const double defaults[] = {1544.53, 1546.12, 1547.72, 1549.32,
+                                       1550.92, 1552.52, 1554.13, 1555.75};
+            opticalCentreWavelengthsNm.assign(defaults, defaults + 8);
+        }
+    }
     if (hasPar("physicalTopology")) {
         std::string pt = par("physicalTopology").stringValue();
         physicalTopology = strcmp(pt.c_str(), "torus") == 0 ? "torus" : "mesh";
@@ -891,8 +915,10 @@ void LogicalTopologyManager::initialize() {
     std::string switchSpec = par("topologySwitches").stringValue();
     scheduleTopologySwitches(switchSpec);
 
-    // ---- baseline microring thermal tuning power (always-on, per-router) ----
-    if (opticalRingTuningPower_mW_per_ring > 0.0 && opticalNumRingsPerRouter > 0) {
+    // ---- baseline microring thermal tuning power (only when dynamic thermal effects OFF) ----
+    if (!opticalEnableThermalEffects
+            && opticalRingTuningPower_mW_per_ring > 0.0
+            && opticalNumRingsPerRouter > 0) {
         double routerTuningPower_mW = opticalNumRingsPerRouter
                                     * opticalRingTuningPower_mW_per_ring;
         double routerTuningPower_W = routerTuningPower_mW * 1e-3;
@@ -1006,6 +1032,13 @@ void LogicalTopologyManager::finish() {
             totalSoaEnergy_J += energy_J;
             totalSoaCircuitHops += soaCount;
         }
+        // Also account for dynamic tuning energy of still-active circuits
+        for (size_t i = 0; i < alloc.tuningPowerPerRouter_mW.size(); ++i) {
+            if (alloc.tuningPowerPerRouter_mW[i] > 0.0) {
+                totalDynamicTuningEnergy_J += alloc.tuningPowerPerRouter_mW[i]
+                                            * 1e-3 * duration.dbl();
+            }
+        }
     }
 
     // Record SOA energy scalars
@@ -1019,6 +1052,23 @@ void LogicalTopologyManager::finish() {
     if (totalSoaCircuitHops > 0) {
         recordScalar("onoc-soa-energy-per-hop-J",
                 totalSoaEnergy_J / static_cast<double>(totalSoaCircuitHops));
+    }
+
+    // ── Dynamic (per-circuit, temperature-aware) tuning energy ──
+    recordScalar("onoc-dynamic-tuning-total-energy-J", totalDynamicTuningEnergy_J);
+    if (simTime() > 0) {
+        recordScalar("onoc-dynamic-tuning-avg-power-W",
+                totalDynamicTuningEnergy_J / simTime().dbl());
+    }
+    if (totalDynamicTuningEnergy_J > 0.0) {
+        double staticEquivalent_W = numNodes * opticalNumRingsPerRouter
+                                 * opticalRingTuningPower_mW_per_ring * 1e-3;
+        if (staticEquivalent_W <= 0.0) {
+            staticEquivalent_W = numNodes * 160.0 * 2.0 * 1e-3; // fallback: 5.12W
+        }
+        double staticEnergy_J = staticEquivalent_W * simTime().dbl();
+        recordScalar("onoc-dynamic-tuning-vs-static-ratio",
+                totalDynamicTuningEnergy_J / staticEnergy_J);
     }
 
     // ── Laser electrical energy (off-chip, CW, not in thermal model) ──
@@ -1177,29 +1227,45 @@ bool LogicalTopologyManager::getDeviceLevelPathMetrics(int srcId, int dstId,
     OpticalDevicePath devPath;
     const int totalWL = maxOpticalWavelengths;
 
-    // ---- Source NI: Laser → waveguide → modulator chain per λ ----
-    for (size_t wi = 0; wi < wavelengths.size(); ++wi) {
-        int wl = wavelengths[wi];
-        // Waveguide: source to modulator
-        {
-            OpticalDeviceSegment seg;
-            seg.deviceType = DEV_WAVEGUIDE;
-            seg.deviceIndex = srcId;
-            seg.waveguideLength_cm = wgDistances.sourceToModulator_cm;
-            seg.wavelengthIndex = wl;
-            devPath.segments.push_back(seg);
-        }
-        // Modulator microring chain: (wl-1) through + 1 drop
-        buildModulatorSegments(srcId, wl, totalWL, devPath.segments);
-        // Waveguide: modulator to router core port
-        {
-            OpticalDeviceSegment seg;
-            seg.deviceType = DEV_WAVEGUIDE;
-            seg.deviceIndex = srcId * 10;
-            seg.waveguideLength_cm = wgDistances.modulatorToRouter_cm;
-            seg.wavelengthIndex = wl;
-            devPath.segments.push_back(seg);
-        }
+    // Max active wavelength index (for shared through-count computation)
+    int maxWl = 1;
+    for (size_t wi = 0; wi < wavelengths.size(); ++wi)
+        if (wavelengths[wi] > maxWl) maxWl = wavelengths[wi];
+
+    // ---- Source NI: Laser → waveguide → shared modulator chain → router ----
+    // Build active-wavelength lookup (dynamically sized to maxWl)
+    std::vector<bool> isActiveWl(maxWl + 1, false);
+    for (size_t wi = 0; wi < wavelengths.size(); ++wi)
+        if (wavelengths[wi] > 0 && wavelengths[wi] <= maxWl)
+            isActiveWl[wavelengths[wi]] = true;
+
+    // Waveguide: source to modulator chain (shared by all wavelengths)
+    {
+        OpticalDeviceSegment seg;
+        seg.deviceType = DEV_WAVEGUIDE;
+        seg.deviceIndex = srcId;
+        seg.waveguideLength_cm = wgDistances.sourceToModulator_cm;
+        seg.wavelengthIndex = maxWl;
+        devPath.segments.push_back(seg);
+    }
+    // Shared modulator microring chain: rings 1..maxWl on single bus waveguide.
+    // Active-wavelength positions → DROP (modulation), others → THROUGH.
+    // Total distinct rings = maxWl (no per-λ duplication).
+    for (int r = 1; r <= maxWl; ++r) {
+        OpticalDeviceSegment seg;
+        seg.deviceType = isActiveWl[r] ? DEV_RING_DROP : DEV_RING_THROUGH;
+        seg.deviceIndex = srcId * 1000 + r;
+        seg.wavelengthIndex = r;
+        devPath.segments.push_back(seg);
+    }
+    // Waveguide: modulator chain to router core port (shared)
+    {
+        OpticalDeviceSegment seg;
+        seg.deviceType = DEV_WAVEGUIDE;
+        seg.deviceIndex = srcId * 10;
+        seg.waveguideLength_cm = wgDistances.modulatorToRouter_cm;
+        seg.wavelengthIndex = maxWl;
+        devPath.segments.push_back(seg);
     }
 
     // ---- Source router: Core→[direction] injection ----
@@ -1218,7 +1284,7 @@ bool LogicalTopologyManager::getDeviceLevelPathMetrics(int srcId, int dstId,
         int b = static_cast<int>(edgeKey & 0xFFFFFFFFLL);
         int nextNode = (a == prevNode) ? b : a;
 
-        // Determine incoming/outgoing port directions
+        // Determine outgoing port direction from this router to the next node
         int inPort  = -1;
         int outPort = -1;
         {
@@ -1229,58 +1295,72 @@ bool LogicalTopologyManager::getDeviceLevelPathMetrics(int srcId, int dstId,
             int dy = ny - py;
             if (dx > 1) dx -= columns; if (dx < -1) dx += columns;
             if (dy > 1) dy -= rows;    if (dy < -1) dy += rows;
-            // Map delta to port: 0=Local,1=West,2=North,3=East,4=South
-            if (dx == 0 && dy == -1)      { inPort = 2; outPort = 0; } // N→S
-            else if (dx == 0 && dy == 1)  { inPort = 0; outPort = 2; } // S→N
-            else if (dx == -1 && dy == 0) { inPort = 3; outPort = 1; } // W→E
-            else if (dx == 1 && dy == 0)  { inPort = 1; outPort = 3; } // E→W
-            if (inPort < 0) {
-                if (dy < 0)      { inPort = 0; outPort = 2; }
-                else if (dy > 0) { inPort = 2; outPort = 0; }
-                else if (dx < 0) { inPort = 1; outPort = 3; }
-                else             { inPort = 3; outPort = 1; }
+            // Map delta to outPort only: 0=Local,1=West,2=North,3=East,4=South
+            if (dx == 0 && dy == -1)      { outPort = 2; } // S→N: exit North
+            else if (dx == 0 && dy == 1)  { outPort = 4; } // N→S: exit South
+            else if (dx == -1 && dy == 0) { outPort = 1; } // E→W: exit West
+            else if (dx == 1 && dy == 0)  { outPort = 3; } // W→E: exit East
+            if (outPort < 0) {
+                if (dy < 0)      { outPort = 2; }
+                else if (dy > 0) { outPort = 4; }
+                else if (dx < 0) { outPort = 1; }
+                else             { outPort = 3; }
             }
         }
 
-        // If first hop: source router injection (Local=0 → outPort)
+        // Determine incoming port:
+        //   - source router uses Local(0) injection
+        //   - intermediate routers derive from the previous hop's exit port
+        //     (signal exits prevRouter at outPort and arrives from the opposite direction)
         if (e == 0) {
             inPort = 0; // Local/Core injection
+        } else {
+            switch (prevOutPort) {
+                case 1: inPort = 3; break; // West ← East
+                case 3: inPort = 1; break; // East ← West
+                case 2: inPort = 4; break; // North ← South
+                case 4: inPort = 2; break; // South ← North
+                default: break;
+            }
         }
 
         // Router traversal using wavelength-dependent metadata
-        // For each active wavelength, evaluate through count and expand
+        // Through-count is determined by the MAX active wavelength index:
+        // all wavelengths share the same waveguide, so they all pass through
+        // rings up to the highest-index active wavelength.
+        // Drop rings: one per active wavelength.
         std::map<int, RouterTurnMetadataMatrix>::const_iterator rtmIt =
             routerTurnMatrices.find(prevNode);
         if (rtmIt != routerTurnMatrices.end() && inPort >= 0 && outPort >= 0
                 && inPort < 5 && outPort < 5 && inPort != outPort) {
             const RouterTurnMetadata &meta = rtmIt->second[inPort][outPort];
-            // Emit through passes (count depends on wavelength)
-            // Use a representative wavelength for shared-path through counts
-            int repWl = wavelengths.empty() ? 1 : wavelengths[0];
-            int formulaType = meta.throughCount; // stored as formula type index
+            int formulaType = meta.throughCount;
+
             int actualThrough = 0;
             switch (formulaType) {
-                case 0: actualThrough = repWl - 1; break;
-                case 1: actualThrough = 2*totalWL + repWl - 1; break;
-                case 2: actualThrough = 3*totalWL + repWl - 1; break;
+                case 0: actualThrough = maxWl - 1; break;
+                case 1: actualThrough = 2*totalWL + maxWl - 1; break;
+                case 2: actualThrough = 3*totalWL + maxWl - 1; break;
                 case 3: actualThrough = 4*totalWL; break;
-                case 4: actualThrough = 4*totalWL + repWl - 1; break;
-                case 5: actualThrough = 6*totalWL + repWl - 1; break;
+                case 4: actualThrough = 4*totalWL + maxWl - 1; break;
+                case 5: actualThrough = 6*totalWL + maxWl - 1; break;
                 default: actualThrough = 0; break;
             }
+            // Through-state rings (shared by all wavelengths)
             for (int t = 0; t < actualThrough; ++t) {
                 OpticalDeviceSegment seg;
                 seg.deviceType = DEV_RING_THROUGH;
                 seg.deviceIndex = prevNode * 1000 + inPort * 100 + outPort * 10 + t;
-                seg.wavelengthIndex = repWl;
+                seg.wavelengthIndex = maxWl;
                 devPath.segments.push_back(seg);
             }
-            // Drop (always 1)
-            {
+            // Drop rings: one per active wavelength
+            for (size_t wi = 0; wi < wavelengths.size(); ++wi) {
                 OpticalDeviceSegment seg;
                 seg.deviceType = DEV_RING_DROP;
-                seg.deviceIndex = prevNode * 100 + inPort * 10 + outPort;
-                seg.wavelengthIndex = repWl;
+                seg.deviceIndex = prevNode * 1000 + inPort * 100 + outPort * 10
+                                + actualThrough + static_cast<int>(wi);
+                seg.wavelengthIndex = wavelengths[wi];
                 devPath.segments.push_back(seg);
             }
             // Bends
@@ -1288,7 +1368,7 @@ bool LogicalTopologyManager::getDeviceLevelPathMetrics(int srcId, int dstId,
                 OpticalDeviceSegment seg;
                 seg.deviceType = DEV_WAVEGUIDE_BEND;
                 seg.deviceIndex = prevNode * 1000 + inPort * 100 + outPort * 10 + b;
-                seg.wavelengthIndex = repWl;
+                seg.wavelengthIndex = maxWl;
                 devPath.segments.push_back(seg);
             }
         }
@@ -1316,30 +1396,96 @@ bool LogicalTopologyManager::getDeviceLevelPathMetrics(int srcId, int dstId,
         prevOutPort = outPort;
     }
 
-    // ---- Destination NI: Router→demodulator chain per λ → PD ----
+    // ---- Destination router: direction→Local egress turn ----
+    // The signal enters from the opposite of prevOutPort and exits to Local(0).
+    {
+        int destInPort = -1;
+        switch (prevOutPort) {
+            case 1: destInPort = 3; break; // West ← East
+            case 3: destInPort = 1; break; // East ← West
+            case 2: destInPort = 4; break; // North ← South
+            case 4: destInPort = 2; break; // South ← North
+            default: break;
+        }
+        if (destInPort >= 0) {
+            int dstRouterId = prevNode; // destination node from loop above
+            auto rtmIt = routerTurnMatrices.find(dstRouterId);
+            if (rtmIt != routerTurnMatrices.end()) {
+                const RouterTurnMetadata &meta = rtmIt->second[destInPort][0];
+                int formulaType = meta.throughCount;
+                int actualThrough = 0;
+                switch (formulaType) {
+                    case 0: actualThrough = maxWl - 1; break;
+                    case 1: actualThrough = 2*totalWL + maxWl - 1; break;
+                    case 2: actualThrough = 3*totalWL + maxWl - 1; break;
+                    case 3: actualThrough = 4*totalWL; break;
+                    case 4: actualThrough = 4*totalWL + maxWl - 1; break;
+                    case 5: actualThrough = 6*totalWL + maxWl - 1; break;
+                    default: actualThrough = 0; break;
+                }
+                const int dstOutPort = 0; // destination always egresses to Local
+                // Through-state rings
+                for (int t = 0; t < actualThrough; ++t) {
+                    OpticalDeviceSegment seg;
+                    seg.deviceType = DEV_RING_THROUGH;
+                    seg.deviceIndex = dstRouterId * 1000 + destInPort * 100
+                                    + dstOutPort * 10 + t;
+                    seg.wavelengthIndex = maxWl;
+                    devPath.segments.push_back(seg);
+                }
+                // Drop rings: one per active wavelength
+                for (size_t wi = 0; wi < wavelengths.size(); ++wi) {
+                    OpticalDeviceSegment seg;
+                    seg.deviceType = DEV_RING_DROP;
+                    seg.deviceIndex = dstRouterId * 1000 + destInPort * 100
+                                    + dstOutPort * 10 + actualThrough + static_cast<int>(wi);
+                    seg.wavelengthIndex = wavelengths[wi];
+                    devPath.segments.push_back(seg);
+                }
+                // Bends
+                for (int b = 0; b < meta.bendCount; ++b) {
+                    OpticalDeviceSegment seg;
+                    seg.deviceType = DEV_WAVEGUIDE_BEND;
+                    seg.deviceIndex = dstRouterId * 1000 + destInPort * 100
+                                    + dstOutPort * 10 + b;
+                    seg.wavelengthIndex = maxWl;
+                    devPath.segments.push_back(seg);
+                }
+            }
+        }
+    }
+
+    // ---- Destination NI: Router → shared demodulator chain → per-λ PD ----
+    // Waveguide: router core port to demodulator chain (shared)
+    {
+        OpticalDeviceSegment seg;
+        seg.deviceType = DEV_WAVEGUIDE;
+        seg.deviceIndex = dstId * 10;
+        seg.waveguideLength_cm = wgDistances.routerToDemodulator_cm;
+        seg.wavelengthIndex = maxWl;
+        devPath.segments.push_back(seg);
+    }
+    // Shared demodulator microring chain: rings 1..maxWl on single bus waveguide.
+    // Active-wavelength positions → DROP (couple to PD), others → THROUGH.
+    // Total distinct rings = maxWl (no per-λ duplication).
+    for (int r = 1; r <= maxWl; ++r) {
+        OpticalDeviceSegment seg;
+        seg.deviceType = isActiveWl[r] ? DEV_RING_DROP : DEV_RING_THROUGH;
+        seg.deviceIndex = dstId * 1000 + r;
+        seg.wavelengthIndex = r;
+        devPath.segments.push_back(seg);
+    }
+    // Per-wavelength: drop port → waveguide → photodetector
     for (size_t wi = 0; wi < wavelengths.size(); ++wi) {
         int wl = wavelengths[wi];
-        // Waveguide: router core port to demodulator
         {
             OpticalDeviceSegment seg;
             seg.deviceType = DEV_WAVEGUIDE;
-            seg.deviceIndex = dstId * 10 + wi;
-            seg.waveguideLength_cm = wgDistances.routerToDemodulator_cm;
-            seg.wavelengthIndex = wl;
-            devPath.segments.push_back(seg);
-        }
-        // Demodulator microring chain: (wl-1) through + 1 drop
-        buildDemodulatorSegments(dstId, wl, totalWL, devPath.segments);
-        // Waveguide: demodulator ring chain to PD
-        {
-            OpticalDeviceSegment seg;
-            seg.deviceType = DEV_WAVEGUIDE;
-            seg.deviceIndex = dstId * 100 + wi;
+            seg.deviceIndex = dstId * 100 + static_cast<int>(wi);
             seg.waveguideLength_cm = wgDistances.demodulatorToPD_cm;
             seg.wavelengthIndex = wl;
             devPath.segments.push_back(seg);
         }
-        // Photodetector
         {
             OpticalDeviceSegment seg;
             seg.deviceType = DEV_PHOTODETECTOR;
@@ -1381,12 +1527,12 @@ bool LogicalTopologyManager::getDeviceLevelPathMetrics(int srcId, int dstId,
     constraints.ringIL_TempCoeff_dB_per_K = opticalRingIL_TempCoeff_dB_per_K;
     constraints.soaGain_TempCoeff_dB_per_K = opticalSoaGain_TempCoeff_dB_per_K;
     constraints.waveguideLoss_TempCoeff_dB_per_cm_per_K = opticalWaveguideLoss_TempCoeff_dB_per_cm_per_K;
+    constraints.centreWavelengths_nm = opticalCentreWavelengthsNm;
     if (opticalEnableThermalEffects) {
         constraints.getNodeTemperature = [](int nodeId) -> double {
             ThermalModel *tm = getThermalModel();
             if (!tm) return 318.15;
-            // Use PE temperature as proxy for all nodes (PE≈Router from Rpe2router coupling)
-            return tm->getPEPerature(nodeId);
+            return tm->getRouterTemperature(nodeId);
         };
     }
 
@@ -1444,6 +1590,7 @@ bool LogicalTopologyManager::getDeviceLevelPathMetrics(int srcId, int dstId,
     metrics.totalTuningPower_mW = result.totalTuningPower_mW;
     metrics.maxRingDetuning_nm = result.maxRingDetuning_nm;
     metrics.tempAdjustedLoss_dB = result.tempAdjustedLoss_dB;
+    metrics.perRouterTuningPower_mW = result.perRouterTuningPower_mW;
     if (opticalEnableThermalEffects) {
         totalOpticalTuningPower_mW += result.totalTuningPower_mW;
         opticalBudgetComputations++;
@@ -1683,23 +1830,121 @@ bool LogicalTopologyManager::tryAllocateOpticalPathForPacket(int srcId,
             prev = next;
         }
 
-        // Distribute optical device power to routers
+        // Per-router tuning: each router independently queries its own temperature
+        // and computes its own tuning power from its turn's ring count.
+        // P_i = ringCount_i × tuningEfficiency × thermoOpticCoeff × abs(T_i - T_ambient)
         int numRouters = static_cast<int>(routers.size());
-        double tuningPerRouter_mW = 0.0;
-        double soaPerRouter_mW = 0.0;
-        if (numRouters > 0) {
-            tuningPerRouter_mW = budgetMetrics.totalTuningPower_mW / numRouters;
+        std::vector<double> tuningPerRouter_mW(numRouters, 0.0);
+        std::vector<double> soaPerRouter_mW(numRouters, 0.0);
+        if (opticalEnableThermalEffects && numRouters > 0) {
+            const int totalWL = maxOpticalWavelengths;
+            const int numActiveWL = static_cast<int>(selectedWavelengths.size());
+            int maxWl = 1;
+            for (size_t wi = 0; wi < selectedWavelengths.size(); ++wi)
+                if (selectedWavelengths[wi] > maxWl) maxWl = selectedWavelengths[wi];
+
+            ThermalModel *tm = getThermalModel();
+
+            for (int i = 0; i < numRouters; ++i) {
+                int routerId = routers[i];
+                int inPort = -1, outPort = -1;
+
+                // Determine (inPort, outPort) from path topology
+                if (i == 0 && numRouters > 1) {
+                    // Source router: Core(0) → direction of first hop
+                    inPort = 0;
+                    int nx, ny, px, py;
+                    rowColByNodeId(routerId, px, py);
+                    rowColByNodeId(routers[1], nx, ny);
+                    int dx = nx - px, dy = ny - py;
+                    if (dx > 1) dx -= columns; if (dx < -1) dx += columns;
+                    if (dy > 1) dy -= rows;    if (dy < -1) dy += rows;
+                    if (dx == 1) outPort = 3;       // East
+                    else if (dx == -1) outPort = 1;  // West
+                    else if (dy == 1) outPort = 4;   // South
+                    else if (dy == -1) outPort = 2;  // North
+                } else if (i == numRouters - 1 && numRouters > 1) {
+                    // Destination router: direction of last hop → Core(0)
+                    outPort = 0;
+                    int px, py, nx, ny;
+                    rowColByNodeId(routers[i-1], px, py);
+                    rowColByNodeId(routerId, nx, ny);
+                    int dx = nx - px, dy = ny - py;
+                    if (dx > 1) dx -= columns; if (dx < -1) dx += columns;
+                    if (dy > 1) dy -= rows;    if (dy < -1) dy += rows;
+                    if (dx == 1) inPort = 1;        // from West
+                    else if (dx == -1) inPort = 3;   // from East
+                    else if (dy == 1) inPort = 2;    // from North
+                    else if (dy == -1) inPort = 4;   // from South
+                } else if (numRouters > 2) {
+                    // Intermediate router: inPort from prev, outPort to next
+                    int px, py, nx, ny;
+                    rowColByNodeId(routers[i-1], px, py);
+                    rowColByNodeId(routerId, nx, ny);
+                    int dxIn = nx - px, dyIn = ny - py;
+                    if (dxIn > 1) dxIn -= columns; if (dxIn < -1) dxIn += columns;
+                    if (dyIn > 1) dyIn -= rows;    if (dyIn < -1) dyIn += rows;
+                    if (dxIn == 1) inPort = 1;       // from West
+                    else if (dxIn == -1) inPort = 3;  // from East
+                    else if (dyIn == 1) inPort = 2;   // from North
+                    else if (dyIn == -1) inPort = 4;  // from South
+
+                    rowColByNodeId(routerId, px, py);
+                    rowColByNodeId(routers[i+1], nx, ny);
+                    int dxOut = nx - px, dyOut = ny - py;
+                    if (dxOut > 1) dxOut -= columns; if (dxOut < -1) dxOut += columns;
+                    if (dyOut > 1) dyOut -= rows;    if (dyOut < -1) dyOut += rows;
+                    if (dxOut == 1) outPort = 3;      // East
+                    else if (dxOut == -1) outPort = 1; // West
+                    else if (dyOut == 1) outPort = 4;  // South
+                    else if (dyOut == -1) outPort = 2; // North
+                }
+
+                // Compute ring count for this router's turn
+                int ringCount = 0;
+                auto rtmIt = routerTurnMatrices.find(routerId);
+                if (rtmIt != routerTurnMatrices.end() && inPort >= 0 && outPort >= 0
+                        && inPort < 5 && outPort < 5 && inPort != outPort) {
+                    int formulaType = rtmIt->second[inPort][outPort].throughCount;
+                    int throughCount = 0;
+                    switch (formulaType) {
+                        case 0: throughCount = maxWl - 1; break;
+                        case 1: throughCount = 2*totalWL + maxWl - 1; break;
+                        case 2: throughCount = 3*totalWL + maxWl - 1; break;
+                        case 3: throughCount = 4*totalWL; break;
+                        case 4: throughCount = 4*totalWL + maxWl - 1; break;
+                        case 5: throughCount = 6*totalWL + maxWl - 1; break;
+                        default: break;
+                    }
+                    ringCount = throughCount + numActiveWL; // through rings + drop rings
+                }
+
+                // NI modulator (src) / demodulator (dst): shared chain, rings 1..maxWl
+                if (i == 0) ringCount += maxWl;
+                if (i == numRouters - 1) ringCount += maxWl;
+
+                double T = tm ? tm->getRouterTemperature(routerId) : opticalTambient_K;
+                double dT = T - opticalTambient_K;
+                double absDT = (dT > 0.0) ? dT : -dT;
+                tuningPerRouter_mW[i] = static_cast<double>(ringCount)
+                    * opticalTuningEfficiency_mW_per_nm
+                    * opticalThermoOpticCoeff_nm_per_K * absDT;
+            }
+
             if (opticalEnableSOA && pathEdges.size() > 0) {
-                soaPerRouter_mW = opticalSoaPumpPower_mW * pathEdges.size() / numRouters;
+                // Each hop has one SOA at the output of the driving router.
+                // The last router (dstId) drives no outgoing hop → no SOA power.
+                for (int i = 0; i < numRouters - 1; ++i)
+                    soaPerRouter_mW[i] = opticalSoaPumpPower_mW;
             }
         }
 
         ThermalModel *tm = getThermalModel();
         if (tm) {
-            for (size_t i = 0; i < routers.size(); ++i) {
-                double total = tuningPerRouter_mW + soaPerRouter_mW;
+            for (int i = 0; i < numRouters; ++i) {
+                double total = tuningPerRouter_mW[i] + soaPerRouter_mW[i];
                 if (total > 0.0)
-                    tm->addRouterOpticalPower(routers[i], total * 1e-3); // mW → W
+                    tm->addRouterOpticalPower(routers[i], total * 1e-3);
             }
         }
 
@@ -1761,13 +2006,16 @@ void LogicalTopologyManager::releaseOpticalPathForPacket(int pktId) {
                 << " spatial=" << alloc.spatialChannel << endl;
     }
 
-    // Remove optical device power from routers
-    double totalPower_mW = alloc.tuningPowerPerRouter_mW + alloc.soaPowerPerRouter_mW;
-    if (totalPower_mW > 0.0 && !alloc.pathRouters.empty()) {
+    // Remove optical device power from routers (per-router)
+    {
         ThermalModel *tm = getThermalModel();
         if (tm) {
-            for (size_t i = 0; i < alloc.pathRouters.size(); ++i)
-                tm->removeRouterOpticalPower(alloc.pathRouters[i], totalPower_mW * 1e-3);
+            for (size_t i = 0; i < alloc.pathRouters.size() && i < alloc.tuningPowerPerRouter_mW.size(); ++i) {
+                double soa = (i < alloc.soaPowerPerRouter_mW.size()) ? alloc.soaPowerPerRouter_mW[i] : 0.0;
+                double total = alloc.tuningPowerPerRouter_mW[i] + soa;
+                if (total > 0.0)
+                    tm->removeRouterOpticalPower(alloc.pathRouters[i], total * 1e-3);
+            }
         }
     }
 
@@ -1779,6 +2027,19 @@ void LogicalTopologyManager::releaseOpticalPathForPacket(int pktId) {
             double energy_J = soaCount * opticalSoaPumpPower_mW * 1e-3 * duration.dbl();
             totalSoaEnergy_J += energy_J;
             totalSoaCircuitHops += soaCount;
+        }
+    }
+
+    // Accumulate dynamic tuning energy (per-circuit, per-router)
+    {
+        simtime_t duration = simTime() - alloc.setupTime;
+        if (duration > 0) {
+            for (size_t i = 0; i < alloc.tuningPowerPerRouter_mW.size(); ++i) {
+                if (alloc.tuningPowerPerRouter_mW[i] > 0.0) {
+                    totalDynamicTuningEnergy_J += alloc.tuningPowerPerRouter_mW[i]
+                                                * 1e-3 * duration.dbl();
+                }
+            }
         }
     }
 

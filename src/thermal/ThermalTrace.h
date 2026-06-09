@@ -36,6 +36,7 @@ class ThermalModel
 
     // --- optical device power superimposed onto routers (persistent) ---
     std::vector<double> routerOpticalPower;  // W
+    std::vector<double> pendingOpticalPower; // W — cached before open() is called
 
     // --- temperature state (K) ---
     std::vector<double> peTemp;
@@ -53,6 +54,7 @@ class ThermalModel
 
     // --- solver state ---
     simtime_t lastTempTime;
+    simtime_t pendingDt;      // accumulated dt from skipped (unflushed) windows
 
     // --- HotSpot trace output ---
     std::ofstream traceFile;

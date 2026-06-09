@@ -93,6 +93,7 @@ class OpticalPathMetrics : public cObject {
     double totalTuningPower_mW;         // Sum of ring tuning power on path
     double maxRingDetuning_nm;          // Max ring wavelength detuning
     double tempAdjustedLoss_dB;         // Additional loss from temperature
+    std::map<int, double> perRouterTuningPower_mW; // routerId → tuning power (mW)
 
   public:
     OpticalPathMetrics()

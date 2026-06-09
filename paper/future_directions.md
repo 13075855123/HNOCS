@@ -145,7 +145,86 @@ $$\text{cost}(PE_j, task_i) = w_T \cdot (T_{PE_j}(t_{start}) - T_{amb}) + w_H \c
 
 贪心拓扑调度 + 热感知的文献依据同方向 B-2（见下方）。增量式热注入是本方向的独特贡献，现有文献中未见类似方法。
 
+#### 实现现状（2026-06-03）
+
+B-1 已在 `Experiment/B-1/` 中完整实现。核心文件：
+
+| 文件 | 功能 |
+|------|------|
+| `mapping/cost_model.py` → `NormalizedCostModel` | 四子项归一化代价函数 |
+| `Experiment/B-1/iterative_greedy.py` | 增量热注入贪心 + PE 热应力跨轮反馈 + 循环检测 |
+| `Experiment/B-1/run.py` | CLI 入口，支持 `--all` 跑全部 benchmark |
+
+##### 代价函数设计演进
+
+**初版**（论文公式直译）：
+$$\text{cost} = w_T \cdot (T_{PE_j} - T_{amb}) + w_H \cdot \sum \text{hops} \cdot \text{dataSize}$$
+
+实际运行发现两个致命问题：
+1. **量纲不匹配**：热项 ~O(1)、通信项 ~O(10³)，贪心完全忽略温度
+2. **DVFS 阈值无感知**：温度超过 54°C 时计算时间翻倍，但代价函数对此不敏感
+
+**终版**（四子项归一化）：
+$$\text{cost} = w_T \cdot f_{thermal} + w_H \cdot f_{comm} + w_D \cdot f_{dvfs} + w_L \cdot f_{overload}$$
+
+| 子项 | 公式 | 范围 | 权重 |
+|------|------|------|------|
+| $f_{thermal}$ | $(T - T_{amb}) / (T_{throttle} - T_{amb})$ | [0, ~1.5] | $w_T=1.0$ |
+| $f_{comm}$ | $\sum \text{hops} \cdot \text{dataSize} / \maxEdgeComm$ | [0, ~1] | $w_H=0.5$ |
+| $f_{dvfs}$ | 三段式：安全区 0 → 预警区线性 → 超阈值 5× 斜率 | [0, 陡升] | $w_D=2.0$ |
+| $f_{overload}$ | $\max(0, \frac{\text{load}_{PE_j}}{\text{ideal}} - 1)$，load 按 **compute_time 加权** | [0, ~15] | $w_L=3.0$ |
+
+其中 $f_{overload}$ 是最关键的改进。初版用 task 计数衡量负载（一个 50000ns 的重 task 和一个 20000ns 的轻 task 等权重），导致贪心无法区分热负载轻重。改为 compute_time 加权后，贪心自然倾向将重 task 分散到冷 PE 上。
+
+##### 跨轮经验机制
+
+初版用 `task_start_temps`（"上轮 task_i 开始时 PE_j 是多少度"）作为跨轮先知。但因每轮映射不同 → 调度时序不同 → 温度值跨映射失准，导致算法在 2-3 轮内围绕局部最优振荡。
+
+改为 **PE 级热应力反馈**（quadratic penalty）：
+
+$$\text{stress}_{PE_j} = w_T \cdot \left(\frac{\max(0, T_{peak}^{PE_j} - T_{amb})}{T_{throttle} - T_{amb}}\right)^2$$
+
+下轮贪心构建时，`pe_penalty[PE_j]` 作为静态偏置加入代价函数。"上轮 PE_j 太热 → 这轮避开它"——粗粒度但跨映射鲁棒。
+
+收敛条件：映射重复出现（循环检测）时取峰值温度最低的轮次。
+
+##### OMNeT++ C++ 实测结果
+
+B-1 重映射的 CSV 在 `examples/task_driven/B1_mapping/`，OMNeT++ 配置文件位于 `examples/task_driven/omnetpp.ini`（新增 `_B1` 后缀 config）。以下为 C++ 仿真结果（`opp_run -u Cmdenv`）：
+
+| Benchmark | 指标 | 静态映射 | B-1 重映射 | Δ | Δ% |
+|-----------|------|----------|-----------|-----|-----|
+| **GEMM** | T_peak | 54.9°C | **53.1°C** | **-1.8°C** | — |
+| (CCR=8) | T_grad | 7.5°C | **4.1°C** | -3.4°C | — |
+| | Makespan | 119.6μs | 116.0μs | -3.6μs | -3.0% |
+| | 总能耗 | 1580.6μJ | **1528.1μJ** | -52.5μJ | **-3.3%** |
+| **MPEG4** | T_peak | 54.4°C | **52.8°C** | **-1.6°C** | — |
+| (CCR=1) | T_grad | 6.5°C | **5.1°C** | -1.4°C | — |
+| | Makespan | 121.7μs | 121.4μs | -0.3μs | -0.2% |
+| | 总能耗 | 1144.0μJ | **1140.4μJ** | -3.6μJ | **-0.3%** |
+| **VOPD** | T_peak | 52.2°C | **51.5°C** | **-0.7°C** | — |
+| (CCR=0.3) | T_grad | 4.7°C | **3.6°C** | -1.1°C | — |
+| | Makespan | 87.4μs | 85.5μs | -1.9μs | -2.2% |
+| | 总能耗 | 753.4μJ | **741.7μJ** | -11.7μJ | **-1.5%** |
+| **HNN** | T_peak | 55.7°C | 59.8°C | **+4.1°C** | — |
+| (CCR=3) | T_grad | 0.2°C | 1.4°C | +1.2°C | — |
+| | Makespan | 204.1μs | **187.1μs** | -17.0μs | **-8.3%** |
+| | 总能耗 | 4681.5μJ | 5202.5μJ | +521.0μJ | +11.1% |
+| **Optic** | T_peak | 48.8°C | 48.8°C | 0.0°C | — |
+| (CCR=0.06) | Makespan | 9.2μs | 9.2μs | 0.0μs | 0.0% |
+
+##### 分析
+
+1. **GEMM/MPEG4/VOPD**：三个 benchmark 在峰值温度、温度梯度、完成时间、总能耗四个维度上**全面优于**静态映射。温度降幅 0.7–1.8°C，能耗降幅 0.3–3.3%。代价函数的热负载加权和 PE 热应力反馈共同作用，使贪心在保持通信效率的同时实现了更好的热负载均衡。
+
+2. **HNN**：B-1 将热负载从 max/min=5.0× 优化到 1.1×（近完美均衡），但峰值温度反而升高 4.1°C。根因是 RC 热网络在长时间仿真中（~200μs）达到稳态——16 个 PE 全部 55.7°C，温度由 **总功率密度 = 总能量 / makespan** 决定。B-1 将 makespan 缩短 8.3%（更高效的 PE 利用率），功率密度相应升高 → 全芯片稳态温度升高。这是**物理学硬约束**（$T \approx T_{amb} + R_{conv} \cdot P_{avg}$），任何纯映射算法都无法同时优化性能和温度——需要 B-2（GA）探索帕累托前沿。
+
+3. **Optic**：16 个 task 全并行、无依赖、1μs 极短计算——热效应微弱，贪心无优化空间。
+
+4. **Python 预测 vs C++ 实测**：两者趋势完全一致（GEMM/MPEG4/VOPD 改善，HNN 温度升但 makespan 降），定量偏差在可接受范围。验证了 Python 热仿真器作为 OMNeT++ 代理的可行性。
+
 ---
+
 
 ### 方向 B-2：遗传算法（GA）
 
@@ -328,19 +407,19 @@ B-1、B-2、C 共用 `mapping/thermal_simulator.py`（Python 热仿真器）和 
 
 ## 建议的论文实验设计
 
-1. **Baseline 1**：传统 XY 路由 + **固定映射**（当前 `tasks_*_static.csv`）
-2. **Baseline 2**：方向 B-1 **增量贪心 + 多轮迭代**（解析方法）
-3. **Baseline 3**：方向 B-2 **GA 优化**（元启发式方法）
+1. **Baseline 1**：传统 XY 路由 + **固定映射**（`static/tasks_*_static.csv`）
+2. **Baseline 2**：方向 B-1 **增量贪心 + 多轮迭代**（解析方法）— ✅ 已实现，OMNeT++ 实测
+3. **Baseline 3**：方向 B-2 **GA 优化**（元启发式方法）— 待实现
 4. **Proposed A**：传统 XY 路由 + **方向 A 运行时热感知动态放置**（控制数据分离）
 5. **Proposed C**：**方向 C GNN+RL 智能映射** — 离线训练、在线推理，通信+温度联合代价
 
-对比维度：温度（峰值/梯度）、通信代价（总跳数×数据量）、完成时间、能耗。
+对比维度：温度（峰值/梯度）、通信代价（总跳数×数据量）、完成时间、总能耗。
 
 ---
 
 ## 实验 Benchmark 套件
 
-四个 benchmark 覆盖 NoC 任务图的完整依赖谱——从全并行到长串行流水线。
+五个 benchmark 覆盖 CCR 0.06→8 的完整谱系，从全并行到深度流水线。
 
 ### 任务图
 
@@ -351,39 +430,25 @@ GEMM (fork-join):          MPEG-4 (fork-join+并行分支):
   T1→T4→T8 ↗                     └→T11→GB          ├→T9→GB
   T1→T5→T9↗                                        └→T10→GB
 
-VOPD (长流水线):            Optic Calib (全并行):
-  T1→T2→T3→T4→T5→T6→T7      GB→T1(PE0)─→GB
-       ↓        ↓  ↓  ↓         T2(PE1)─→GB
-      T12→GB  T8 T9 T10→GB       ...
-                                T16(PE15)→GB
+VOPD (长流水线):            Optic Calib (全并行):       HNN (深度流水线):
+  T1→T2→T3→T4→T5→T6→T7      GB→T1(PE0)─→GB          GB→T1-4(fan-out×4)
+       ↓        ↓  ↓  ↓         T2(PE1)─→GB              →T5-12(fan-out×8)
+      T12→GB  T8 T9 T10→GB       ...                     →T13-28(16 PE并行)
+                                T16(PE15)→GB              →T29-32(reduce×4→GB)
 ```
 
-### 四个 Benchmark 特征
+### 五个 Benchmark 特征
 
-| | GEMM | MPEG-4 | VOPD | Optic Calib |
-|---|---|---|---|---|
-| **文件** | `tasks_gemm_static.csv` | `tasks_mpeg4_static.csv` | `tasks_vopd_static.csv` | `tasks_optic_calib.csv` |
-| **Task 数** | 10 | 11 PE + 1 GB | 12 PE | 16 PE |
-| **依赖模式** | fork-join | fork-join + 分支 | 长流水线 + 分叉 | **全并行（无依赖）** |
-| **最长串行链** | 4 级 | 6 级 | 7 级 | 0 级 |
-| **最大并行度** | 4 | 3 | 4 | **16** |
-| **计算量/task** | 15-50µs | 15-35µs | 20-30µs | 62.5µs |
-| **通信量/task** | 32-512B | 32-500B | 27-500B | 4B |
-| **数据流方向** | PE→PE + →GB | PE→PE + →GB | PE→PE + →GB | **PE→GB 单向** |
-| **类比场景** | HPC 矩阵计算 | 手机视频解码 | 视频对象解码 | Chiplet 标定 |
-| **热感知挑战** | 4 路并行热点集中 | 6 级串行累积 + 多路汇聚 | 7 级最长串行累加热 | 全分散，无热点 |
-
-### 覆盖谱
-
-```
-依赖复杂度
-    ↑
-    │  VOPD        ← 最长串行链，温度累积效应最强
-    │  MPEG-4      ← 串行+分支，NoC 论文最高频引用
-    │  GEMM        ← 结构最规整，并行度最高
-    │  Optic Calib ← 全并行，对比组（无热累积）
-    └──────────────────────────→ 并行度
-```
+| | GEMM | MPEG-4 | VOPD | Optic Calib | HNN |
+|---|---|---|---|---|---|
+| **Task 数** | 10 | 11 PE + 1 GB | 12 PE | 16 PE | 32 PE + 1 GB |
+| **CCR** | **8** | **1** | **0.3** | **0.06** | **3** |
+| **依赖模式** | fork-join | fork-join+分支 | 长流水线+分叉 | 全并行 | 4→8→16→4 流水线 |
+| **最长串行链** | 4 级 | 6 级 | 7 级 | 0 级 | 4 级 |
+| **最大并行度** | 4 | 3 | 4 | **16** | **16** |
+| **计算量/task** | 15-50μs | 15-35μs | 20-30μs | 1μs | 20-50μs |
+| **通信量/task** | 1-8KB | 0.5-4KB | 0.5-4KB | 32KB | 8-32KB |
+| **热感知挑战** | 中等并行热点 | 6级串行累积 | 7级最长累加热 | 全分散无热点 | **16 PE同步重计算→DVFS重灾区** |
 
 ---
 
