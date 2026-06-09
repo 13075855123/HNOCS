@@ -7,7 +7,6 @@
 *.sca
 *.vec
 /src/Makefile
-/out
 __pycache__/
 *.pyc
 # Direction B thermal snapshot (generated at simulation end)
