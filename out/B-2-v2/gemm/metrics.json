@@ -1,0 +1,127 @@
+{
+  "name": "gemm",
+  "baseline": {
+    "thermal": {
+      "T1_pe_peak_temp_K": 328.05854649933,
+      "T3_temp_std_K": 2.554206770599849,
+      "T5_over_throttle_count": 6
+    },
+    "performance": {
+      "P1_makespan_s": 0.000119635,
+      "P3_dvfs_penalty_pct": 1.7684489444444438
+    },
+    "communication": {
+      "C1_total_comm_cost": 104448.0
+    },
+    "energy": {
+      "E1_pe_total_energy_J": 0.0015668413540942847,
+      "E4_soa_energy_J": 1.287788e-06,
+      "E5_tuning_energy_J": 1.110275431376e-07,
+      "E6_laser_energy_J": 6.01425e-07,
+      "E7_total_energy_J": 0.0015688415946374225
+    },
+    "tradeoff": {
+      "TR2_composite_cost": 6.000000000000001,
+      "cost_terms": {
+        "f_thermal": 1.0,
+        "f_sigma": 1.0,
+        "f_hot": 1.0,
+        "f_makespan": 1.0,
+        "f_comm": 1.0,
+        "f_congestion": 1.0,
+        "f_dvfs": 1.0,
+        "f_load": 1.0,
+        "f_energy": 1.0,
+        "total_cost": 6.000000000000001,
+        "raw_comm_cost": 104448.0,
+        "raw_congestion_cost": 22528.0,
+        "raw_load_imbalance": 0.9202539178734378,
+        "T_max_K": 328.05854649933,
+        "sigma_T_K": 2.554206770599849,
+        "N_hot": 6,
+        "eta_dvfs_pct": 1.7684489444444438,
+        "makespan_s": 0.000119635,
+        "total_energy_J": 0.0015688415946374225
+      }
+    }
+  },
+  "b2": {
+    "thermal": {
+      "T1_pe_peak_temp_K": 326.2664490583,
+      "T3_temp_std_K": 1.8896223115871227,
+      "T5_over_throttle_count": 0
+    },
+    "performance": {
+      "P1_makespan_s": 0.0001158908,
+      "P3_dvfs_penalty_pct": 0.0,
+      "P2_speedup": 1.032308000289928
+    },
+    "communication": {
+      "C1_total_comm_cost": 62464.0
+    },
+    "energy": {
+      "E1_pe_total_energy_J": 0.0015136080812753726,
+      "E4_soa_energy_J": 5.40812e-07,
+      "E5_tuning_energy_J": 4.2879019427175e-08,
+      "E6_laser_energy_J": 5.82954e-07,
+      "E7_total_energy_J": 0.0015147747262947997
+    },
+    "tradeoff": {
+      "TR2_composite_cost": 3.978109180252875,
+      "cost_terms": {
+        "f_thermal": 0.8191361930681564,
+        "f_sigma": 0.7398078860872136,
+        "f_hot": 0.0,
+        "f_makespan": 0.9687031387135872,
+        "f_comm": 0.5980392156862745,
+        "f_congestion": 0.45454545454545453,
+        "f_dvfs": 0.0,
+        "f_load": 1.0827764604440613,
+        "f_energy": 0.9655370761921198,
+        "total_cost": 3.978109180252875,
+        "raw_comm_cost": 62464.0,
+        "raw_congestion_cost": 10240.0,
+        "raw_load_imbalance": 0.9964292799047808,
+        "T_max_K": 326.2664490583,
+        "sigma_T_K": 1.8896223115871227,
+        "N_hot": 0,
+        "eta_dvfs_pct": 0.0,
+        "makespan_s": 0.0001158908,
+        "total_energy_J": 0.0015147747262947997
+      }
+    }
+  },
+  "b2_generations": 30,
+  "b2_converged": false,
+  "b2_elapsed_s": 2232.493883499992,
+  "b2_best_fitness": 3.978109180252875,
+  "config": {
+    "population_size": 50,
+    "num_generations": 30,
+    "crossover_rate": 0.8,
+    "mutation_rate": 0.1,
+    "w_T": 1.0,
+    "w_sigma": 1.0,
+    "w_hot": 0.6,
+    "w_makespan": 1.2,
+    "w_H": 0.4,
+    "w_congestion": 0.7,
+    "w_D": 0.4,
+    "w_L": 0.2,
+    "w_E": 0.5,
+    "w_peak": 0.0,
+    "seed": 42,
+    "fitness": "baseline_normalized_v2",
+    "cost_reference": {
+      "peak_excess_K": 9.908546499330043,
+      "sigma_T_K": 2.554206770599849,
+      "N_hot": 6.0,
+      "makespan_s": 0.000119635,
+      "total_energy_J": 0.0015688415946374225,
+      "eta_dvfs_pct": 1.7684489444444438,
+      "comm_cost": 104448.0,
+      "congestion_cost": 22528.0,
+      "load_imbalance": 0.9202539178734378
+    }
+  }
+}

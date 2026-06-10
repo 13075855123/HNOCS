@@ -1,6 +1,15 @@
 *.so
 *.dll
 *.exe
+*.o
+*.obj
+*.d
+*.o.d
+*.a
+*.lib
+*.exp
+*.pdb
+*.ilk
 .qtenvrc
 *_m.h
 *_m.cc
@@ -14,6 +23,9 @@ thermal_snapshot.json
 # OMNeT++ build artifacts
 *.anf
 src/Makefile.*
+/out/clang-*/
+/out/gcc-*/
+/out/msvc-*/
 /.metadata/
 # Temp analysis files
 sim_log.txt

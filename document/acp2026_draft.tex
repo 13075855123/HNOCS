@@ -22,7 +22,7 @@
 \maketitle
 
 \begin{abstract}
-微环谐振器（MRR）的热敏感性是光片上网络（ONoC）面临的核心挑战之一。局部温度变化会引起 MRR 谐振波长漂移，需要动态热调谐补偿；同时，当处理器核（PE）温度超过 DVFS 节流阈值时，计算时间被拉长，进一步影响系统性能和能耗。现有工作主要从器件级、电路级和路由级应对热管理问题，而\textbf{任务到 PE 的映射}作为设计时热源布局手段仍未被充分利用。本文提出一种基于遗传算法（GA）的热感知任务映射框架：每个候选映射通过\textbf{全系统 OMNeT++ 仿真}评估，该仿真包含 8$\lambda$ WDM 光层、SOA 放大、MRR 动态调谐、激光源、32 节点 RC 热网络和周期性 DVFS 反馈回路。GA 以基线归一化多目标代价函数为适应度，联合考虑峰值温度、温度标准差、热点数、makespan、通信距离、静态拥塞、DVFS 惩罚、负载均衡和总能耗。在覆盖 CCR 0.3--8 的四个基准上，所提方法均降低复合代价；其中 GEMM 和 MPEG4 同时改善热、性能、通信和能耗指标，VOPD 将 makespan 降低 \SI{50.5}{\percent}、总能耗降低 \SI{31.8}{\percent}，但牺牲部分热均匀性；HNN 则表现为明显的热-性能折中。结果表明，任务映射是 ONoC 热管理的有效设计时优化手段，但必须以多目标折中而非单一热指标最小化来建模。
+微环谐振器（MRR）的热敏感性是光片上网络（ONoC）面临的核心挑战之一。局部温度变化会引起 MRR 谐振波长漂移，需要动态热调谐补偿；同时，当处理器核（PE）温度超过 DVFS 节流阈值时，计算时间被拉长，进一步影响系统性能和能耗。现有工作主要从器件级、电路级和路由级应对热管理问题，而\textbf{任务到 PE 的映射}作为设计时热源布局手段仍未被充分利用。本文提出一种基于遗传算法（GA）的热感知任务映射框架：每个候选映射通过\textbf{全系统 OMNeT++ 仿真}评估，该仿真包含 8$\lambda$ WDM 光层、SOA 放大、MRR 动态调谐、激光源、32 节点 RC 热网络和周期性 DVFS 反馈回路。GA 以基线归一化多目标代价函数为适应度，联合考虑峰值温度、温度标准差、热点数、makespan、通信距离、静态拥塞、DVFS 惩罚、负载均衡和总能耗。在覆盖 CCR 0.3--8 的四个基准上，所提方法均降低复合代价；其中 GEMM 和 MPEG4 同时改善热、性能、通信和能耗指标，VOPD 将 makespan 降低 \SI{51.6}{\percent}、总能耗降低 \SI{33.0}{\percent}，但牺牲部分热均匀性；HNN 则显著降低热点数和 DVFS 惩罚，但以 \SI{29.6}{\percent} 的 makespan 增加为代价。结果表明，任务映射是 ONoC 热管理的有效设计时优化手段，但必须以多目标折中而非单一热指标最小化来建模。
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -171,13 +171,13 @@ f_E = \frac{E_{\text{total}}(M)}{E_{\text{total}}(M_0)} .
 \begin{enumerate}
 \item 生成临时 CSV 文件，写入任务到 PE 的分配；
 \item 创建最小 OMNeT++ INI 文件，继承基类 \texttt{[ONoCGeneral]} 配置并指向临时 CSV；
-\item 调用 \texttt{libhnocs\_dbg.exe} 子进程（Cmdenv 模式），运行完整仿真，包括 TaskPE 执行、电控制面路由、光电路建立（SETUP/ACK 握手、波长分配、MRR 调谐、SOA 放大）、数据面旁路和热网络更新；
+\item 调用 \texttt{libhnocs.exe} 子进程（Cmdenv 模式），运行完整仿真，包括 TaskPE 执行、电控制面路由、光电路建立（SETUP/ACK 握手、波长分配、MRR 调谐、SOA 放大）、数据面旁路和热网络更新；
 \item 解析输出标量文件（\texttt{.sca}）：提取 makespan、每 PE DVFS 比、PE 总能耗、SOA 能耗、调谐能耗和激光器能耗；
 \item 通过 \texttt{opp\_scavetool} 将输出矢量文件（\texttt{.vec}）导出为 JSON，解析每 PE 温度迹线，得到真实峰值温度 $T_{\max}$、温度标准差 $\sigma_T$ 和过热 PE 数 $N_{\text{hot}}$；
 \item 基于提取的标量计算式~\eqref{eq:cost} 中的代价函数。
 \end{enumerate}
 
-超过 \SI{60}{\second} 超时阈值的仿真（表示产生了导致光层事件爆炸的病态映射）被赋予无穷大适应度，GA 自动避开搜索空间中的此类区域。
+超过 \SI{300}{\second} 超时阈值的仿真（表示产生了导致光层事件爆炸的病态映射）被赋予无穷大适应度，GA 自动避开搜索空间中的此类区域。
 
 为加速评估，种群使用 \texttt{ProcessPoolExecutor} 以 8 个 worker 并行评估，每代墙钟时间减少约 6--7 倍。
 
@@ -191,7 +191,7 @@ f_E = \frac{E_{\text{total}}(M)}{E_{\text{total}}(M_0)} .
 
 \textbf{精英保留。}$e = 2$ 个最优个体原封不动进入下一代，确保已找到的最优解永不丢失。
 
-\textbf{终止条件。}GA 最多运行 $G = 30$ 代，若最优适应度连续 10 代无改善则提前终止。
+\textbf{终止条件。}GA 最多运行 $G = 60$ 代，若最优适应度连续 10 代无改善则提前终止。
 
 \subsection{OMNeT++ 在环评估的必要性}
 
@@ -225,7 +225,7 @@ GEMM   & 11 & 8    & Fork-join 归约树 \\
 \end{tabular}
 \end{table}
 
-GA 参数：种群大小 50，最大 30 代，锦标赛规模 3，交叉率 0.8，变异率 0.1，精英数 2，早停 patience 为 10 代，随机种子 42。所有实验在 OMNeT++ 6.3.0 + Clang 编译器 + Windows 环境下运行。基线为任务图 CSV 文件中预设的\textbf{静态映射}（由工作负载设计者启发式分配）。每个基准先运行一次基线仿真以构造式~\eqref{eq:cost} 的归一化参照，再运行 GA 搜索优化映射。
+GA 参数：种群大小 50，最大 60 代，锦标赛规模 3，交叉率 0.8，变异率 0.1，精英数 2，早停 patience 为 10 代，随机种子 42。所有实验在 OMNeT++ 6.3.0 + Clang 编译器 + Windows 环境下运行，单个个体仿真超时阈值为 \SI{300}{\second}。基线为任务图 CSV 文件中预设的\textbf{静态映射}（由工作负载设计者启发式分配）。每个基准先运行一次基线仿真以构造式~\eqref{eq:cost} 的归一化参照，再运行 GA 搜索优化映射。
 
 \subsection{评价指标}
 
@@ -241,7 +241,7 @@ GA 参数：种群大小 50，最大 30 代，锦标赛规模 3，交叉率 0.8�
 
 \subsection{GEMM 实验结果}
 
-表~\ref{tab:gemm} 展示了 GEMM（CCR = 8，Fork-join 矩阵乘法归约树）的详细对比结果。GA 运行 30 代后未触发早停，耗时 37.2 分钟；因此该结果应视为当前搜索预算下的最佳发现，而非严格收敛点。
+表~\ref{tab:gemm} 展示了 GEMM（CCR = 8，Fork-join 矩阵乘法归约树）的详细对比结果。GA 在第 52 代触发早停，最后一次改进出现在第 42 代，耗时 128.3 分钟。
 
 \begin{table}[h]
 \centering
@@ -251,16 +251,16 @@ GA 参数：种群大小 50，最大 30 代，锦标赛规模 3，交叉率 0.8�
 \toprule
 \textbf{指标} & \textbf{基线} & \textbf{GA} & \textbf{$\Delta$} \\
 \midrule
-$T_{\max}$ (\si{\degreeCelsius}) & 54.9 & 53.1 & $-$1.79 \\
-$\sigma_T$ (K) & 2.55 & 1.89 & $-$26.0\% \\
+$T_{\max}$ (\si{\degreeCelsius}) & 54.9 & 52.9 & $-$2.04 \\
+$\sigma_T$ (K) & 2.55 & 1.84 & $-$28.0\% \\
 $N_{\text{hot}}$ & 6 & 0 & $-$6 \\
-$t_{\text{makespan}}$ (\si{\micro\second}) & 119.6 & 115.9 & $-$3.1\% \\
+$t_{\text{makespan}}$ (\si{\micro\second}) & 119.6 & 116.0 & $-$3.1\% \\
 $\eta_{\text{dvfs}}$ (\%) & 1.77 & 0.00 & $-$100\% \\
-$E_{\text{total}}$ (\si{\milli\joule}) & 1.569 & 1.515 & $-$3.5\% \\
-$E_{\text{SOA}}$ (\si{\micro\joule}) & 1.288 & 0.541 & $-$58.0\% \\
-$E_{\text{tune}}$ (\si{\nano\joule}) & 111.0 & 42.9 & $-$61.4\% \\
-Comm. cost (hops$\times$bytes) & 104,448 & 62,464 & $-$40.2\% \\
-Composite cost & 6.000 & 3.978 & $-$33.7\% \\
+$E_{\text{total}}$ (\si{\milli\joule}) & 1.569 & 1.515 & $-$3.4\% \\
+$E_{\text{SOA}}$ (\si{\micro\joule}) & 1.288 & 0.460 & $-$64.3\% \\
+$E_{\text{tune}}$ (\si{\nano\joule}) & 111.0 & 34.9 & $-$68.5\% \\
+Comm. cost (hops$\times$bytes) & 104,448 & 70,656 & $-$32.4\% \\
+Composite cost & 6.000 & 3.925 & $-$34.6\% \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -268,21 +268,21 @@ Composite cost & 6.000 & 3.978 & $-$33.7\% \\
 GA 优化映射在所有指标上实现了同步改善：
 
 \begin{itemize}
-\item \textbf{热}: $T_{\max}$ 降低 \SI{1.79}{\degreeCelsius}，$\sigma_T$ 改善 26.0\%，6 个过热 PE 全部消除（$N_{\text{hot}} = 0$）。DVFS 节流比归零，说明该映射把工作负载从节流边界拉回安全区。
+\item \textbf{热}: $T_{\max}$ 降低 \SI{2.04}{\degreeCelsius}，$\sigma_T$ 改善 28.0\%，6 个过热 PE 全部消除（$N_{\text{hot}} = 0$）。DVFS 节流比归零，说明该映射把工作负载从节流边界拉回安全区。
 \item \textbf{性能}: Makespan 改善 3.1\%。由于 GEMM 的基线已经具有较高并行度，性能收益主要来自热点消除后的节流恢复，而不是任务重排带来的大幅调度改变。
-\item \textbf{能耗}: 系统总能耗降低 3.5\%。光层改善更明显：SOA 能耗下降 58.0\%，调谐能耗下降 61.4\%，与通信代价下降 40.2\% 一致。
+\item \textbf{能耗}: 系统总能耗降低 3.4\%。光层改善更明显：SOA 能耗下降 64.3\%，调谐能耗下降 68.5\%，与通信代价下降 32.4\% 一致。
 \end{itemize}
 
 这些结果证实，在计算密集且具有归约结构的工作负载中，GA 能够同时实现通信局部化、热点削减和轻微性能提升，是本文最干净的正例。
 
 \subsection{收敛行为}
 
-图~\ref{fig:convergence} 展示了 GEMM 在 30 代中的适应度变化。最优适应度从第 1 代的 4.333 降至第 30 代的 3.978，改善 8.2\%；相对于基线复合代价 6.000，最终改善 33.7\%。第 27 代仍出现新的最优个体，说明 30 代预算可能仍截断了后续改进空间。
+图~\ref{fig:convergence} 展示了四个基准的最优适应度收敛轨迹。所有基准均在 60 代上限前触发早停：GEMM、HNN、MPEG4 和 VOPD 分别运行 52、47、23 和 34 代。与 30 代预算下的旧结果不同，本次每代平均和最差适应度均为有限值，说明收敛统计未被超时个体的无穷大适应度污染。
 
 \begin{figure}[t]
 \centering
-% [待补充：收敛曲线图]
-\caption{GEMM 30 代适应度变化。最优适应度从第 1 代 4.333 降至第 30 代 3.978；相对于基线 6.000，最终复合代价降低 33.7\%。}
+\includegraphics[width=\linewidth]{figures/b2_v3_convergence_best_fitness.png}
+\caption{B-2-v3-g60 的 GA 收敛曲线。横轴为早停前实际执行代数；四个基准均在 60 代上限前收敛。}
 \label{fig:convergence}
 \end{figure}
 
@@ -299,17 +299,17 @@ GA 优化映射在所有指标上实现了同步改善：
 \textbf{基准} & \textbf{Cost} & $T_{\max}$ & $\sigma_T$ & $N_{\text{hot}}$ & Makespan & Comm. & $E_{\text{total}}$ \\
  & & (\si{\degreeCelsius}) & (K) & & (\si{\micro\second}) & (hop$\times$B) & (\si{\milli\joule}) \\
 \midrule
-GEMM   & 6.000$\rightarrow$\textbf{3.978} & 54.9$\rightarrow$\textbf{53.1} & 2.55$\rightarrow$\textbf{1.89} & 6$\rightarrow$\textbf{0} & 119.6$\rightarrow$\textbf{115.9} & 104448$\rightarrow$\textbf{62464} & 1.569$\rightarrow$\textbf{1.515} \\
-(CCR=8) & ($-$33.7\%) & ($-$1.79\si{\degreeCelsius}) & ($-$26.0\%) & & ($-$3.1\%) & ($-$40.2\%) & ($-$3.5\%) \\
+GEMM   & 6.000$\rightarrow$\textbf{3.925} & 54.9$\rightarrow$\textbf{52.9} & 2.55$\rightarrow$\textbf{1.84} & 6$\rightarrow$\textbf{0} & 119.6$\rightarrow$\textbf{116.0} & 104448$\rightarrow$\textbf{70656} & 1.569$\rightarrow$\textbf{1.515} \\
+(CCR=8) & ($-$34.6\%) & ($-$2.04\si{\degreeCelsius}) & ($-$28.0\%) & & ($-$3.1\%) & ($-$32.4\%) & ($-$3.4\%) \\
 \midrule
 MPEG4  & 6.000$\rightarrow$\textbf{4.035} & 54.4$\rightarrow$\textbf{52.7} & 1.54$\rightarrow$\textbf{1.46} & 2$\rightarrow$\textbf{0} & 121.7$\rightarrow$\textbf{90.9} & 420000$\rightarrow$\textbf{196000} & 1.133$\rightarrow$\textbf{0.969} \\
 (CCR$\approx$1) & ($-$32.8\%) & ($-$1.69\si{\degreeCelsius}) & ($-$5.3\%) & & ($-$25.3\%) & ($-$53.3\%) & ($-$14.5\%) \\
 \midrule
-VOPD   & 5.000$\rightarrow$\textbf{4.063} & 52.2$\rightarrow$52.3 & 1.15$\rightarrow$1.40 & 0$\rightarrow$0 & 87.4$\rightarrow$\textbf{43.3} & 1396000$\rightarrow$\textbf{646000} & 0.747$\rightarrow$\textbf{0.510} \\
-(CCR=0.3) & ($-$18.7\%) & (+0.08\si{\degreeCelsius}) & (+21.7\%) & & ($-$50.5\%) & ($-$53.7\%) & ($-$31.8\%) \\
+VOPD   & 5.000$\rightarrow$\textbf{4.094} & 52.2$\rightarrow$52.3 & 1.15$\rightarrow$1.37 & 0$\rightarrow$0 & 87.4$\rightarrow$\textbf{42.3} & 1396000$\rightarrow$\textbf{796000} & 0.747$\rightarrow$\textbf{0.500} \\
+(CCR=0.3) & ($-$18.1\%) & (+0.12\si{\degreeCelsius}) & (+18.8\%) & & ($-$51.6\%) & ($-$43.0\%) & ($-$33.0\%) \\
 \midrule
-HNN    & 6.000$\rightarrow$\textbf{5.252} & 55.7$\rightarrow$56.0 & 3.05$\rightarrow$\textbf{2.19} & 16$\rightarrow$\textbf{8} & 204.2$\rightarrow$243.2 & 2195456$\rightarrow$\textbf{1638400} & 4.661$\rightarrow$\textbf{4.517} \\
-(CCR=3) & ($-$12.5\%) & (+0.34\si{\degreeCelsius}) & ($-$28.4\%) & & (+19.1\%) & ($-$25.4\%) & ($-$3.1\%) \\
+HNN    & 6.000$\rightarrow$\textbf{5.116} & 55.7$\rightarrow$\textbf{55.1} & 3.05$\rightarrow$\textbf{2.06} & 16$\rightarrow$\textbf{4} & 204.2$\rightarrow$264.7 & 2195456$\rightarrow$\textbf{1761280} & 4.661$\rightarrow$\textbf{4.583} \\
+(CCR=3) & ($-$14.7\%) & ($-$0.57\si{\degreeCelsius}) & ($-$32.5\%) & & (+29.6\%) & ($-$19.8\%) & ($-$1.7\%) \\
 \midrule
 \bottomrule
 \end{tabular}
@@ -317,29 +317,29 @@ HNN    & 6.000$\rightarrow$\textbf{5.252} & 55.7$\rightarrow$56.0 & 3.05$\righta
 
 \subsection{逐基准分析}
 
-\textbf{GEMM (CCR=8, Fork-join 归约树):} 全维度正向，是四个基准中最干净的结果。GA 将通信代价削减 40.2\%，同时降低峰值温度 1.79\si{\degreeCelsius}、消除 6 个热点 PE，并使 makespan 和总能耗分别下降 3.1\% 与 3.5\%。该结果说明，对于通信结构清晰且基线存在热点的计算密集负载，任务重映射可以同时压低热点和光层代价。
+\textbf{GEMM (CCR=8, Fork-join 归约树):} 全维度正向，是四个基准中最干净的结果。GA 将通信代价削减 32.4\%，同时降低峰值温度 2.04\si{\degreeCelsius}、消除 6 个热点 PE，并使 makespan 和总能耗分别下降 3.1\% 与 3.4\%。该结果说明，对于通信结构清晰且基线存在热点的计算密集负载，任务重映射可以同时压低热点和光层代价。
 
-\textbf{MPEG4 (CCR$\approx$1, Fork-join+分支):} 新目标函数下由旧实验中的退化案例转为强正结果。通信代价下降 53.3\%，makespan 下降 25.3\%，总能耗下降 14.5\%，且 $T_{\max}$ 下降 1.69\si{\degreeCelsius}、热点数从 2 降至 0。其 $\sigma_T$ 仅下降 5.3\%，说明收益主要来自通信路径缩短和拥塞降低，而不是大幅重塑热分布。
+\textbf{MPEG4 (CCR$\approx$1, Fork-join+分支):} 在当前多目标函数下表现为强正结果。通信代价下降 53.3\%，makespan 下降 25.3\%，总能耗下降 14.5\%，且 $T_{\max}$ 下降 1.69\si{\degreeCelsius}、热点数从 2 降至 0。其 $\sigma_T$ 仅下降 5.3\%，说明收益主要来自通信路径缩短和拥塞降低，而不是大幅重塑热分布。
 
-\textbf{VOPD (CCR=0.3, 长流水线):} 性能和能耗收益最大：makespan 下降 50.5\%，加速比约 2.02$\times$，总能耗下降 31.8\%，通信代价下降 53.7\%。但 $T_{\max}$ 略升 0.08\si{\degreeCelsius}，$\sigma_T$ 上升 21.7\%。这不是热优化失败，而是多目标优化选择了更短执行时间和更低总能耗，代价是活跃 PE 与空闲 PE 的温差变大。由于该基准全程无热点 PE，峰值温度仍低于 DVFS 阈值。
+\textbf{VOPD (CCR=0.3, 长流水线):} 性能和能耗收益最大：makespan 下降 51.6\%，加速比约 2.06$\times$，总能耗下降 33.0\%，通信代价下降 43.0\%。但 $T_{\max}$ 略升 0.12\si{\degreeCelsius}，$\sigma_T$ 上升 18.8\%。这不是热优化失败，而是多目标优化选择了更短执行时间和更低总能耗，代价是活跃 PE 与空闲 PE 的温差变大。由于该基准全程无热点 PE，峰值温度仍低于 DVFS 阈值。
 
-\textbf{HNN (CCR=3, 4 级流水线, 33 任务):} 这是最困难的折中案例。复合代价降低 12.5\%，通信代价降低 25.4\%，总能耗降低 3.1\%，$\sigma_T$ 改善 28.4\%，热点 PE 从 16 降至 8，平均 DVFS 惩罚从 11.01\% 降至 1.28\%。但 $T_{\max}$ 仍略升 0.34\si{\degreeCelsius}，makespan 增加 19.1\%。这说明显式 makespan 项虽然显著缓解了旧目标函数中的严重性能退化，但 30 代预算和 33 任务搜索空间仍不足以得到完全均衡的映射。
+\textbf{HNN (CCR=3, 4 级流水线, 33 任务):} 这是最困难的折中案例。复合代价降低 14.7\%，通信代价降低 19.8\%，总能耗降低 1.7\%，$\sigma_T$ 改善 32.5\%，热点 PE 从 16 降至 4，平均 DVFS 惩罚从 11.01\% 降至 0.63\%。但 makespan 增加 29.6\%。这说明显式 makespan 项虽然抑制了极端退化，但复杂流水线负载仍可能通过牺牲 DAG 并行度换取热安全性和较低 DVFS。
 
 \subsection{$\sigma_T$ 的三重模式}
 
 温度标准差 $\sigma_T$ 在四个基准上呈现三种模式，揭示了任务映射优化中热均匀性与性能、能耗之间的张力：
 
 \begin{itemize}
-\item \textbf{热-性能双赢（GEMM, MPEG4）}: $\sigma_T$ 分别下降 26.0\% 和 5.3\%，makespan 同时下降 3.1\% 和 25.3\%。通信局部化与热点削减方向一致。
-\item \textbf{性能/能耗优先（VOPD）}: $\sigma_T$ 上升 21.7\%，但 makespan 和总能耗分别下降 50.5\% 与 31.8\%。在无热点约束下，提高热不均匀性换取执行时间缩短是可接受折中。
-\item \textbf{未完全解决的折中（HNN）}: $\sigma_T$ 下降 28.4\%，热点 PE 减半，但 makespan 增加 19.1\%，峰值温度略升。该结果提示复杂流水线负载需要更长搜索预算或更强的并行度约束。
+\item \textbf{热-性能双赢（GEMM, MPEG4）}: $\sigma_T$ 分别下降 28.0\% 和 5.3\%，makespan 同时下降 3.1\% 和 25.3\%。通信局部化与热点削减方向一致。
+\item \textbf{性能/能耗优先（VOPD）}: $\sigma_T$ 上升 18.8\%，但 makespan 和总能耗分别下降 51.6\% 与 33.0\%。在无热点约束下，提高热不均匀性换取执行时间缩短是可接受折中。
+\item \textbf{未完全解决的折中（HNN）}: $\sigma_T$ 下降 32.5\%，热点 PE 从 16 降至 4，但 makespan 增加 29.6\%。该结果提示复杂流水线负载需要更强的并行度约束或针对性权重调整。
 \end{itemize}
 
 这一发现对 ONoC 热管理研究有直接启示：$\sigma_T$ 并非越低越好，也不能孤立解释。只有同时观察 $T_{\max}$、$N_{\text{hot}}$、makespan 和能耗，才能判断某个映射是否真正优于基线。
 
 \subsection{收敛行为}
 
-表~\ref{tab:convergence} 汇总了各基准的收敛统计。MPEG4 触发早停，其余均跑满 30 代。GEMM、VOPD 和 HNN 在后期仍出现新的最优个体，说明当前代数上限可能截断了进一步改进。部分个体因光层事件爆炸或仿真超时返回无穷大适应度，因此若平均适应度包含 \texttt{inf}，它不能作为种群整体质量的稳定统计；本文主要解释最终最优映射和最优适应度轨迹。
+表~\ref{tab:convergence} 汇总了各基准的收敛统计。四个基准均在 60 代上限前触发早停，最后一次改进之后均经历 10 代无改善。历史记录中未出现 \texttt{avg\_fitness = Infinity} 或 \texttt{worst\_fitness = Infinity}，因此本次收敛曲线和种群统计比早期 30 代实验更稳定。
 
 \begin{table}[h]
 \centering
@@ -348,40 +348,49 @@ HNN    & 6.000$\rightarrow$\textbf{5.252} & 55.7$\rightarrow$56.0 & 3.05$\righta
 \footnotesize
 \begin{tabular}{lccccc}
 \toprule
-\textbf{基准} & \textbf{代数} & \textbf{收敛} & \textbf{初始} & \textbf{最终} & \textbf{min} \\
+\textbf{基准} & \textbf{代数} & \textbf{收敛} & \textbf{初始} & \textbf{最终} & \textbf{耗时(min)} \\
 \midrule
-GEMM  & 30 & 否 & 4.33 & 3.98 ($-$8\%) & 37 \\
-MPEG4 & 23 & 是 & 4.69 & 4.03 ($-$14\%) & 32 \\
-VOPD  & 30 & 否 & 4.99 & 4.06 ($-$19\%) & 36 \\
-HNN   & 30 & 否 & 6.15 & 5.25 ($-$15\%) & 63 \\
+GEMM  & 52 & 是 & 4.33 & 3.92 ($-$9\%) & 128 \\
+MPEG4 & 23 & 是 & 4.69 & 4.03 ($-$14\%) & 84 \\
+VOPD  & 34 & 是 & 4.99 & 4.09 ($-$18\%) & 114 \\
+HNN   & 47 & 是 & 6.15 & 5.12 ($-$17\%) & 220 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\subsection{光层能耗分解}
+\subsection{代价分解与光层能耗}
+
+图~\ref{fig:cost_breakdown} 展示了最终 B-2 映射的加权代价分解。HNN 的最大贡献项为 makespan，解释了其虽然热安全性改善但性能退化仍显著；VOPD 的主要贡献来自 $\sigma_T$ 和 $T_{\max}$，说明其性能与能耗收益是以热均匀性为代价获得的。MPEG4 的负载项贡献较高，表明优化映射为了缩短通信和关键路径，将更多名义计算时间集中到少数 PE 上；由于其 makespan、通信和能耗均大幅下降，这种静态负载不均衡被综合目标函数接受。
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/b2_v3_cost_breakdown.png}
+\caption{最终 B-2 映射的加权代价分解。各堆叠项之和等于表~\ref{tab:all} 中的 composite cost。}
+\label{fig:cost_breakdown}
+\end{figure}
 
 光层三组分的变化模式揭示了 GA 优化作用的物理机制：
 
 \begin{itemize}
-\item \textbf{SOA 能耗}：受通信距离和电路持续时间的双重影响。GEMM 和 MPEG4 的 SOA 能耗分别下降 58.0\% 和 43.5\%，与通信代价下降一致；VOPD 与 HNN 的 SOA 能耗分别上升 13.0\% 和 5.6\%，说明缩短总通信距离并不必然降低 SOA 泵浦能耗，光路持续时间和路径重叠同样重要。
-\item \textbf{调谐能耗}：GEMM、MPEG4、HNN 分别下降 61.4\%、47.7\%、36.0\%，表明减少活跃 MRR 数量和热点程度仍是降低调谐能耗的主要杠杆。VOPD 调谐能耗小幅上升 4.8\%，与其 $\sigma_T$ 变差一致。
-\item \textbf{激光器能耗}：与仿真时间近似成正比。VOPD 的 makespan 下降 50.5\%，因此总能耗显著下降；HNN 的 makespan 增加 19.1\%，抵消了一部分通信和调谐收益。
+\item \textbf{SOA 能耗}：受通信距离和电路持续时间的双重影响。GEMM 和 MPEG4 的 SOA 能耗分别下降 64.3\% 和 43.5\%，与通信代价下降一致；VOPD 与 HNN 的 SOA 能耗分别上升 23.2\% 和 28.5\%，说明缩短总通信距离并不必然降低 SOA 泵浦能耗，光路持续时间和路径重叠同样重要。
+\item \textbf{调谐能耗}：GEMM、MPEG4、HNN 分别下降 68.5\%、47.7\%、32.9\%，表明减少活跃 MRR 数量和热点程度仍是降低调谐能耗的主要杠杆。VOPD 调谐能耗上升 11.4\%，与其 $\sigma_T$ 变差一致。
+\item \textbf{激光器能耗}：与仿真时间近似成正比。VOPD 的 makespan 下降 51.6\%，因此总能耗显著下降；HNN 的 makespan 增加 29.6\%，抵消了一部分通信和调谐收益。
 \end{itemize}
 
 \section{讨论}
 
 \subsection{OMNeT++ 在环评估的实证价值}
 
-本方法将全系统 OMNeT++ 仿真作为 GA 适应度评估器，其价值在 VOPD 和 HNN 两个基准上尤其明显。VOPD 的通信代价下降 53.7\%，makespan 下降 50.5\%，但 SOA 和调谐能耗并未同步下降，说明光层能耗不仅由总 hop 数决定，还受电路持续时间、路径重叠和波长槽占用影响。HNN 则相反：通信、$\sigma_T$、热点数和总能耗均改善，但 makespan 与峰值温度仍退化，暴露了复杂流水线负载中并行度保持的困难。上述现象只有在包含光路建立、波长分配、MRR 调谐、SOA 泵浦和热反馈的时域仿真中才能观察到。代价是计算开销：四个基准合计耗时约 2.8 小时，但个体间天然并行，适合设计时离线优化。
+本方法将全系统 OMNeT++ 仿真作为 GA 适应度评估器，其价值在 VOPD 和 HNN 两个基准上尤其明显。VOPD 的通信代价下降 43.0\%，makespan 下降 51.6\%，但 SOA 和调谐能耗并未同步下降，说明光层能耗不仅由总 hop 数决定，还受电路持续时间、路径重叠和波长槽占用影响。HNN 则相反：通信、$\sigma_T$、热点数、峰值温度和总能耗均改善，但 makespan 仍退化 29.6\%，暴露了复杂流水线负载中并行度保持的困难。上述现象只有在包含光路建立、波长分配、MRR 调谐、SOA 泵浦和热反馈的时域仿真中才能观察到。代价是计算开销：四个基准合计耗时约 9.1 小时，但个体间天然并行，适合设计时离线优化。
 
 \subsection{代价函数的效果与不足}
 
-相对于只包含峰值温度、通信、DVFS 和负载均衡的早期目标函数，本文采用的 baseline-normalized 多目标函数显著改善了 MPEG4 和 VOPD 的性能/能耗表现，并避免了 HNN 中过度牺牲 makespan 的极端结果。然而，实验也说明该函数仍存在三个不足：
+相对于只包含峰值温度、通信、DVFS 和负载均衡的早期目标函数，本文采用的 baseline-normalized 多目标函数显著改善了 MPEG4 和 VOPD 的性能/能耗表现，并将 HNN 的热-性能折中显式暴露在 composite cost 中。然而，实验也说明该函数仍存在三个不足：
 
 \begin{enumerate}
 \item \textbf{静态拥塞代理仍然粗糙}：$f_C$ 基于 XY 路径累计字节量，能够抑制空间集中通信，但不能表示同一时间窗口内的真实并发电路数。VOPD 的 SOA 能耗上升说明静态代理仍不能完全预测光层动态行为。
-\item \textbf{权重对工作负载敏感}：GEMM 和 MPEG4 获得全维度改善，但 HNN 仍出现 makespan +19.1\% 和峰值温度 +0.34\si{\degreeCelsius}。对 33 任务流水线负载，$w_M$、$w_L$ 或并行度约束可能仍需提高。
-\item \textbf{搜索预算限制结论强度}：GEMM、VOPD 和 HNN 在 30 代内未收敛，且后期仍出现新最优解。因此本文结果应表述为给定预算下的映射优化收益，而非全局最优。
+\item \textbf{权重对工作负载敏感}：GEMM 和 MPEG4 获得较一致改善，但 HNN 仍出现 makespan +29.6\%，VOPD 仍出现 $\sigma_T$ +18.8\%。对复杂流水线负载，$w_M$、$w_\sigma$、$w_L$ 或显式并行度约束可能仍需按目标调整。
+\item \textbf{单种子结论仍有限}：本次 60 代实验均触发早停，收敛性优于 30 代结果；但每个基准仍只报告 seed=42 的一次运行。因此本文结果应表述为给定配置下的可复现实验结果，而非跨随机种子的统计最优。
 \end{enumerate}
 
 \subsection{$\sigma_T$ vs Makespan：热管理中的根本张力}
@@ -390,20 +399,20 @@ HNN   & 30 & 否 & 6.15 & 5.25 ($-$15\%) & 63 \\
 
 \subsection{局限性与未来工作}
 
-当前研究存在若干局限：(1) 每个基准仅报告 seed=42 的一次 GA 运行，后续需要多随机种子统计显著性；(2) GEMM、VOPD 和 HNN 未在 30 代内收敛，后续应增加代数或采用代理模型预筛选以扩大搜索预算；(3) 当前拥塞项为静态 XY 字节负载代理，尚未直接记录运行时并发光电路和等待时间；(4) GA 产出的映射针对单一任务图优化，多工作负载联合优化是自然扩展；(5) MRR 因电荷俘获和热循环产生的长期谐振漂移未被建模，可靠性维度仍需后续纳入。
+当前研究存在若干局限：(1) 每个基准仅报告 seed=42 的一次 GA 运行，后续需要多随机种子统计显著性；(2) 虽然本次四个基准均在 60 代上限前早停，但 GA 仍是启发式搜索，不能保证全局最优；(3) 当前拥塞项为静态 XY 字节负载代理，尚未直接记录运行时并发光电路和等待时间；(4) GA 产出的映射针对单一任务图优化，多工作负载联合优化是自然扩展；(5) MRR 因电荷俘获和热循环产生的长期谐振漂移未被建模，可靠性维度仍需后续纳入。
 
 \section{结论}
 
 本文提出了一种基于遗传算法的光电混合片上网络热感知任务映射框架，以全系统 OMNeT++ 仿真作为适应度评估神谕，并以静态基线归一化多目标函数联合优化热、性能、通信、拥塞、DVFS、负载和能耗。在覆盖 CCR 0.3--8 的四个基准上，核心发现如下：
 
 \begin{enumerate}
-\item \textbf{任务映射是 ONoC 热优化的有效设计时手段}。GA 优化映射在四个基准上均降低复合代价；GEMM 实现全核心指标改善（T$_{\max}$ -1.79\si{\degreeCelsius}，$N_{\text{hot}}$ 清零，makespan -3.1\%，总能耗 -3.5\%），MPEG4 同时获得热、性能、通信和能耗收益，VOPD 实现 2.02$\times$ 加速和 31.8\% 总能耗降低。
+\item \textbf{任务映射是 ONoC 热优化的有效设计时手段}。GA 优化映射在四个基准上均降低复合代价；GEMM 实现全核心指标改善（T$_{\max}$ -2.04\si{\degreeCelsius}，$N_{\text{hot}}$ 清零，makespan -3.1\%，总能耗 -3.4\%），MPEG4 同时获得热、性能、通信和能耗收益，VOPD 实现 2.06$\times$ 加速和 33.0\% 总能耗降低。
 
 \item \textbf{OMNeT++ 在环评估是必要的}。VOPD 和 HNN 表明，通信跳数、SOA 能耗、调谐能耗、makespan 和热分布之间并不总是同向变化。光电路建立、波长争用、MRR 动态调谐和热-光耦合的完整效应需要在时域仿真中共同观察。
 
 \item \textbf{热均匀性必须与性能和能耗联合解释}。GEMM/MPEG4 中 $\sigma_T$ 与 makespan 同步改善，VOPD 中 $\sigma_T$ 变差但性能和能耗显著改善，HNN 中 $\sigma_T$ 改善但 makespan 退化。单独最小化 $\sigma_T$ 并不等价于系统最优。
 
-\item \textbf{复杂工作负载仍需要更强搜索和约束}。HNN 的复合代价下降 12.5\%，热点 PE 从 16 降至 8，但 makespan 仍增加 19.1\%。这提示后续工作需要多随机种子、更长代数、运行时拥塞特征和面向 DAG 并行度的约束。
+\item \textbf{复杂工作负载仍需要更强约束和统计验证}。HNN 的复合代价下降 14.7\%，热点 PE 从 16 降至 4，DVFS 惩罚从 11.01\% 降至 0.63\%，但 makespan 仍增加 29.6\%。这提示后续工作需要多随机种子、运行时拥塞特征和面向 DAG 并行度的约束。
 \end{enumerate}
 
 任务映射作为设计时优化手段，具有零硬件成本、与器件级和电路级热管理方案正交互补的优势。本文结果支持将其作为 ONoC 热-光-性能联合优化栈中的上层设计空间搜索方法。

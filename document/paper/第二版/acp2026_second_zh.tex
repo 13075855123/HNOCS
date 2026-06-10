@@ -1,0 +1,141 @@
+\documentclass[conference]{IEEEtran}
+\usepackage{ctex}
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{siunitx}
+
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+\begin{document}
+
+\title{面向硅光片上网络的仿真在环热感知任务重映射}
+
+\author{\IEEEauthorblockN{匿名作者}}
+
+\maketitle
+
+\begin{abstract}
+热管理是硅光片上网络（ONoC）走向系统级应用的关键挑战。
+对于任务级负载，任务到处理单元（PE）的映射同时影响热源分布、DVFS 节流、光传输路径、波长活动、SOA 激活时间和 MRR 热调谐需求等等。
+然而，现有 ONoC 热管理方法多集中在器件调谐、波长分配、路由或拓扑控制，较少把任务映射作为系统级控制变量。
+本文因此将 ONoC 热管理建模为系统级多目标折中，而非单纯降低芯片温度或补偿 MRR 热漂移。
+我们提出一种基于遗传算法的仿真在环热感知任务重映射方法。
+每个候选映射由全系统 OMNeT++ 模型评估，该模型包含 8 波长 WDM 光层、MRR 动态热调谐、SOA 和激光器能耗、紧凑 RC 热网络以及 DVFS 反馈。
+优化目标为基线归一化复合代价，联合考虑峰值温度、温度不均衡、热点 PE 数、makespan、通信代价、拥塞、DVFS 惩罚、负载不均衡和总能耗。
+在 GEMM、MPEG4、VOPD 和 HNN 四个 DAG 负载上，所提方法均降低复合代价；其中 GEMM 和 MPEG4 在热、性能、通信和能耗指标上同步改善，VOPD 将 makespan 和总能耗分别降低 51.6\% 和 33.0\%，HNN 将热点 PE 从 16 个降至 4 个。
+结果表明，在联合优化热稳定性、光器件补偿、性能和能耗时，任务重映射可作为 ONoC 的系统级热管理机制。
+\end{abstract}
+
+\begin{IEEEkeywords}
+硅光子，光片上网络，热感知任务映射，微环谐振器，遗传算法，OMNeT++
+\end{IEEEkeywords}
+
+\section{引言}
+
+硅光片上网络（ONoC）是众核处理器中一种有前景的互连架构，因为它能够提供高带宽密度、波分复用（WDM）能力和低延迟数据移动~\cite{batten2008,bergman2018}。通过使用光波导以及基于微环的滤波或交换结构，ONoC 可以支持处理单元（PE）之间的高吞吐通信。然而，支撑高密度 WDM 通信的光子器件也带来了关键的热可靠性挑战。
+
+核心问题之一是微环谐振器（MRR）的热敏感性。在基于 MRR 的光链路和路由器中，谐振波长决定光信号是继续通过还是被 drop 到目标端口。温度变化会移动谐振波长，使器件偏离目标 WDM 信道~\cite{padmaraju2014}。这种失谐可能增加插入损耗、降低信号裕量、引入串扰，或迫使系统使用主动热调谐来维持正确的光传输。因此，ONoC 热管理并不只是降低芯片温度，也是在保证光子器件与其工作波长保持对准。
+
+现有方案多从器件、电路、路由或波长分配层面处理该问题~\cite{guha2012,zhou2013,chittamuru2015}。这些方法是必要的，但它们往往假设应用任务映射是固定的。这一假设忽略了一个重要的系统级控制变量。计算任务在芯片上的放置决定了热量在哪里产生。热源分布不仅影响 PE 热点和 DVFS 节流，也会影响邻近光路由器和 MRR 所经历的温度。同时，任务重映射会改变通信路径、波长通道活动、SOA 激活时间和总执行时间。因此，某个映射虽然可能改善跳数或温度均匀性，却可能恶化光层能耗或 makespan。
+
+本文研究将任务重映射作为 ONoC 的跨层热管理机制。核心思想是将候选映射放入全系统仿真器中评估，而不是只依赖简化解析模型。我们实现了一个基于遗传算法的重映射框架，其中每个个体代表完整的任务到 PE 分配。对于每个候选映射，框架生成临时工作负载配置并调用 OMNeT++ 进行评估。仿真模型包含任务执行、PE 功耗、紧凑 RC 热网络、DVFS 节流、WDM 光传输、MRR 动态调谐、SOA 泵浦功率和激光器能耗。由此得到的热、光、性能和能耗指标用于计算映射适应度。
+
+本文提出的适应度函数是一个基线归一化多目标代价。它联合考虑 PE 峰值温度、温度标准差、超过阈值的 PE 数量、应用 makespan、通信距离、静态拥塞、DVFS 惩罚、负载不均衡和总能耗。该目标并非最小化单一热指标，而是搜索相对于原始静态映射具有更好系统级折中的任务映射。
+
+本文的贡献包括三点。第一，将任务重映射定义为维持 ONoC 热稳定运行的系统级机制，覆盖 MRR 波长对准和电子层热点降低。第二，提出仿真在环优化框架，使用与最终验证相同的全系统 OMNeT++ 模型评估每个候选映射。第三，在四个具有不同计算通信特征的 DAG 工作负载上进行实验，展示 ONoC 热感知任务重映射具有明显的工作负载相关折中。
+
+\section{方法}
+
+\subsection{系统模型}
+
+本文建模一个多核 ONoC，其中 PE 通过 8 波长 WDM 光层通信。模型包含光波导、MRR 滤波结构、SOA 辅助光传输和片外激光器能耗。热模型采用紧凑 RC 网络，跟踪 PE 和光路由器温度随时间的变化。PE 执行功耗、SOA 泵浦功率和 MRR 调谐功率被注入热网络。当 PE 温度超过阈值时，DVFS 节流被应用到任务执行时间。
+
+在该模型中，任务映射改变业务从哪里产生、哪些波长和路径处于活跃状态、光器件活跃多长时间，以及需要多少热调谐。因此，本文从 WDM 传输活动、器件对准和光层能耗角度评估光层行为，而不是从特定协议控制事件角度定义问题。
+
+\subsection{任务重映射}
+
+工作负载表示为有向无环图 $\mathcal{G}=(\mathcal{T},\mathcal{E})$，每个任务具有名义执行时间，每条边表示数据依赖。映射 $M:\mathcal{T}\rightarrow\mathcal{P}$ 将任务分配到 PE。遗传算法将每个个体编码为完整的任务到 PE 分配。对于每个候选映射，框架生成临时工作负载配置并调用 OMNeT++ 仿真器。随后从仿真输出中解析指标，并转换为标量适应度。
+
+\subsection{多目标适应度}
+
+优化器最小化如下基线归一化目标：
+\begin{equation}
+\begin{aligned}
+\mathcal{F}(M) ={}& w_T f_T + w_\sigma f_\sigma + w_{\mathrm{hot}} f_{\mathrm{hot}}
++ w_M f_M + w_H f_H \\
+&+ w_C f_C + w_D f_D + w_L f_L + w_E f_E .
+\end{aligned}
+\label{eq:fitness}
+\end{equation}
+其中，$f_T$ 表示峰值温度，$f_\sigma$ 表示温度不均衡，$f_{\mathrm{hot}}$ 表示超过阈值的 PE 数，$f_M$ 表示 makespan，$f_H$ 和 $f_C$ 表示通信距离和拥塞，$f_D$ 表示 DVFS 惩罚，$f_L$ 表示负载不均衡，$f_E$ 表示总能耗。每一项都相对于同一工作负载的原始静态映射归一化。因此，$\mathcal{F}(M)<\mathcal{F}(M_0)$ 表示候选映射相对于基线具有更好的系统级折中。
+
+\section{结果}
+
+本文在 GEMM、MPEG4、VOPD 和 HNN 四个 DAG 工作负载上评估所提方法。实验结果显示，所提重映射方法在所有工作负载上均降低复合目标，但收益来源依赖工作负载结构。
+
+\begin{table}[t]
+\centering
+\caption{不同工作负载上的主要影响。}
+\label{tab:summary}
+\begin{tabular}{lccc}
+\toprule
+\textbf{工作负载} & \textbf{热影响} & \textbf{Makespan} & \textbf{总能耗} \\
+\midrule
+GEMM & 改善 & $-3.1\%$ & $-3.4\%$ \\
+MPEG4 & 改善 & $-25.3\%$ & $-14.5\%$ \\
+VOPD & 混合 & $-51.6\%$ & $-33.0\%$ \\
+HNN & 热点更安全 & $+29.6\%$ & $-1.7\%$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+GEMM 和 MPEG4 是较理想的情形，热、性能、通信和能耗指标同步改善。GEMM 将峰值温度降低 \SI{2.04}{\degreeCelsius}，消除了全部 6 个热点 PE，并将 makespan 降低 3.1\%。MPEG4 将峰值温度降低 \SI{1.69}{\degreeCelsius}，makespan 降低 25.3\%，总能耗降低 14.5\%。
+
+VOPD 展示了性能和能耗优先的折中。其 makespan 降低 51.6\%，总能耗降低 33.0\%，但温度标准差上升。这说明，当工作负载仍低于热点阈值时，较低的复合代价并不要求所有热指标同时改善。
+
+HNN 展示了热安全优先的折中。热点 PE 数从 16 降至 4，平均 DVFS 惩罚从 11.01\% 降至 0.63\%。然而，makespan 增加 29.6\%。这一结果强调，ONoC 任务重映射需要作为耦合优化问题评估，而不能被简化为单一指标最小化。
+
+\section{结论}
+
+本文提出一种面向热稳定硅光 ONoC 的仿真在环任务重映射框架。通过使用全系统 OMNeT++ 模型评估每个候选映射，该框架能够捕获任务放置、PE 发热、MRR 对准、光传输活动、SOA 激活、DVFS 反馈和应用性能之间的耦合关系。四个工作负载上的结果表明，任务重映射能够降低热、光和性能的复合代价，但最优映射具有明显的工作负载依赖性。这些发现支持将任务重映射作为一种系统级控制机制，与器件级调谐、波长分配和路由共同构成 ONoC 热管理方案。
+
+\begin{thebibliography}{00}
+
+\bibitem{batten2008}
+C. Batten \emph{et al.},
+``Building manycore processor-to-DRAM networks with monolithic silicon photonics,''
+in \emph{Proc. IEEE Symp. High Perf. Interconnects (HOTI)}, 2008, pp. 21--30.
+
+\bibitem{bergman2018}
+K. Bergman and L. P. Carloni,
+``Power evaluation of a photonic network-on-chip,''
+\emph{IEEE Micro}, 2018.
+
+\bibitem{padmaraju2014}
+K. Padmaraju and K. Bergman,
+``Resolving the thermal challenges for silicon microring resonator devices,''
+\emph{Nanophotonics}, vol. 3, no. 4--5, pp. 269--281, 2014.
+
+\bibitem{guha2012}
+B. Guha, J. Cardenas, and M. Lipson,
+``Athermal silicon microring resonators with titanium oxide cladding,''
+\emph{Optics Express}, vol. 21, no. 22, pp. 26557--26563, 2013.
+
+\bibitem{zhou2013}
+L. Zhou \emph{et al.},
+``Design and evaluation of an arbitration-free passive optical crossbar for on-chip interconnection networks,''
+\emph{Applied Physics A}, vol. 95, pp. 1111--1118, 2009.
+
+\bibitem{chittamuru2015}
+S. V. R. Chittamuru, I. G. Thakkar, and S. Pasricha,
+``LIBRA: Thermal and process-variation aware routing in photonic NoCs,''
+\emph{IEEE Transactions on Computer-Aided Design of Integrated Circuits and Systems}, vol. 37, no. 9, pp. 1778--1790, 2018.
+
+\end{thebibliography}
+
+\end{document}

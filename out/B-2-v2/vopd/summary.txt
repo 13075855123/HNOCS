@@ -1,0 +1,8 @@
+[vopd] gen=30 conv=False elapsed=2141.5s
+  T_max:    52.2C -> 52.3C  (delta=+0.1C)
+  sigma_T:  1.15K -> 1.40K
+  N_hot:    0 -> 0
+  Makespan: 87.4us -> 43.3us  (delta=-44.1us)
+  eta_dvfs: 0.00% -> 0.00%
+  Comm:     1396000 -> 646000
+  E_total:  0.747mJ -> 0.510mJ

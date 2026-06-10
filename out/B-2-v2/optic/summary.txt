@@ -1,0 +1,8 @@
+[optic] gen=27 conv=True elapsed=92.4s
+  T_max:    48.8C -> 48.8C  (delta=-0.0C)
+  sigma_T:  1.02K -> 0.96K
+  N_hot:    0 -> 0
+  Makespan: 9.2us -> 9.2us  (delta=-0.0us)
+  eta_dvfs: 0.00% -> 0.00%
+  Comm:     0 -> 0
+  E_total:  0.106mJ -> 0.103mJ

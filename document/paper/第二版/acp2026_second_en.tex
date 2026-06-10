@@ -1,0 +1,134 @@
+\documentclass[conference]{IEEEtran}
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{siunitx}
+
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+\begin{document}
+
+\title{Simulation-in-the-Loop Thermal-Aware Task Remapping for Silicon-Photonic Networks-on-Chip}
+
+\author{\IEEEauthorblockN{Anonymous Authors}}
+
+\maketitle
+
+\begin{abstract}
+Thermal management is a key barrier to system-level silicon-photonic networks-on-chip (ONoCs). In task-level workloads, task-to-processing-element (PE) mapping shapes heat-source placement, DVFS throttling, optical paths, wavelength activity, SOA activation, and microring-resonator (MRR) thermal-tuning demand. However, existing ONoC thermal-management methods mainly optimize device tuning, wavelength assignment, routing, or topology control, leaving task mapping underused as a system-level control variable. This paper therefore treats ONoC thermal management as a joint tradeoff rather than only chip-temperature reduction or MRR drift compensation. We propose a simulator-in-the-loop thermal-aware task remapping method based on a genetic algorithm. Each candidate mapping is evaluated by a full-system OMNeT++ model with an 8-wavelength WDM optical layer, dynamic MRR tuning, SOA and laser energy, a compact RC thermal network, and DVFS feedback. The optimizer minimizes a baseline-normalized cost combining peak temperature, temperature imbalance, hot-PE count, makespan, communication cost, congestion, DVFS penalty, load imbalance, and total energy. Across GEMM, MPEG4, VOPD, and HNN DAG workloads, the method reduces the composite cost in all cases. It improves thermal, performance, communication, and energy metrics for GEMM and MPEG4; reduces VOPD makespan and energy by 51.6\% and 33.0\%; and cuts HNN hot PEs from 16 to 4. The results show that task remapping is a practical system-level thermal-management mechanism for ONoCs when thermal stability, photonic compensation, performance, and energy are optimized jointly.
+\end{abstract}
+
+\begin{IEEEkeywords}
+silicon photonics, optical network-on-chip, thermal-aware task mapping, microring resonator, genetic algorithm, OMNeT++
+\end{IEEEkeywords}
+
+\section{Introduction}
+
+Silicon-photonic networks-on-chip (ONoCs) are a promising interconnect substrate for many-core processors because they provide high bandwidth density, wavelength-division multiplexing (WDM), and low-latency data movement~\cite{batten2008,bergman2018}. At the system level, ONoC execution is determined by both task execution on processing elements (PEs) and communication among dependent tasks. These two factors jointly shape runtime performance, thermal behavior, and optical-layer energy.
+
+Task-to-PE mapping determines where computation is placed on the chip and therefore defines the spatial distribution of heat sources. This heat distribution affects PE hotspots, DVFS throttling, and task execution time. It also affects the temperatures seen by nearby microring resonators (MRRs), whose resonance wavelengths are sensitive to temperature variation~\cite{padmaraju2014}. Temperature-induced shifts can move MRRs away from their target WDM channels, increasing the need for dynamic thermal tuning to maintain MRR alignment. Thus, thermal behavior in an ONoC has both electronic and photonic consequences.
+
+Task communication introduces another coupled effect. A mapping changes which task pairs communicate across the chip, which physical paths are used, and how WDM optical transmission activity is distributed over time. It therefore changes wavelength-channel activity, SOA activation time, and optical-layer energy. A mapping that reduces peak temperature may increase communication distance or optical activity, while a mapping that improves locality may concentrate heat and increase photonic-device compensation cost.
+
+Consequently, ONoC thermal management is not only a matter of compensating MRR thermal drift, and it is not only a matter of lowering chip temperature. It is a system-level multi-objective tradeoff among task mapping, heat distribution, MRR alignment, WDM optical transmission activity, performance, and energy. This view is important because optimizing any single metric can hide adverse effects on another part of the thermal-optical-performance chain.
+
+Existing ONoC thermal-management techniques mainly focus on device tuning, wavelength assignment, routing, or topology control~\cite{guha2012,zhou2013,chittamuru2015}. These techniques are necessary, but they often treat task-to-PE mapping as a fixed input. This leaves an important system-level variable underused: by changing where computation and communication originate, task mapping can reshape both the thermal field and the optical activity pattern before lower-level compensation mechanisms are applied.
+
+This paper proposes a simulator-in-the-loop thermal-aware task remapping framework for ONoCs. The framework uses a genetic algorithm to search task-to-PE mappings. Each candidate mapping is evaluated by a full-system OMNeT++ model that includes task execution, PE power, a compact RC thermal network, DVFS feedback, WDM optical transmission activity, MRR dynamic thermal tuning, SOA pump power, and laser energy. The resulting thermal, optical, performance, and energy metrics are combined through a baseline-normalized multi-objective fitness function.
+
+The main contributions of this work are as follows. First, we formulate task-to-PE mapping as a system-level thermal-management variable for ONoCs, linking heat-source placement with PE throttling, MRR alignment, photonic-device compensation cost, and optical-layer energy. Second, we introduce a simulator-in-the-loop search framework that evaluates each candidate mapping using the same full-system OMNeT++ model used for validation. Third, we evaluate the method on four DAG workloads and show workload-dependent tradeoffs among thermal behavior, WDM optical transmission activity, performance, and energy.
+
+\section{Method}
+
+\subsection{System Model}
+
+We model a many-core ONoC in which PEs communicate through an 8-wavelength WDM optical layer. Optical waveguides, MRR-based filtering structures, SOA-assisted optical transmission, and off-chip laser power are included in the energy model. The thermal model uses a compact RC network that tracks PE and router temperatures over time. PE execution power, SOA pump power, and MRR tuning power are injected into the thermal network, and DVFS throttling is applied when PE temperatures exceed the configured thermal threshold.
+
+In this model, task mapping changes where traffic is generated, which wavelengths and paths are active, how long optical components remain active, and how much thermal tuning is required. The optical layer is therefore evaluated through WDM transmission activity, device alignment, and optical-layer energy rather than through protocol-specific control-flow events.
+
+\subsection{Task Remapping}
+
+A workload is represented as a directed acyclic graph $\mathcal{G}=(\mathcal{T},\mathcal{E})$, where each task has a nominal execution time and each edge carries a data dependency. A mapping $M:\mathcal{T}\rightarrow\mathcal{P}$ assigns tasks to PEs. The genetic algorithm encodes each individual as a complete task-to-PE assignment. For each candidate, the framework generates a temporary workload configuration and invokes the OMNeT++ simulator. The resulting metrics are parsed from simulator outputs and converted into a scalar fitness value.
+
+\subsection{Multi-Objective Fitness}
+
+The optimizer minimizes a baseline-normalized objective:
+\begin{equation}
+\begin{aligned}
+\mathcal{F}(M) ={}& w_T f_T + w_\sigma f_\sigma + w_{\mathrm{hot}} f_{\mathrm{hot}}
++ w_M f_M + w_H f_H \\
+&+ w_C f_C + w_D f_D + w_L f_L + w_E f_E .
+\end{aligned}
+\label{eq:fitness}
+\end{equation}
+Here, $f_T$ captures peak temperature, $f_\sigma$ captures temperature imbalance, $f_{\mathrm{hot}}$ counts over-threshold PEs, $f_M$ captures makespan, $f_H$ and $f_C$ capture communication distance and congestion, $f_D$ captures DVFS penalty, $f_L$ captures load imbalance, and $f_E$ captures total energy. Each term is normalized against the original static mapping for the same workload. Therefore, $\mathcal{F}(M)<\mathcal{F}(M_0)$ indicates a better system-level tradeoff than the baseline mapping.
+
+\section{Results}
+
+We evaluate the method on four DAG workloads: GEMM, MPEG4, VOPD, and HNN. The proposed remapping reduces the composite objective for all workloads, but the source of improvement depends on workload structure.
+
+\begin{table}[t]
+\centering
+\caption{Summary of workload-dependent effects.}
+\label{tab:summary}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Workload} & \textbf{Thermal Effect} & \textbf{Makespan} & \textbf{Energy} \\
+\midrule
+GEMM & improved & $-3.1\%$ & $-3.4\%$ \\
+MPEG4 & improved & $-25.3\%$ & $-14.5\%$ \\
+VOPD & mixed & $-51.6\%$ & $-33.0\%$ \\
+HNN & safer hotspots & $+29.6\%$ & $-1.7\%$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+GEMM and MPEG4 represent favorable cases in which thermal, performance, communication, and energy metrics improve together. GEMM reduces peak temperature by \SI{2.04}{\degreeCelsius}, removes all six hot PEs, and reduces makespan by 3.1\%. MPEG4 reduces peak temperature by \SI{1.69}{\degreeCelsius}, reduces makespan by 25.3\%, and reduces total energy by 14.5\%.
+
+VOPD shows a performance- and energy-oriented tradeoff. Makespan decreases by 51.6\% and total energy decreases by 33.0\%, but the temperature standard deviation increases. This case shows that a lower composite cost does not necessarily require every thermal metric to improve when the workload remains below the hot-PE threshold.
+
+HNN shows a thermal-safety-oriented tradeoff. The number of hot PEs decreases from 16 to 4, and the average DVFS penalty decreases from 11.01\% to 0.63\%. However, makespan increases by 29.6\%. This result highlights the need to evaluate ONoC task remapping as a coupled optimization problem rather than a single-metric minimization task.
+
+\section{Conclusion}
+
+This paper presents a simulator-in-the-loop task remapping framework for thermally stable silicon-photonic ONoCs. By evaluating each candidate mapping with a full-system OMNeT++ model, the framework captures the coupling among task placement, PE heat generation, MRR alignment, optical transmission activity, SOA activation, DVFS feedback, and application performance. Results across four workloads show that task remapping can reduce the composite thermal-optical-performance cost, but the best mapping is workload dependent. These findings support task remapping as a system-level control mechanism that complements device-level tuning, wavelength assignment, and routing in ONoC thermal management.
+
+\begin{thebibliography}{00}
+
+\bibitem{batten2008}
+C. Batten \emph{et al.},
+``Building manycore processor-to-DRAM networks with monolithic silicon photonics,''
+in \emph{Proc. IEEE Symp. High Perf. Interconnects (HOTI)}, 2008, pp. 21--30.
+
+\bibitem{bergman2018}
+K. Bergman and L. P. Carloni,
+``Power evaluation of a photonic network-on-chip,''
+\emph{IEEE Micro}, 2018.
+
+\bibitem{padmaraju2014}
+K. Padmaraju and K. Bergman,
+``Resolving the thermal challenges for silicon microring resonator devices,''
+\emph{Nanophotonics}, vol. 3, no. 4--5, pp. 269--281, 2014.
+
+\bibitem{guha2012}
+B. Guha, J. Cardenas, and M. Lipson,
+``Athermal silicon microring resonators with titanium oxide cladding,''
+\emph{Optics Express}, vol. 21, no. 22, pp. 26557--26563, 2013.
+
+\bibitem{zhou2013}
+L. Zhou \emph{et al.},
+``Design and evaluation of an arbitration-free passive optical crossbar for on-chip interconnection networks,''
+\emph{Applied Physics A}, vol. 95, pp. 1111--1118, 2009.
+
+\bibitem{chittamuru2015}
+S. V. R. Chittamuru, I. G. Thakkar, and S. Pasricha,
+``LIBRA: Thermal and process-variation aware routing in photonic NoCs,''
+\emph{IEEE Transactions on Computer-Aided Design of Integrated Circuits and Systems}, vol. 37, no. 9, pp. 1778--1790, 2018.
+
+\end{thebibliography}
+
+\end{document}

@@ -1,0 +1,68 @@
+{
+  "name": "gemm",
+  "baseline": {
+    "thermal": {
+      "T1_pe_peak_temp_K": 328.05851911322,
+      "T3_temp_std_K": 2.554082447165531,
+      "T5_over_throttle_count": 6
+    },
+    "performance": {
+      "P1_makespan_s": 0.000119635,
+      "P3_dvfs_penalty_pct": 1.7680633611111125
+    },
+    "communication": {
+      "C1_total_comm_cost": 104448.0
+    },
+    "energy": {
+      "E1_pe_total_energy_J": 0.0015785605962482976,
+      "E4_soa_energy_J": 1.287788e-06,
+      "E5_tuning_energy_J": 1.1102438319496e-07,
+      "E6_laser_energy_J": 6.01425e-07,
+      "E7_total_energy_J": 0.0015805608336314928
+    },
+    "tradeoff": {
+      "TR2_composite_cost": 4.039686199294496
+    }
+  },
+  "b2": {
+    "thermal": {
+      "T1_pe_peak_temp_K": 326.87274649947,
+      "T3_temp_std_K": 1.9698903767174087,
+      "T5_over_throttle_count": 0
+    },
+    "performance": {
+      "P1_makespan_s": 0.0001157946,
+      "P3_dvfs_penalty_pct": 0.0,
+      "P2_speedup": 1.0331656225765278
+    },
+    "communication": {
+      "C1_total_comm_cost": 41984.0
+    },
+    "energy": {
+      "E1_pe_total_energy_J": 0.0015250314871148869,
+      "E4_soa_energy_J": 4.23496e-07,
+      "E5_tuning_energy_J": 3.1914306289894e-08,
+      "E6_laser_energy_J": 5.82473e-07,
+      "E7_total_energy_J": 0.0015260693704211767
+    },
+    "tradeoff": {
+      "TR2_composite_cost": 2.321575362115726
+    }
+  },
+  "b2_generations": 30,
+  "b2_converged": false,
+  "b2_elapsed_s": 4024.7836859000017,
+  "b2_best_fitness": 2.321575362115726,
+  "config": {
+    "population_size": 50,
+    "num_generations": 30,
+    "crossover_rate": 0.8,
+    "mutation_rate": 0.1,
+    "w_T": 1.0,
+    "w_H": 1.0,
+    "w_D": 2.0,
+    "w_L": 0.5,
+    "w_peak": 0.0,
+    "seed": 42
+  }
+}
