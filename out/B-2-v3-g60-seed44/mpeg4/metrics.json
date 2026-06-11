@@ -1,0 +1,127 @@
+{
+  "name": "mpeg4",
+  "baseline": {
+    "thermal": {
+      "T1_pe_peak_temp_K": 327.57510637505,
+      "T3_temp_std_K": 1.5403989658376955,
+      "T5_over_throttle_count": 2
+    },
+    "performance": {
+      "P1_makespan_s": 0.0001217279,
+      "P3_dvfs_penalty_pct": 0.06452131944444438
+    },
+    "communication": {
+      "C1_total_comm_cost": 420000.0
+    },
+    "energy": {
+      "E1_pe_total_energy_J": 0.00113144695934758,
+      "E4_soa_energy_J": 1.321816e-06,
+      "E5_tuning_energy_J": 9.5848494909711e-08,
+      "E6_laser_energy_J": 6.121395e-07,
+      "E7_total_energy_J": 0.0011334767633424897
+    },
+    "tradeoff": {
+      "TR2_composite_cost": 6.000000000000001,
+      "cost_terms": {
+        "f_thermal": 1.0,
+        "f_sigma": 1.0,
+        "f_hot": 1.0,
+        "f_makespan": 1.0,
+        "f_comm": 1.0,
+        "f_congestion": 1.0,
+        "f_dvfs": 1.0,
+        "f_load": 1.0,
+        "f_energy": 1.0,
+        "total_cost": 6.000000000000001,
+        "raw_comm_cost": 420000.0,
+        "raw_congestion_cost": 88000.0,
+        "raw_load_imbalance": 0.5670623064060744,
+        "T_max_K": 327.57510637505,
+        "sigma_T_K": 1.5403989658376955,
+        "N_hot": 2,
+        "eta_dvfs_pct": 0.06452131944444438,
+        "makespan_s": 0.0001217279,
+        "total_energy_J": 0.0011334767633424897
+      }
+    }
+  },
+  "b2": {
+    "thermal": {
+      "T1_pe_peak_temp_K": 326.13343437279,
+      "T3_temp_std_K": 1.590666135470261,
+      "T5_over_throttle_count": 0
+    },
+    "performance": {
+      "P1_makespan_s": 6.34688e-05,
+      "P3_dvfs_penalty_pct": 0.0,
+      "P2_speedup": 1.9179171498437029
+    },
+    "communication": {
+      "C1_total_comm_cost": 336000.0
+    },
+    "energy": {
+      "E1_pe_total_energy_J": 0.000813382848605402,
+      "E4_soa_energy_J": 1.213484e-06,
+      "E5_tuning_energy_J": 7.4398780403011e-08,
+      "E6_laser_energy_J": 3.17344e-07,
+      "E7_total_energy_J": 0.000814988075385805
+    },
+    "tradeoff": {
+      "TR2_composite_cost": 3.950989900053926,
+      "cost_terms": {
+        "f_thermal": 0.8470391797299673,
+        "f_sigma": 1.0326325651648496,
+        "f_hot": 0.0,
+        "f_makespan": 0.5213989561965663,
+        "f_comm": 0.8,
+        "f_congestion": 0.3181818181818182,
+        "f_dvfs": 0.0,
+        "f_load": 2.717020350945038,
+        "f_energy": 0.7190161296138978,
+        "total_cost": 3.950989900053926,
+        "raw_comm_cost": 336000.0,
+        "raw_congestion_cost": 28000.0,
+        "raw_load_imbalance": 1.5407198267591349,
+        "T_max_K": 326.13343437279,
+        "sigma_T_K": 1.590666135470261,
+        "N_hot": 0,
+        "eta_dvfs_pct": 0.0,
+        "makespan_s": 6.34688e-05,
+        "total_energy_J": 0.000814988075385805
+      }
+    }
+  },
+  "b2_generations": 46,
+  "b2_converged": true,
+  "b2_elapsed_s": 5755.640854599886,
+  "b2_best_fitness": 3.950989900053926,
+  "config": {
+    "population_size": 50,
+    "num_generations": 60,
+    "crossover_rate": 0.8,
+    "mutation_rate": 0.1,
+    "w_T": 1.0,
+    "w_sigma": 1.0,
+    "w_hot": 0.6,
+    "w_makespan": 1.2,
+    "w_H": 0.4,
+    "w_congestion": 0.7,
+    "w_D": 0.4,
+    "w_L": 0.2,
+    "w_E": 0.5,
+    "w_peak": 0.0,
+    "seed": 44,
+    "fitness": "baseline_normalized_v2",
+    "cost_reference": {
+      "peak_excess_K": 9.425106375050007,
+      "sigma_T_K": 1.5403989658376955,
+      "N_hot": 2.0,
+      "makespan_s": 0.0001217279,
+      "total_energy_J": 0.0011334767633424897,
+      "eta_dvfs_pct": 0.06452131944444438,
+      "comm_cost": 420000.0,
+      "congestion_cost": 88000.0,
+      "load_imbalance": 0.5670623064060744
+    }
+  }
+}
