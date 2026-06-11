@@ -26,6 +26,7 @@
 Define_Module(PktFifoSrc);
 
 static const int NOC_VISUAL_CLEANUP_MSG = 9101;
+static const int NOC_OPTICAL_RELEASE_MSG = 9102;
 
 void PktFifoSrc::initialize() {
     credits = 0;
@@ -282,7 +283,12 @@ void PktFifoSrc::sendOpticalFlitFromQ() {
         throw cRuntimeError("Optical queue received non-data packet class %d", packetClass);
     }
 
-    if (flit->getType() == NOC_END_FLIT) {
+    int flitType = flit->getType();
+    int circuitToken = flit->getPktId();
+    simtime_t txDuration = computeOpticalTxDuration(flit);
+    simtime_t releaseDelay = computeOpticalPropagationDelay(flit->getSrcId(), flit->getDstId()) + txDuration;
+
+    if (flitType == NOC_END_FLIT) {
         numQueuedPkts--;
         opticalQueuedPkts--;
         opticalPacketsSent++;
@@ -296,7 +302,11 @@ void PktFifoSrc::sendOpticalFlitFromQ() {
         throw cRuntimeError("Failed to send optical bypass flit from %d to %d", flit->getSrcId(), flit->getDstId());
     }
 
-    simtime_t txFinishTime = simTime() + computeOpticalTxDuration(flit);
+    if (flitType == NOC_END_FLIT) {
+        scheduleOpticalRelease(circuitToken, releaseDelay);
+    }
+
+    simtime_t txFinishTime = simTime() + txDuration;
     scheduleAt(txFinishTime, opticalPopMsg);
 
     recordQueueStats();
@@ -691,6 +701,7 @@ void PktFifoSrc::handleGenMsg(cMessage *msg) {
             if (pendingToken > 0 && topologyManager) {
                 topologyManager->releaseOpticalPathByToken(pendingToken);
             }
+            purgeControlFlitsForSetup(pendingToken);
             setupPendingByDst[dstId] = 0;
             setupPendingExpiryByDst[dstId] = SIMTIME_ZERO;
             pendingSetupTokenByDst[dstId] = 0;
@@ -886,6 +897,40 @@ void PktFifoSrc::handleControlEvent(int eventType,
     }
 }
 
+void PktFifoSrc::purgeControlFlitsForSetup(int token) {
+    if (token <= 0) return;
+
+    for (int i = controlQ.getLength() - 1; i >= 0; --i) {
+        NoCFlitMsg *flit = check_and_cast<NoCFlitMsg *>(controlQ.get(i));
+        if (onocGetPacketClass(flit->getSL()) == ONOC_PKT_SETUP_REQ
+                && flit->getPktId() == token) {
+            controlQ.remove(flit);
+            delete flit;
+        }
+    }
+}
+
+void PktFifoSrc::scheduleOpticalRelease(int token, simtime_t delay) {
+    if (token <= 0 || !topologyManager) return;
+
+    cMessage *releaseMsg = new cMessage("sourceOpticalRelease");
+    releaseMsg->setKind(NOC_OPTICAL_RELEASE_MSG);
+    releaseMsg->addPar("token") = token;
+    pendingOpticalReleaseMsgs.insert(releaseMsg);
+    scheduleAt(simTime() + delay, releaseMsg);
+}
+
+void PktFifoSrc::handleOpticalRelease(cMessage *msg) {
+    pendingOpticalReleaseMsgs.erase(msg);
+
+    int token = (int)msg->par("token").longValue();
+    if (token > 0 && topologyManager) {
+        topologyManager->releaseOpticalPathByToken(token);
+    }
+
+    delete msg;
+}
+
 void PktFifoSrc::receiveSignal(cComponent *source, simsignal_t signalID, intval_t value, cObject *details) {
     (void)source;
     (void)details;
@@ -935,6 +980,10 @@ void PktFifoSrc::handleMessage(cMessage *msg) {
     int msgType = msg->getKind();
     if (msgType == NOC_VISUAL_CLEANUP_MSG) {
         handleVisualCleanup(msg);
+        return;
+    }
+    if (msgType == NOC_OPTICAL_RELEASE_MSG) {
+        handleOpticalRelease(msg);
         return;
     }
     if (msgType == NOC_POP_MSG) {
@@ -1041,4 +1090,9 @@ PktFifoSrc::~PktFifoSrc() {
         }
     }
     visualLinkCleanup.clear();
+
+    for (cMessage *releaseMsg : pendingOpticalReleaseMsgs) {
+        cancelAndDelete(releaseMsg);
+    }
+    pendingOpticalReleaseMsgs.clear();
 }

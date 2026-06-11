@@ -65,6 +65,7 @@ class OpticalPathMetrics : public cObject {
     double muxDemuxLoss_dB;              // DEV_MUX + DEV_DEMUX total
     double waveguidePropagationLoss_dB;  // DEV_WAVEGUIDE total
     double waveguideBendingLoss_dB;      // DEV_WAVEGUIDE_BEND total
+    double waveguideCrossingLoss_dB;     // DEV_WAVEGUIDE_CROSSING total
     double ringThroughLoss_dB;           // DEV_RING_THROUGH total
     double ringDropLoss_dB;              // DEV_RING_DROP total
     double soaGainTotal_dB;              // DEV_SOA total gain (positive)
@@ -73,13 +74,15 @@ class OpticalPathMetrics : public cObject {
 
     // Per-wavelength breakdown (indexed by 1-based wavelength id)
     std::map<int, double> perWavelengthTotalLoss_dB;
-    std::map<int, double> perWavelengthCrosstalk_dB;
+    std::map<int, double> perWavelengthCrosstalk_dB; // legacy name; value is summed crosstalk noise power in dBm
+    std::map<int, double> perWavelengthCrosstalkNoise_dBm;
     std::map<int, double> perWavelengthReceivedPower_dBm;
     std::map<int, double> perWavelengthSNR_dB;
     std::map<int, double> perWavelengthBER;
 
     // Overall device-level aggregate
-    double totalCrosstalk_dB;            // worst across wavelengths
+    double totalCrosstalk_dB;            // legacy name; value is worst summed crosstalk noise power in dBm
+    double totalCrosstalkNoise_dBm;
     double estimatedSNR_dB;              // worst across wavelengths
     double estimatedBER;                 // worst across wavelengths
 
@@ -107,10 +110,11 @@ class OpticalPathMetrics : public cObject {
           meetsSensitivity(false),
           modulatorLoss_dB(0.0), muxDemuxLoss_dB(0.0),
           waveguidePropagationLoss_dB(0.0), waveguideBendingLoss_dB(0.0),
-          ringThroughLoss_dB(0.0), ringDropLoss_dB(0.0),
+          waveguideCrossingLoss_dB(0.0), ringThroughLoss_dB(0.0), ringDropLoss_dB(0.0),
           soaGainTotal_dB(0.0), soaASENoise_dBm(-199.0),
           detectorLoss_dB(0.0),
-          totalCrosstalk_dB(-199.0), estimatedSNR_dB(99.0),
+          totalCrosstalk_dB(-199.0), totalCrosstalkNoise_dBm(-199.0),
+          estimatedSNR_dB(99.0),
           estimatedBER(0.0),
           budgetRerouteTriggered(false),
           totalTuningPower_mW(0.0), maxRingDetuning_nm(0.0),

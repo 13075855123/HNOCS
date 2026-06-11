@@ -8,6 +8,7 @@
 #include <omnetpp.h>
 #include <queue>
 #include <map>
+#include <set>
 #include <vector>
 #include "cores/task/TaskDescriptor.h"
 #include "NoCs_m.h"
@@ -47,6 +48,7 @@ private:
     std::vector<simtime_t> setupPendingExpiryByDst;
     std::vector<int> pendingSetupTokenByDst;
     std::vector<int> activeCircuitTokenByDst;
+    std::set<cMessage*> pendingOpticalReleaseMsgs;
     std::vector<std::vector<TaskMsg*>> pendingDataQ;
     cQueue opticalDataQ;                // data flits for sendDirect
     cMessage* opticalPopMsg = nullptr;  // paces optical send
@@ -64,6 +66,8 @@ private:
     bool sendFlitDirectToPE(TaskMsg *flit);
     bool tryReserveSetupPath(int dstPE, int &token);
     void flushPendingData(int peId);
+    void scheduleOpticalRelease(int dstPE, int token, simtime_t delay);
+    void handleOpticalRelease(cMessage *msg);
 
     void loadTaskGraphFromCSV(const std::string& csvPath);
     void distributeTasks();

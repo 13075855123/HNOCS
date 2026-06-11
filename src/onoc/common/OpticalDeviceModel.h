@@ -39,6 +39,7 @@ enum OpticalDeviceType {
     DEV_RING_DROP,              // Microring resonator drop-port extraction
     DEV_WAVEGUIDE,              // Straight waveguide segment (loss per cm)
     DEV_WAVEGUIDE_BEND,         // Waveguide 90° bend
+    DEV_WAVEGUIDE_CROSSING,     // Waveguide crossing point
     DEV_MUX,                    // WDM multiplexer (AWG or cascaded rings)
     DEV_DEMUX,                  // WDM demultiplexer
     DEV_SOA,                    // Semiconductor optical amplifier
@@ -103,29 +104,33 @@ const DevicePerWavelengthParams &getDeviceParams(const OpticalParamTable &table,
 struct OpticalDeviceSegment {
     OpticalDeviceType deviceType;
     int deviceIndex;             // Instance index within its host (router / NI)
+    int hostNodeId;              // PE/router id used for temperature lookup; -1 = infer legacy index
     double waveguideLength_cm;   // Valid for DEV_WAVEGUIDE
     int wavelengthIndex;         // 1-based λ index carried by this segment
 
     OpticalDeviceSegment()
-        : deviceType(DEV_NONE), deviceIndex(-1), waveguideLength_cm(0.0), wavelengthIndex(1) {}
+        : deviceType(DEV_NONE), deviceIndex(-1), hostNodeId(-1),
+          waveguideLength_cm(0.0), wavelengthIndex(1) {}
 };
 
 // ────────────────────────────────────────────────────────────
 //  5. Router turn metadata (wavelength-dependent)
 //     For a 5-port microring router, each (in→out) pair has:
-//       throughCount = number of rings passed in through (off-resonance) mode
+//       throughCount = evaluated number of rings passed in through mode
+//       throughFormulaType = compact formula id for wavelength-dependent evaluation
 //       dropCount    = number of rings used in drop (on-resonance) mode (=1)
 //       bendCount    = number of 90° waveguide bends
-//     throughCount is a function of wavelength index i and total λ count n.
+//     throughCount is evaluated from wavelength index i and total λ count n.
 //
 //     Port mapping: 0=Local(Core), 1=West, 2=North, 3=East, 4=South
 // ────────────────────────────────────────────────────────────
 struct RouterTurnMetadata {
-    int throughCount;   // depends on i (1-based wavelength index) and n (total λ)
+    int throughCount;   // evaluated through-ring count; 0 until evaluated for a wavelength
+    int throughFormulaType; // formula id used by evaluateRouterThroughCount()
     int dropCount;      // always 1 for any valid turn
     int bendCount;      // fixed per port pair (0-8)
 
-    RouterTurnMetadata() : throughCount(0), dropCount(1), bendCount(0) {}
+    RouterTurnMetadata() : throughCount(0), throughFormulaType(-1), dropCount(1), bendCount(0) {}
 };
 
 typedef std::vector<OpticalDeviceSegment> DeviceSegmentList;
@@ -133,13 +138,17 @@ typedef std::vector<std::vector<RouterTurnMetadata> > RouterTurnMetadataMatrix;
 
 // Build a wavelength-dependent 5-port microring router turn metadata matrix.
 // n = total available wavelengths (e.g. 16).
-// The throughCount field must be evaluated per wavelength i at path-build time.
+// The throughFormulaType field is evaluated per wavelength i at path-build time.
 RouterTurnMetadataMatrix buildWavelengthDependentRouterMatrix(int n);
+
+// Evaluate the through-ring count for one router turn and one wavelength.
+int evaluateRouterThroughCount(const RouterTurnMetadata &meta,
+        int wavelengthIndex, int totalWavelengths);
 
 // Expand a RouterTurnMetadata entry into actual device segments for a given
 // wavelength index i (1-based).  Appends to the provided segment list.
 void expandRouterTurnToSegments(const RouterTurnMetadata &meta,
-        int wavelengthIndex, int inPort, int outPort, int nodeId,
+        int wavelengthIndex, int totalWavelengths, int inPort, int outPort, int nodeId,
         std::vector<OpticalDeviceSegment> &segments);
 
 // ────────────────────────────────────────────────────────────
@@ -181,7 +190,8 @@ struct OpticalDevicePath {
     // Per-wavelength accumulated budgets (filled by computeDeviceBudget).
     // Indexed by 1-based wavelength index.
     std::map<int, double> perWavelengthTotalLoss_dB;
-    std::map<int, double> perWavelengthCrosstalk_dB;
+    std::map<int, double> perWavelengthCrosstalk_dB; // legacy name; value is summed crosstalk noise power in dBm
+    std::map<int, double> perWavelengthCrosstalkNoise_dBm;
     std::map<int, double> perWavelengthReceivedPower_dBm;
     std::map<int, double> perWavelengthSNR_dB;
     std::map<int, double> perWavelengthBER;
@@ -189,7 +199,8 @@ struct OpticalDevicePath {
 
     // Aggregate:
     double totalLoss_dB;
-    double totalCrosstalk_dB;
+    double totalCrosstalk_dB;          // legacy name; value is worst summed crosstalk noise power in dBm
+    double totalCrosstalkNoise_dBm;
     double worstReceivedPower_dBm;   // across all used wavelengths
     double worstSNR_dB;
     double worstBER;
@@ -204,7 +215,8 @@ struct OpticalDevicePath {
     // Populated by computeDeviceLevelBudget via deviceIndex/1000 grouping.
     std::map<int, double> perRouterTuningPower_mW;
 
-    OpticalDevicePath() : totalLoss_dB(0.0), totalCrosstalk_dB(0.0),
+    OpticalDevicePath() : totalLoss_dB(0.0), totalCrosstalk_dB(-199.0),
+          totalCrosstalkNoise_dBm(-199.0),
           worstReceivedPower_dBm(0.0), worstSNR_dB(99.0),
           worstBER(0.0), signalMargin_dB(0.0),
           totalTuningPower_mW(0.0), maxRingDetuning_nm(0.0),

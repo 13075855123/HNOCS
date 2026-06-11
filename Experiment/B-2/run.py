@@ -40,6 +40,9 @@ from mapping.omnet_evaluator import OmnetEvaluator
 from mapping.csv_writer import write_static_csv
 from ga_mapper import GAMapper, GAConfig
 
+PE_OPTICAL_ENERGY_KEY = "E7_pe_optical_comm_energy_J"
+LEGACY_TOTAL_ENERGY_KEY = "E7_total_energy_J"
+
 BENCHMARKS = {
     "GEMM":   "examples/task_driven/static/tasks_gemm_static.csv",
     "MPEG4":  "examples/task_driven/static/tasks_mpeg4_static.csv",
@@ -112,6 +115,13 @@ def _metric(full: dict, side: str, section: str, key: str) -> float:
     return value if isinstance(value, (int, float)) else 0.0
 
 
+def _energy_metric(full: dict, side: str) -> float:
+    value = _metric(full, side, "energy", PE_OPTICAL_ENERGY_KEY)
+    if value == 0.0:
+        value = _metric(full, side, "energy", LEGACY_TOTAL_ENERGY_KEY)
+    return value
+
+
 def _result_record(full: dict, seed: int | None, generations: int, run_type: str) -> dict:
     """Flatten one metrics.json payload for cross-seed CSV/JSON summaries."""
     bl_cost = _metric(full, "baseline", "tradeoff", "TR2_composite_cost")
@@ -126,8 +136,8 @@ def _result_record(full: dict, seed: int | None, generations: int, run_type: str
     b2_ms = _metric(full, "b2", "performance", "P1_makespan_s") * 1e6
     bl_comm = _metric(full, "baseline", "communication", "C1_total_comm_cost")
     b2_comm = _metric(full, "b2", "communication", "C1_total_comm_cost")
-    bl_energy = _metric(full, "baseline", "energy", "E7_total_energy_J") * 1e3
-    b2_energy = _metric(full, "b2", "energy", "E7_total_energy_J") * 1e3
+    bl_energy = _energy_metric(full, "baseline") * 1e3
+    b2_energy = _energy_metric(full, "b2") * 1e3
 
     return {
         "benchmark": str(full.get("name", "")).upper(),
@@ -154,9 +164,9 @@ def _result_record(full: dict, seed: int | None, generations: int, run_type: str
         "comm_baseline": bl_comm,
         "comm_b2": b2_comm,
         "comm_delta_pct": _safe_pct(bl_comm, b2_comm),
-        "energy_baseline_mJ": bl_energy,
-        "energy_b2_mJ": b2_energy,
-        "energy_delta_pct": _safe_pct(bl_energy, b2_energy),
+        "pe_optical_energy_baseline_mJ": bl_energy,
+        "pe_optical_energy_b2_mJ": b2_energy,
+        "pe_optical_energy_delta_pct": _safe_pct(bl_energy, b2_energy),
     }
 
 
@@ -182,9 +192,9 @@ def _write_run_summaries(output_dir: str, records: list[dict]) -> None:
     aggregate_rows: list[dict] = []
     numeric_fields = [
         "cost_delta_pct", "tmax_delta_C", "sigma_delta_pct",
-        "makespan_delta_pct", "comm_delta_pct", "energy_delta_pct",
+        "makespan_delta_pct", "comm_delta_pct", "pe_optical_energy_delta_pct",
         "cost_b2", "tmax_b2_C", "sigma_b2_K", "makespan_b2_us",
-        "comm_b2", "energy_b2_mJ", "elapsed_min",
+        "comm_b2", "pe_optical_energy_b2_mJ", "elapsed_min",
     ]
     for (benchmark, run_type, generations), group in sorted(grouped.items()):
         row: dict[str, object] = {
@@ -275,12 +285,22 @@ def run_benchmark(
             "P3_dvfs_penalty_pct": bl_scalars.eta_dvfs_pct,
         },
         "communication": {"C1_total_comm_cost": bl_c1},
+        "optical": {
+            "O1_budget_count": bl_scalars.optical_budget_count,
+            "O2_min_signal_margin_dB": bl_scalars.optical_min_signal_margin_dB,
+            "O3_min_snr_dB": bl_scalars.optical_min_snr_dB,
+            "O4_max_ber": bl_scalars.optical_max_ber,
+            "O5_max_temp_adjusted_loss_dB": bl_scalars.optical_max_temp_adjusted_loss_dB,
+            "O6_max_ring_detuning_nm": bl_scalars.optical_max_ring_detuning_nm,
+            "O7_max_path_tuning_power_mW": bl_scalars.optical_max_path_tuning_power_mW,
+            "O8_max_waveguide_crossing_loss_dB": bl_scalars.optical_max_waveguide_crossing_loss_dB,
+        },
         "energy": {
             "E1_pe_total_energy_J": bl_scalars.pe_total_energy_J,
             "E4_soa_energy_J": bl_scalars.soa_energy_J,
             "E5_tuning_energy_J": bl_scalars.tuning_energy_J,
             "E6_laser_energy_J": bl_scalars.laser_energy_J,
-            "E7_total_energy_J": bl_scalars.total_energy_J,
+            PE_OPTICAL_ENERGY_KEY: bl_scalars.pe_optical_comm_energy_J,
         },
         "tradeoff": {
             "TR2_composite_cost": bl_composite,
@@ -313,12 +333,22 @@ def run_benchmark(
             "P3_dvfs_penalty_pct": b2_scalars.eta_dvfs_pct,
         },
         "communication": {"C1_total_comm_cost": b2_c1},
+        "optical": {
+            "O1_budget_count": b2_scalars.optical_budget_count,
+            "O2_min_signal_margin_dB": b2_scalars.optical_min_signal_margin_dB,
+            "O3_min_snr_dB": b2_scalars.optical_min_snr_dB,
+            "O4_max_ber": b2_scalars.optical_max_ber,
+            "O5_max_temp_adjusted_loss_dB": b2_scalars.optical_max_temp_adjusted_loss_dB,
+            "O6_max_ring_detuning_nm": b2_scalars.optical_max_ring_detuning_nm,
+            "O7_max_path_tuning_power_mW": b2_scalars.optical_max_path_tuning_power_mW,
+            "O8_max_waveguide_crossing_loss_dB": b2_scalars.optical_max_waveguide_crossing_loss_dB,
+        },
         "energy": {
             "E1_pe_total_energy_J": b2_scalars.pe_total_energy_J,
             "E4_soa_energy_J": b2_scalars.soa_energy_J,
             "E5_tuning_energy_J": b2_scalars.tuning_energy_J,
             "E6_laser_energy_J": b2_scalars.laser_energy_J,
-            "E7_total_energy_J": b2_scalars.total_energy_J,
+            PE_OPTICAL_ENERGY_KEY: b2_scalars.pe_optical_comm_energy_J,
         },
         "tradeoff": {
             "TR2_composite_cost": b2_composite,
@@ -443,8 +473,14 @@ def _summary_text(name: str, full: dict, elapsed: float) -> str:
     b2_eta = _f(b2, "performance", "P3_dvfs_penalty_pct")
     bl_c1 = _f(bl, "communication", "C1_total_comm_cost")
     b2_c1 = _f(b2, "communication", "C1_total_comm_cost")
-    bl_e7 = _f(bl, "energy", "E7_total_energy_J") * 1e3
-    b2_e7 = _f(b2, "energy", "E7_total_energy_J") * 1e3
+    bl_e7 = bl.get("energy", {}).get(
+        PE_OPTICAL_ENERGY_KEY,
+        bl.get("energy", {}).get(LEGACY_TOTAL_ENERGY_KEY, 0.0),
+    ) * 1e3
+    b2_e7 = b2.get("energy", {}).get(
+        PE_OPTICAL_ENERGY_KEY,
+        b2.get("energy", {}).get(LEGACY_TOTAL_ENERGY_KEY, 0.0),
+    ) * 1e3
 
     return "\n".join([
         f"[{name}] gen={full['b2_generations']} conv={full['b2_converged']} "
@@ -455,7 +491,7 @@ def _summary_text(name: str, full: dict, elapsed: float) -> str:
         f"  Makespan: {bl_p1:.1f}us -> {b2_p1:.1f}us  (delta={b2_p1 - bl_p1:+.1f}us)",
         f"  eta_dvfs: {bl_eta:.2f}% -> {b2_eta:.2f}%",
         f"  Comm:     {bl_c1:.0f} -> {b2_c1:.0f}",
-        f"  E_total:  {bl_e7:.3f}mJ -> {b2_e7:.3f}mJ",
+        f"  E_pe_opt: {bl_e7:.3f}mJ -> {b2_e7:.3f}mJ",
     ])
 
 
@@ -525,7 +561,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--w-congestion", type=float, default=0.7, help="Static edge-congestion weight")
     p.add_argument("--w-D", type=float, default=0.4, help="DVFS penalty weight")
     p.add_argument("--w-L", type=float, default=0.2, help="Compute-load imbalance weight")
-    p.add_argument("--w-E", type=float, default=0.5, help="Total energy weight")
+    p.add_argument("--w-E", type=float, default=0.5, help="PE + optical communication energy weight")
     p.add_argument("--w-peak", type=float, default=0.0)
 
     # OMNeT++ paths

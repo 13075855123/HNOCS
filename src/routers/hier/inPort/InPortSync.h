@@ -67,7 +67,7 @@ private:
     cOutVector cumulativeDynamicEnergyVec;
 
     // NEW
-    void finalizeEnergyWindow(simtime_t now);
+    void finalizeEnergyWindow(simtime_t now, bool finalWindow = false);
 
     // Temperature-based display color update
     void updateThermalDisplay();
@@ -75,8 +75,10 @@ private:
     // Per-router temperature output vector (only port[0] records)
     cOutVector routerTempVec;
 
-    // NEW: only one inPort per router submits aggregated router power
+    // NEW: router port identity for per-port thermal power aggregation
     bool thermalAggregationOwner;
+    int routerPortId;
+    int routerPortCount;
 
     class inPortFlitInfo* getFlitInfo(NoCFlitMsg *msg);
 

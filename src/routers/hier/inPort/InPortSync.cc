@@ -3,7 +3,7 @@
 
 Define_Module(InPortSync);
 
-void InPortSync::finalizeEnergyWindow(simtime_t now) {
+void InPortSync::finalizeEnergyWindow(simtime_t now, bool finalWindow) {
     // Temperature-dependent leakage power (doubles ~every 10°C)
     cModule* routerMod = getParentModule()->getParentModule();
     int routerId = routerMod ? routerMod->getIndex() : -1;
@@ -22,37 +22,28 @@ void InPortSync::finalizeEnergyWindow(simtime_t now) {
     windowStaticEnergyJ = actualLeakage * energyWindow.dbl();
     windowEnergyJ = windowStaticEnergyJ + windowDynamicEnergyJ;
 
-    // Always submit power to thermal model (thermal physics doesn't wait for statStartTime)
-    if (thermalAggregationOwner) {
-        double routerWindowEnergy = 0.0;
-
-        for (cModule::SubmoduleIterator it(routerMod); !it.end(); ++it) {
-            cModule* sub = *it;
-            if (strcmp(sub->getName(), "port") == 0) {
-                cModule* inPortMod = sub->getSubmodule("inPort");
-                if (inPortMod) {
-                    InPortSync* ip = dynamic_cast<InPortSync*>(inPortMod);
-                    if (ip) {
-                        routerWindowEnergy += ip->windowEnergyJ;
-                    }
-                }
-            }
-        }
-
-        double routerAvgPower = 0.0;
+    // Always submit per-port power to the thermal model.  The model aggregates
+    // a router only after all of its ports have submitted this same window.
+    if (routerPortId >= 0 && routerPortCount > 0) {
+        double portAvgPower = 0.0;
         if (energyWindow.dbl() > 0) {
-            routerAvgPower = routerWindowEnergy / energyWindow.dbl();
+            portAvgPower = windowEnergyJ / energyWindow.dbl();
         }
 
-        getThermalModel()->submitRouterPower(routerId, now, routerAvgPower);
+        getThermalModel()->submitRouterPortPower(routerId, routerPortId,
+                                                 routerPortCount, now,
+                                                 portAvgPower, finalWindow);
 
         EV << "-I- " << getFullPath()
-           << " ROUTER-THERMAL-SUBMIT"
+           << " ROUTER-PORT-THERMAL-SUBMIT"
            << " routerId=" << routerId
-           << " routerWindowEnergy=" << routerWindowEnergy
-           << " routerAvgPower=" << routerAvgPower
+           << " portId=" << routerPortId
+           << " portCount=" << routerPortCount
+           << " portWindowEnergy=" << windowEnergyJ
+           << " portAvgPower=" << portAvgPower
            << " leakageFactor=" << leakageFactor
            << " Trouter=" << Trouter
+           << " finalWindow=" << finalWindow
            << " at " << now
            << endl;
     }
@@ -187,11 +178,22 @@ void InPortSync::initialize() {
         }
     }
 
-    // NEW: only port[0].inPort submits aggregated router power
+    // NEW: all ports submit power; port[0] owns the router temperature vector.
     thermalAggregationOwner = false;
+    routerPortId = -1;
+    routerPortCount = 0;
     cModule* portMod = getParentModule();
     if (portMod && strcmp(portMod->getName(), "port") == 0) {
-        thermalAggregationOwner = (portMod->getIndex() == 0);
+        routerPortId = portMod->getIndex();
+        cModule* routerMod = portMod->getParentModule();
+        if (routerMod) {
+            for (cModule::SubmoduleIterator it(routerMod); !it.end(); ++it) {
+                cModule* sub = *it;
+                if (strcmp(sub->getName(), "port") == 0)
+                    routerPortCount++;
+            }
+        }
+        thermalAggregationOwner = (routerPortId == 0);
     }
 
     if (thermalAggregationOwner) {
@@ -548,7 +550,7 @@ void InPortSync::measureQlength() {
 
 void InPortSync::finish() {
     // NEW
-    finalizeEnergyWindow(simTime());
+    finalizeEnergyWindow(simTime(), true);
 
     if (simTime() > statStartTime) {
         int Dst;

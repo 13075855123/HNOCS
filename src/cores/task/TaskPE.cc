@@ -24,6 +24,8 @@
 
 Define_Module(TaskPE);
 
+static const int TASKPE_OPTICAL_RELEASE_MSG = 9201;
+
 int TaskPE::systemTotalTasks = 0;
 int TaskPE::systemCompletedTasks = 0;
 bool TaskPE::systemStopScheduled = false;
@@ -175,6 +177,8 @@ void TaskPE::initialize() {
     totalIdleTime        = 0;
     totalThrottlePenalty  = 0;
     totalComputeTimeNominal = 0;
+    remainingNominalWork = 0;
+    lastDvfsUpdateTime = simTime();
 
     // NEW
     lastEnergyUpdateTime = simTime();
@@ -355,6 +359,11 @@ void TaskPE::initialize() {
 // handleMessage
 // -----------------------------------------------------------------------
 void TaskPE::handleMessage(cMessage* msg) {
+    if (msg->getKind() == TASKPE_OPTICAL_RELEASE_MSG) {
+        handleOpticalRelease(msg);
+        return;
+    }
+
     if (msg == dvfsTickMsg) {
         handleDvfsTick();
         return;
@@ -426,6 +435,7 @@ void TaskPE::handleMessage(cMessage* msg) {
             if (!tpe->isAllDataSent()) { allDone = false; break; }
         }
         if (allDone) {
+            recordScalar("allTrafficDrainedAt", simTime());
             cancelAndDelete(msg);
             endSimulation();
             return;
@@ -567,8 +577,9 @@ void TaskPE::finish() {
         powerTrace = nullptr;
     }
 
-    // Ensure thermal snapshot is written (singleton destructor never runs in OMNeT++)
-    getThermalModel()->close();
+    // ThermalModel writes the snapshot after all PEs and router ports submit
+    // their final windows, so one early-finishing PE cannot close it for others.
+    getThermalModel()->markPEFinished(peId);
 }
 
 // -----------------------------------------------------------------------
@@ -581,6 +592,10 @@ TaskPE::~TaskPE() {
     cancelAndDelete(dvfsTickMsg);
     if (controlPopMsg) cancelAndDelete(controlPopMsg);
     if (opticalPopMsg) cancelAndDelete(opticalPopMsg);
+    for (cMessage *releaseMsg : pendingOpticalReleaseMsgs) {
+        cancelAndDelete(releaseMsg);
+    }
+    pendingOpticalReleaseMsgs.clear();
 
     for (TaskDescriptor* t : taskList) {
         delete t;
@@ -662,6 +677,7 @@ void TaskPE::sendControlFlitFromQ() {
                 int pt = pendingSetupTokenByDst[d];
                 if (pt > 0 && topologyManager)
                     topologyManager->releaseOpticalPathByToken(pt);
+                purgeControlFlitsForSetup(pt);
                 setupPendingByDst[d] = 0;
                 setupPendingExpiryByDst[d] = SIMTIME_ZERO;
                 pendingSetupTokenByDst[d] = 0;
@@ -764,6 +780,7 @@ void TaskPE::sendOpticalFlitFromQ() {
 
     int flitType = flit->getType();  // save before sendDirect transfers ownership
     simtime_t txDuration = computeOpticalTxDuration(flit);  // save before sendDirect transfers ownership
+    simtime_t releaseDelay = computeOpticalPropagationDelay(flit->getSrcId(), flit->getDstId()) + txDuration;
 
     if (!sendFlitDirectToSink(flit)) {
         throw cRuntimeError("TaskPE[%d] optical sendDirect failed to PE%d", peId, dstPE_orig);
@@ -777,14 +794,13 @@ void TaskPE::sendOpticalFlitFromQ() {
     // On END flit, release circuit
     if (flitType == NOC_END_FLIT) {
         int token = activeCircuitTokenByDst[dstIdx];
-        if (token > 0 && topologyManager) {
-            topologyManager->releaseOpticalPathByToken(token);
-        }
         circuitReadyByDst[dstIdx] = 0;
         activeCircuitTokenByDst[dstIdx] = 0;
-        nextSetupAttemptByDst[dstIdx] = SIMTIME_ZERO;
-        printf("[OPTICAL] PE%d TEARDOWN circuit to dst=%d token=%d at t=%.6fus\n",
-               peId, dstIdx, token, simTime().dbl() * 1e6);
+        nextSetupAttemptByDst[dstIdx] = simTime() + releaseDelay;
+        scheduleOpticalRelease(dstIdx, token, releaseDelay);
+        printf("[OPTICAL] PE%d TEARDOWN scheduled to dst=%d token=%d at t=%.6fus releaseAt=%.6fus\n",
+               peId, dstIdx, token, simTime().dbl() * 1e6,
+               (simTime() + releaseDelay).dbl() * 1e6);
         updateOpticalLabel();
     }
 
@@ -794,12 +810,16 @@ void TaskPE::sendOpticalFlitFromQ() {
 void TaskPE::flushPendingData(int dst) {
     if (pendingDataQ[dst].empty()) return;
     if (circuitReadyByDst[dst]) {
-        for (TaskMsg* flit : pendingDataQ[dst]) {
+        size_t count = 0;
+        for (size_t i = 0; i < pendingDataQ[dst].size(); i++) {
+            TaskMsg* flit = pendingDataQ[dst][i];
             opticalDataQ.insert(flit);
+            count++;
+            if (flit->getType() == NOC_END_FLIT) break;
         }
         printf("[OPTICAL] PE%d flush %d pending flits to opticalDataQ for dst=%d at t=%.6fus\n",
-               peId, (int)pendingDataQ[dst].size(), dst, simTime().dbl() * 1e6);
-        pendingDataQ[dst].clear();
+               peId, (int)count, dst, simTime().dbl() * 1e6);
+        pendingDataQ[dst].erase(pendingDataQ[dst].begin(), pendingDataQ[dst].begin() + count);
         sendOpticalFlitFromQ();
     }
     // Else: keep waiting for circuit (matching PktFifoSrc — no electrical fallback)
@@ -876,6 +896,49 @@ void TaskPE::handleControlEvent(int eventType, int requesterId,
     (void)eventType; (void)requesterId; (void)targetId; (void)token;
 }
 
+void TaskPE::purgeControlFlitsForSetup(int token) {
+    if (token <= 0) return;
+
+    for (int i = controlQ.getLength() - 1; i >= 0; --i) {
+        TaskMsg *flit = check_and_cast<TaskMsg *>(controlQ.get(i));
+        if (flit->getTaskId() == -1 && flit->getPktId() == token
+                && flit->getProducerPE() == peId) {
+            controlQ.remove(flit);
+            delete flit;
+        }
+    }
+}
+
+void TaskPE::scheduleOpticalRelease(int dstIdx, int token, simtime_t delay) {
+    if (token <= 0) return;
+
+    cMessage *releaseMsg = new cMessage("opticalRelease");
+    releaseMsg->setKind(TASKPE_OPTICAL_RELEASE_MSG);
+    releaseMsg->addPar("dstIdx") = dstIdx;
+    releaseMsg->addPar("token") = token;
+    pendingOpticalReleaseMsgs.insert(releaseMsg);
+    scheduleAt(simTime() + delay, releaseMsg);
+}
+
+void TaskPE::handleOpticalRelease(cMessage *msg) {
+    pendingOpticalReleaseMsgs.erase(msg);
+
+    int dstIdx = (int)msg->par("dstIdx").longValue();
+    int token = (int)msg->par("token").longValue();
+    if (token > 0 && topologyManager) {
+        topologyManager->releaseOpticalPathByToken(token);
+    }
+
+    if (dstIdx >= 0 && dstIdx < (int)activeCircuitTokenByDst.size()
+            && activeCircuitTokenByDst[dstIdx] == token) {
+        activeCircuitTokenByDst[dstIdx] = 0;
+        circuitReadyByDst[dstIdx] = 0;
+    }
+
+    delete msg;
+    updateOpticalLabel();
+}
+
 void TaskPE::receiveSignal(cComponent *source, simsignal_t signalID,
         intval_t value, cObject *details) {
     (void)source; (void)details;
@@ -904,18 +967,6 @@ void TaskPE::loadTaskGraphFromCSV(const std::string& csvPath) {
             delete t;
             continue;
         }
-
-        // Count same-PE predecessors (dependencies resolved locally via sendTaskData)
-        int localPreds = 0;
-        for (int predId : t->predecessors) {
-            for (TaskDescriptor* other : allTasks) {
-                if (other->taskId == predId && other->assignedPE == peId) {
-                    localPreds++;
-                    break;
-                }
-            }
-        }
-        t->pendingDependencies -= localPreds;
 
         if (t->pendingDependencies == 0) {
             t->state = TASK_READY;
@@ -978,6 +1029,7 @@ void TaskPE::startComputation(TaskDescriptor* task) {
     // per tick: remainingNominalWork -= dvfsTickInterval / dvfsScale(T_current)
     remainingNominalWork = nominalTime;
     totalComputeTimeNominal += nominalTime;
+    lastDvfsUpdateTime = now;
 
     if (powerTrace) {
         powerTrace->recordPEEvent(peId, PE_COMPUTE_START, now, powerCompute);
@@ -989,41 +1041,56 @@ void TaskPE::startComputation(TaskDescriptor* task) {
            peId, task->taskId, now.dbl()*1e6, nominalTime.dbl()*1e6,
            dvfsScale, TpeC);
 
-    scheduleAt(simTime() + dvfsTickInterval, dvfsTickMsg);
+    simtime_t nextDvfsDelay = nominalTime * dvfsScale;
+    if (dvfsTickInterval > 0.0 && nextDvfsDelay > dvfsTickInterval)
+        nextDvfsDelay = dvfsTickInterval;
+    scheduleAt(now + nextDvfsDelay, dvfsTickMsg);
 }
 
 // -----------------------------------------------------------------------
 // handleDvfsTick — periodic DVFS re-check during computation
 // -----------------------------------------------------------------------
 void TaskPE::handleDvfsTick() {
-    if (!currentTask || remainingNominalWork <= 0.0) {
-        // Task completed or was preempted — fall through to complete
+    if (!currentTask) {
+        return;
+    }
+    if (remainingNominalWork <= 0.0) {
         completeComputation();
         return;
     }
 
-    // Read current PE temperature and compute DVFS scale
-    double dvfsScale = getDvfsScaleFactor();
-    double Tpe = getThermalModel()->getPEPerature(peId);
+    simtime_t now = simTime();
+    simtime_t elapsed = now - lastDvfsUpdateTime;
 
-    // Advance nominal work: dt_real / dvfsScale
-    // At dvfsScale=1.0, 100ns tick → 100ns nominal progress
-    // At dvfsScale=2.0, 100ns tick → 50ns nominal progress (slower)
-    double fullWorkDone = dvfsTickInterval.dbl() / dvfsScale;
+    if (elapsed <= 0.0) {
+        scheduleAt(now + dvfsTickInterval, dvfsTickMsg);
+        return;
+    }
+
+    double dvfsScale = getDvfsScaleFactor();
+    if (dvfsScale < 1.0)
+        dvfsScale = 1.0;
+
+    // Advance nominal work by the real elapsed time since the last DVFS check.
+    // The scheduled delay is shortened for the final partial interval, so the
+    // task finishes at the actual completion time instead of the next full tick.
+    double fullWorkDone = elapsed.dbl() / dvfsScale;
     double actualWork = std::min(fullWorkDone, remainingNominalWork.dbl());
     remainingNominalWork -= actualWork;
 
-    // Throttle penalty: the extra real time spent due to DVFS slowdown.
-    // Only count the work we actually did (avoid inflating penalty with
-    // unused tick capacity in the final partial tick).
-    // penalty = real_time_for_work - nominal_work
+    // penalty = real_time_for_work - nominal_work; this now closes with the
+    // compute interval because the final event is scheduled at realTimeForWork.
     double realTimeForWork = actualWork * dvfsScale;
     totalThrottlePenalty += realTimeForWork - actualWork;
+    lastDvfsUpdateTime = now;
 
     if (remainingNominalWork <= 0.0) {
         completeComputation();
     } else {
-        scheduleAt(simTime() + dvfsTickInterval, dvfsTickMsg);
+        simtime_t nextDvfsDelay = remainingNominalWork * dvfsScale;
+        if (dvfsTickInterval > 0.0 && nextDvfsDelay > dvfsTickInterval)
+            nextDvfsDelay = dvfsTickInterval;
+        scheduleAt(now + nextDvfsDelay, dvfsTickMsg);
     }
 }
 
@@ -1076,6 +1143,48 @@ void TaskPE::completeComputation() {
     scheduleNextTask();
 }
 
+void TaskPE::markDependencySatisfied(int targetTaskId, int producerTaskId,
+        const char *source, bool scheduleImmediately) {
+    auto it = taskMap.find(targetTaskId);
+    if (it == taskMap.end()) {
+        EV << "-W- TaskPE[" << peId << "] dependency for unknown task "
+           << targetTaskId << " from producerTask=" << producerTaskId
+           << " source=" << source << endl;
+        return;
+    }
+
+    TaskDescriptor* task = it->second;
+    if (task->state == TASK_COMPLETED || task->state == TASK_COMPUTING) {
+        return;
+    }
+
+    receivedDependencies[targetTaskId]++;
+    if (task->pendingDependencies > 0) {
+        task->pendingDependencies--;
+    }
+
+    EV << "-I- TaskPE[" << peId << "] dependency update"
+       << " targetTask=" << targetTaskId
+       << " producerTask=" << producerTaskId
+       << " source=" << source
+       << " pendingDeps=" << task->pendingDependencies
+       << " receivedCount=" << receivedDependencies[targetTaskId]
+       << " at " << simTime() << endl;
+
+    if (task->pendingDependencies <= 0 && task->state == TASK_WAITING) {
+        task->state = TASK_READY;
+        readyQueue.push(task);
+
+        EV << "-I- TaskPE[" << peId << "] task " << targetTaskId
+           << " is READY at " << simTime()
+           << " readyQueueSize=" << readyQueue.size() << endl;
+
+        if (scheduleImmediately) {
+            scheduleNextTask();
+        }
+    }
+}
+
 // -----------------------------------------------------------------------
 // sendTaskData – create flits and queue them for injection
 // -----------------------------------------------------------------------
@@ -1102,7 +1211,10 @@ void TaskPE::sendTaskData(TaskDescriptor* task) {
             dstPE = bufferBaseId + row;
         }
 
-        if (dstPE == peId) continue;
+        if (dstPE == peId) {
+            markDependencySatisfied(succTaskId, task->taskId, "local", false);
+            continue;
+        }
 
         bool toGB = (dstPE >= bufferBaseId && dstPE < bufferBaseId + numRows);
         int numPEs = numRows * numColumns;
@@ -1118,6 +1230,7 @@ void TaskPE::sendTaskData(TaskDescriptor* task) {
                 if (pendingToken > 0 && topologyManager) {
                     topologyManager->releaseOpticalPathByToken(pendingToken);
                 }
+                purgeControlFlitsForSetup(pendingToken);
                 setupPendingByDst[optIdx] = 0;
                 setupPendingExpiryByDst[optIdx] = SIMTIME_ZERO;
                 pendingSetupTokenByDst[optIdx] = 0;
@@ -1330,22 +1443,29 @@ void TaskPE::handleDataArrival(TaskMsg* msg) {
                 srcIdx = numPEs_ack + (srcPE - bufferBaseId);
             }
             ensureOpticalStateSize(srcIdx);
-            if (!circuitReadyByDst[srcIdx] && setupPendingByDst[srcIdx]) {
+            int pendingToken = pendingSetupTokenByDst[srcIdx];
+            if (!circuitReadyByDst[srcIdx] && setupPendingByDst[srcIdx]
+                    && pendingToken > 0 && pktId == pendingToken) {
                 setupAckAcceptedCount++;
                 circuitReadyByDst[srcIdx] = 1;
                 setupPendingByDst[srcIdx] = 0;
                 setupPendingExpiryByDst[srcIdx] = SIMTIME_ZERO;
+                pendingSetupTokenByDst[srcIdx] = 0;
                 activeCircuitTokenByDst[srcIdx] = pktId;
                 printf("[OPTICAL] PE%d SETUP_ACK rcvd from PE%d -> CIRCUIT READY token=%d at t=%.6fus\n",
                        peId, srcPE, pktId, simTime().dbl() * 1e6);
                 updateOpticalLabel();
                 flushPendingData(srcIdx);
+            } else if (setupPendingByDst[srcIdx]) {
+                setupAckStaleCount++;
+                if (pktId > 0 && topologyManager) {
+                    topologyManager->releaseOpticalPathByToken(pktId);
+                }
             } else if (!circuitReadyByDst[srcIdx]) {
                 setupAckStaleCount++;
-            }
-            // Release old token if this ACK carries one
-            if (pktId > 0 && pktId != activeCircuitTokenByDst[srcIdx] && topologyManager) {
-                topologyManager->releaseOpticalPathByToken(pktId);
+                if (pktId > 0 && topologyManager) {
+                    topologyManager->releaseOpticalPathByToken(pktId);
+                }
             }
         }
 
@@ -1355,8 +1475,13 @@ void TaskPE::handleDataArrival(TaskMsg* msg) {
 
     totalFlitsReceived++;
 
-    // Return one receive-side credit to router
-    sendCredit(msg->getVC(), 1);
+    bool arrivedViaOptical = hasGate("opticalIn")
+            && msg->getArrivalGateId() == gate("opticalIn")->getId();
+
+    // Optical direct traffic did not consume an electrical input-buffer credit.
+    if (!arrivedViaOptical) {
+        sendCredit(msg->getVC(), 1);
+    }
 
     // Optical flits: PD+TIA energy; electrical flits: standard recv energy
     if (!msg->getFirstNet()) {
@@ -1386,34 +1511,93 @@ void TaskPE::handleDataArrival(TaskMsg* msg) {
                                   powerIdle + powerRecvPerFlit / tClk_s);
     }
 
+    if (totalFlits <= 0) {
+        delete msg;
+        throw cRuntimeError("TaskPE[%d] received pktId=%d with invalid flit count %d",
+                peId, pktId, totalFlits);
+    }
+
+    std::vector<TaskMsg*> &packetFlits = recvBuffer[pktId];
+    auto discardBufferedPacket = [&]() {
+        for (TaskMsg *f : packetFlits) {
+            delete f;
+        }
+        recvBuffer.erase(pktId);
+    };
+    if (flitIdx < 0 || flitIdx >= totalFlits) {
+        delete msg;
+        discardBufferedPacket();
+        throw cRuntimeError("TaskPE[%d] received out-of-range flitIdx=%d for pktId=%d totalFlits=%d",
+                peId, flitIdx, pktId, totalFlits);
+    }
+    if (flitIdx != (int)packetFlits.size()) {
+        int expectedFlitIdx = (int)packetFlits.size();
+        delete msg;
+        discardBufferedPacket();
+        throw cRuntimeError("TaskPE[%d] received non-contiguous flitIdx=%d for pktId=%d expected=%d",
+                peId, flitIdx, pktId, expectedFlitIdx);
+    }
+    if (flitIdx == 0 && flitType != NOC_START_FLIT) {
+        delete msg;
+        discardBufferedPacket();
+        throw cRuntimeError("TaskPE[%d] received pktId=%d without START flit",
+                peId, pktId);
+    }
+    if (flitIdx > 0 && flitType == NOC_START_FLIT) {
+        delete msg;
+        discardBufferedPacket();
+        throw cRuntimeError("TaskPE[%d] received duplicate START for pktId=%d at flitIdx=%d",
+                peId, pktId, flitIdx);
+    }
+    if (flitType == NOC_END_FLIT && flitIdx != totalFlits - 1) {
+        delete msg;
+        discardBufferedPacket();
+        throw cRuntimeError("TaskPE[%d] received early END for pktId=%d at flitIdx=%d totalFlits=%d",
+                peId, pktId, flitIdx, totalFlits);
+    }
+    if (flitType != NOC_END_FLIT && flitIdx == totalFlits - 1) {
+        delete msg;
+        discardBufferedPacket();
+        throw cRuntimeError("TaskPE[%d] missing END on final flit for pktId=%d",
+                peId, pktId);
+    }
+
     // Accumulate flit in receive buffer — all flits represent real data
-    recvBuffer[pktId].push_back(msg);
+    packetFlits.push_back(msg);
 
     // Wait until the entire packet arrives
     if (flitType != NOC_END_FLIT && totalFlits > 1) {
         EV << "-I- TaskPE[" << peId << "] buffered flit " << flitIdx
            << "/" << (totalFlits - 1)
            << " pktId=" << pktId
-           << " bufferSize=" << recvBuffer[pktId].size()
-           << endl;
+            << " bufferSize=" << packetFlits.size()
+            << endl;
         return;
+    }
+
+    if ((int)packetFlits.size() != totalFlits) {
+        int receivedFlits = (int)packetFlits.size();
+        discardBufferedPacket();
+        throw cRuntimeError("TaskPE[%d] completed pktId=%d with %d/%d flits",
+                peId, pktId, receivedFlits, totalFlits);
     }
 
     // END flit: packet complete, assemble data from buffered flits
     int targetTaskId = msg->getTaskId();
     int producerPE = msg->getProducerPE();
+    int producerTaskId = msg->getProducerTaskId();
     simtime_t compTime = msg->getComputeTime();
     int dataSize = msg->getDataSize();
 
     EV << "-I- TaskPE[" << peId << "] PACKET-COMPLETE"
        << " pktId=" << pktId
-       << " totalFlits=" << recvBuffer[pktId].size()
+       << " totalFlits=" << packetFlits.size()
        << " targetTask=" << targetTaskId
        << " producerPE=" << producerPE
        << " at " << simTime() << endl;
 
     // Free all buffered flits for this packet
-    for (TaskMsg* f : recvBuffer[pktId]) {
+    for (TaskMsg* f : packetFlits) {
         delete f;
     }
     recvBuffer.erase(pktId);
@@ -1463,31 +1647,8 @@ void TaskPE::handleDataArrival(TaskMsg* msg) {
         return;
     }
 
-    // PE→PE dependency flit: decrement pending counter
-    if (task->state == TASK_COMPLETED || task->state == TASK_COMPUTING) {
-        return;
-    }
-
-    receivedDependencies[targetTaskId]++;
-    if (task->pendingDependencies > 0)
-        task->pendingDependencies--;
-
-    EV << "-I- TaskPE[" << peId << "] dependency update"
-       << " targetTask=" << targetTaskId
-       << " pendingDeps=" << task->pendingDependencies
-       << " receivedCount=" << receivedDependencies[targetTaskId]
-       << " at " << simTime() << endl;
-
-    if (task->pendingDependencies <= 0) {
-        task->state = TASK_READY;
-        readyQueue.push(task);
-
-        EV << "-I- TaskPE[" << peId << "] task " << targetTaskId
-           << " is READY at " << simTime()
-           << " readyQueueSize=" << readyQueue.size() << endl;
-
-        scheduleNextTask();
-    }
+    // PE->PE dependency flit: decrement pending counter.
+    markDependencySatisfied(targetTaskId, producerTaskId, "remote", true);
 }
 
 // -----------------------------------------------------------------------

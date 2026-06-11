@@ -1,183 +1,63 @@
-# HNOCS Experiment Runbook
+# HNOCS Project Agent Guide
 
-本文档记录 B-2 实验在本地电脑和实验室主机上的已验证路径、环境设置和运行命令。运行前先确认路径，不要混用 `D:\HNOCS` 和 `E:\mzj\HNOCS_mzj`。
+本文档是 `D:\HNOCS` 工程的项目级上下文，重点记录论文叙事、当前有效结果口径和协作注意事项。实验运行手册已单独放在 `D:\HNOCS\out\AGENTS.md`。
 
-## 1. 机器与路径
+## 1. 论文任务与当前叙事
 
-### 本地电脑
+论文关注硅光片上网络（ONoC）的系统级热管理。核心观点不是单独降低芯片温度或补偿 MRR 热漂移，而是把任务到处理单元（PE）的映射作为系统级控制变量，联合优化热稳定性、性能、通信、拥塞、DVFS、负载均衡和总能耗。
 
-| 项 | 值 |
-|---|---|
-| HNOCS workspace | `D:\HNOCS` |
-| Python | `Python 3.13.5` |
-| Python executable | `D:\anaconda3\python.exe` |
-| OMNeT++ root | `D:\omnetpp\omnetpp-6.3.0` |
-| HNOCS executable | `D:\HNOCS\libhnocs.exe` |
-| B-2 script | `D:\HNOCS\experiment\B-2\run.py` |
-| OMNeT++ ini | `D:\HNOCS\examples\task_driven\omnetpp.ini` |
-| NED paths | `D:\HNOCS\src;D:\HNOCS\examples\task_driven` |
+当前摘要主张如下：
 
-PowerShell setup:
+- 任务级负载映射会同时影响热源分布、DVFS 节流、光传输路径、波长活动、SOA 激活时间和 MRR 热调谐需求。
+- 方法为基于遗传算法的仿真在环热感知任务重映射。
+- 每个候选映射由全系统 OMNeT++ 模型评估，模型包含 8 波长 WDM 光层、MRR 动态热调谐、SOA 和激光器能耗、紧凑 RC 热网络以及 DVFS 反馈。
+- 优化目标为 baseline-normalized composite cost，联合考虑峰值温度、温度不均衡、热点 PE 数、makespan、通信代价、拥塞、DVFS 惩罚、负载不均衡和总能耗。
+- GEMM 与 MPEG4 可表述为热、性能、通信和能耗同步改善。
+- VOPD 的主要优势是 makespan、通信、拥塞和总能耗显著改善；不要声称 VOPD 的峰值温度和温度标准差也同步改善。
+- HNN 是典型多目标折中：热点 PE 数显著下降，但 makespan 相对 baseline 变差；写作时强调系统级折中，不要写成所有指标都改善。
 
-```powershell
-$env:OMNETPP_ROOT = "D:\omnetpp\omnetpp-6.3.0"
-$env:PATH = "D:\HNOCS;D:\omnetpp\omnetpp-6.3.0\bin;D:\omnetpp\omnetpp-6.3.0\tools\win32.x86_64\clang64\bin;D:\omnetpp\omnetpp-6.3.0\tools\win32.x86_64\usr\bin;" + $env:PATH
-cd D:\HNOCS
-```
+## 2. 实验运行手册位置
 
-### 实验室主机
+本地/实验室主机路径、环境检查、已验证运行命令、dry run、进度显示、输出文件结构和无效结果判定，统一维护在 `D:\HNOCS\out\AGENTS.md`。
 
-| 项 | 值 |
-|---|---|
-| Hostname | `DESKTOP-N2P5LH1` |
-| OS | Windows 10 Pro, version 2009, 64-bit |
-| CPU | AMD Ryzen 9 9950X 16-Core Processor |
-| CPU cores / logical processors | 16 cores / 32 logical processors |
-| RAM | about 203.6 GB |
-| HNOCS workspace | `E:\mzj\HNOCS_mzj` |
-| Python | `Python 3.12.10` |
-| Python executable | `C:\Users\admin\AppData\Local\Programs\Python\Python312\python.exe` |
-| OMNeT++ root | `S:\omnetpp-6.3.0` |
-| HNOCS executable | `E:\mzj\HNOCS_mzj\libhnocs.exe` |
-| B-2 script | `E:\mzj\HNOCS_mzj\experiment\B-2\run.py` |
-| OMNeT++ ini | `E:\mzj\HNOCS_mzj\examples\task_driven\omnetpp.ini` |
-| NED paths | `E:\mzj\HNOCS_mzj\src;E:\mzj\HNOCS_mzj\examples\task_driven` |
+后续 agent 需要重跑实验或核对环境时，先阅读 `D:\HNOCS\out\AGENTS.md`，不要在根目录 `AGENTS.md` 中重复维护同一批路径和命令。
 
-PowerShell setup:
+## 3. 当前已整理结果
 
-```powershell
-$env:OMNETPP_ROOT = "S:\omnetpp-6.3.0"
-$env:PATH = "E:\mzj\HNOCS_mzj;S:\omnetpp-6.3.0\bin;S:\omnetpp-6.3.0\tools\win32.x86_64\clang64\bin;S:\omnetpp-6.3.0\tools\win32.x86_64\usr\bin;" + $env:PATH
-cd E:\mzj\HNOCS_mzj
-```
+本地 `D:\HNOCS\out` 当前包含：
 
-## 2. 环境检查
+- `B-2-v3-g60-seed42`
+- `B-2-v3-g60-seed43`
 
-每次换机器或新开 PowerShell 后先执行：
+baseline 在两个 seed 的 `metrics.json` 中一致。seed42 可作为主结果；seed43 可作为随机种子稳健性补充。
 
-```powershell
-python --version
-where.exe python
-python -c "import sys; print(sys.executable)"
-opp_run --version
-opp_scavetool
-```
+| Workload | Baseline cost | Seed42 cost | Seed43 cost | Seed42 improvement | Seed43 improvement |
+|---|---:|---:|---:|---:|---:|
+| GEMM | 6.0000 | 3.9245 | 3.8490 | 34.59% | 35.85% |
+| MPEG4 | 6.0000 | 4.0350 | 3.8743 | 32.75% | 35.43% |
+| VOPD | 5.0000 | 4.0940 | 4.0851 | 18.12% | 18.30% |
+| HNN | 6.0000 | 5.1158 | 5.2112 | 14.74% | 13.15% |
 
-检查关键文件：
+Seed43 相对 seed42：
 
-```powershell
-# 本地电脑
-Test-Path D:\HNOCS\libhnocs.exe
-Test-Path D:\HNOCS\examples\task_driven\omnetpp.ini
-Test-Path D:\omnetpp\omnetpp-6.3.0\bin\opp_scavetool.exe
+| Workload | Cost change | Tmax change | Hot PE | Makespan change | Comm change | Energy change |
+|---|---:|---:|---:|---:|---:|---:|
+| GEMM | -1.92% | +0.113 C | 0 -> 0 | -0.03% | -14.49% | +0.06% |
+| MPEG4 | -3.98% | -0.083 C | 0 -> 0 | -12.86% | -2.04% | -6.66% |
+| VOPD | -0.22% | -0.280 C | 0 -> 0 | +0.04% | -20.35% | +1.06% |
+| HNN | +1.86% | +0.083 C | 4 -> 8 | -1.07% | +4.19% | +0.30% |
 
-# 实验室主机
-Test-Path E:\mzj\HNOCS_mzj\libhnocs.exe
-Test-Path E:\mzj\HNOCS_mzj\examples\task_driven\omnetpp.ini
-Test-Path S:\omnetpp-6.3.0\bin\opp_scavetool.exe
-```
+写作建议：
 
-`opp_run --version` 在非工程目录下可能继续打印 `Missing configuration`，只要版本号能打印出来即可。`opp_scavetool --version` 不可用，直接执行 `opp_scavetool` 能显示帮助信息即可。
+- GEMM、MPEG4：两个 seed 都支持复合代价下降，并且热、性能、通信、能耗整体改善。
+- VOPD：两个 seed 都支持复合代价下降和 makespan 约 51.6% 改善，总能耗约 32-33% 改善；但温度均匀性变差，不要夸大热指标。
+- HNN：两个 seed 都支持复合代价下降和热点 PE 减少；seed42 从 16 降至 4，seed43 从 16 降至 8。HNN 的 makespan 变差，应表述为多目标折中。
 
-## 3. 已验证实验命令
+## 4. 仓库协作注意事项
 
-### 本地电脑：B-2-v2，30 generations
-
-以下命令已成功运行，用于生成 `out\B-2-v2`：
-
-```powershell
-$env:OMNETPP_ROOT = "D:\omnetpp\omnetpp-6.3.0"
-$env:PATH = "D:\HNOCS;D:\omnetpp\omnetpp-6.3.0\bin;D:\omnetpp\omnetpp-6.3.0\tools\win32.x86_64\clang64\bin;D:\omnetpp\omnetpp-6.3.0\tools\win32.x86_64\usr\bin;" + $env:PATH
-
-cd D:\HNOCS
-python experiment\B-2\run.py --all --workers 8 --generations 30 --population 50 --seed 42 -o out\B-2-v2
-```
-
-参数：`seed=42`，`population=50`，`generations=30`，`workers=8`，`omnet-timeout` 使用默认值。该目录仍可能包含 Optic 历史结果，但当前论文不使用 Optic。
-
-### 实验室主机：B-2-v3-g60，60 generations
-
-以下命令已在实验室主机成功运行，用于生成 `out\B-2-v3-g60`：
-
-```powershell
-$env:OMNETPP_ROOT = "S:\omnetpp-6.3.0"
-$env:PATH = "E:\mzj\HNOCS_mzj;S:\omnetpp-6.3.0\bin;S:\omnetpp-6.3.0\tools\win32.x86_64\clang64\bin;S:\omnetpp-6.3.0\tools\win32.x86_64\usr\bin;" + $env:PATH
-
-cd E:\mzj\HNOCS_mzj
-python experiment\B-2\run.py `
-  --all `
-  --workers 8 `
-  --generations 60 `
-  --population 50 `
-  --seed 42 `
-  --omnet-timeout 300 `
-  -o out\B-2-v3-g60 `
-  --omnet-bin "E:\mzj\HNOCS_mzj\libhnocs.exe" `
-  --omnet-ned-paths "E:\mzj\HNOCS_mzj\src;E:\mzj\HNOCS_mzj\examples\task_driven" `
-  --omnet-workdir "E:\mzj\HNOCS_mzj\examples\task_driven" `
-  --omnet-ini "E:\mzj\HNOCS_mzj\examples\task_driven\omnetpp.ini" `
-  --omnetpp-root "S:\omnetpp-6.3.0"
-```
-
-参数：`seed=42`，`population=50`，`generations=60`，`workers=8`，`omnet-timeout=300s`。这是当前长代数实验的主机已验证命令。
-
-## 4. Dry Run 和进度显示
-
-确认实验计划，不启动 OMNeT++：
-
-```powershell
-python experiment\B-2\run.py --all --credibility --dry-run -o out\B-2-credibility
-```
-
-终端进度显示使用 `--verbose`。它会打印 baseline、每代 `Gen` 进度、OMNeT++ config 名称和 timeout 信息。例如：
-
-```powershell
-python experiment\B-2\run.py `
-  --csv examples\task_driven\static\tasks_gemm_static.csv `
-  --workers 4 `
-  --generations 5 `
-  --population 12 `
-  --seed 42 `
-  --verbose `
-  -o out\smoke-gemm
-```
-
-如果在实验室主机上运行 smoke test，请显式传入 `--omnet-bin`、`--omnet-ned-paths`、`--omnet-workdir`、`--omnet-ini`、`--omnetpp-root`，不要依赖默认的 `D:\HNOCS` 路径。
-
-## 5. 输出文件和结果检查
-
-单次输出目录：
-
-```text
-out\<run-name>\<benchmark>\
-```
-
-每个 benchmark 应包含：
-
-- `metrics.json`
-- `history.json`
-- `remapped.csv`
-- `summary.txt`
-
-多 seed / credibility 输出还会生成：
-
-- `runs_summary.csv`
-- `aggregate_summary.csv`
-- `aggregate_summary.json`
-
-结果有效性最低检查：
-
-```powershell
-Get-Content out\<run-name>\<benchmark>\summary.txt
-Get-Content out\<run-name>\<benchmark>\metrics.json
-Get-Content out\<run-name>\<benchmark>\history.json
-```
-
-以下结果必须视为无效，不能用于论文：
-
-- `T_max -> -273.1C`
-- `makespan 0.0us`
-- `E_total 0.000mJ`
-- `history.json` 每代都是 `best_fitness: Infinity`
-
-出现无效结果时，优先检查路径参数是否仍指向旧机器路径，尤其是实验室主机不能使用 `D:\HNOCS` 默认路径。
+- 中文回答。
+- 优先读取 `metrics.json` 的结构化字段，不要从 `summary.txt` 手工解析核心数据。
+- 路径检查优先于重跑实验。发现无效结果时，先按 `D:\HNOCS\out\AGENTS.md` 核对运行环境和路径参数。
+- 不要删除或覆盖 `out\B-2-v3-g60-seed42`、`out\B-2-v3-g60-seed43` 及其中的 `history.json`、`metrics.json`、`remapped.csv`。
+- 生成论文图表时保留脚本、CSV 中间表和最终图片，便于追溯。
+- 修改实验脚本前，先确认是否会改变 baseline 或 fitness 定义；如果会改变，旧结果不能和新结果直接合并。

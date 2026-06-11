@@ -63,6 +63,9 @@ OpticalDeviceType parseDeviceType(const std::string &name) {
     if (lower == "ring_drop")    return DEV_RING_DROP;
     if (lower == "wg")           return DEV_WAVEGUIDE;
     if (lower == "bend")         return DEV_WAVEGUIDE_BEND;
+    if (lower == "crossing")     return DEV_WAVEGUIDE_CROSSING;
+    if (lower == "waveguide_cross") return DEV_WAVEGUIDE_CROSSING;
+    if (lower == "wg_crossing")  return DEV_WAVEGUIDE_CROSSING;
     if (lower == "pd")           return DEV_PHOTODETECTOR;
     if (lower == "detector")     return DEV_PHOTODETECTOR;
     return DEV_NONE;

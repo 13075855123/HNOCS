@@ -55,6 +55,13 @@ LogicalTopologyManager::LogicalTopologyManager() {
     opticalSoaPumpPower_mW = 80.0;
     opticalBudgetComputations = 0;
     opticalWavelengthEvaluations = 0;
+    minOpticalSignalMargin_dB = std::numeric_limits<double>::infinity();
+    minOpticalSNR_dB = std::numeric_limits<double>::infinity();
+    maxOpticalBER = 0.0;
+    maxOpticalTempAdjustedLoss_dB = 0.0;
+    maxOpticalRingDetuning_nm = 0.0;
+    maxOpticalPathTuningPower_mW = 0.0;
+    maxOpticalWaveguideCrossingLoss_dB = 0.0;
     opticalWavelengthStrategy = "lowest";
     opticalRingTuningPower_mW_per_ring = 0.0;
     opticalNumRingsPerRouter = 0;
@@ -827,6 +834,15 @@ void LogicalTopologyManager::initialize() {
     opticalNumRingsPerRouter = par("opticalNumRingsPerRouter");
     totalRingTuningEnergy_J = 0.0;
     totalDynamicTuningEnergy_J = 0.0;
+    totalOpticalTuningPower_mW = 0.0;
+    opticalBudgetComputations = 0;
+    minOpticalSignalMargin_dB = std::numeric_limits<double>::infinity();
+    minOpticalSNR_dB = std::numeric_limits<double>::infinity();
+    maxOpticalBER = 0.0;
+    maxOpticalTempAdjustedLoss_dB = 0.0;
+    maxOpticalRingDetuning_nm = 0.0;
+    maxOpticalPathTuningPower_mW = 0.0;
+    maxOpticalWaveguideCrossingLoss_dB = 0.0;
     logOpticalAllocDecisions = par("logOpticalAllocDecisions");
     logTopologyTransitions = par("logTopologyTransitions");
 
@@ -995,14 +1011,23 @@ void LogicalTopologyManager::finish() {
     recordScalar("onoc-optical-wavelength-evaluations",
             static_cast<double>(opticalWavelengthEvaluations));
 
-    // Temperature-aware optical statistics
-    if (opticalEnableThermalEffects) {
-        recordScalar("onoc-optical-total-tuning-power-mW", totalOpticalTuningPower_mW);
-        recordScalar("onoc-optical-budget-computations", static_cast<double>(opticalBudgetComputations));
-        if (opticalBudgetComputations > 0) {
-            recordScalar("onoc-optical-avg-tuning-power-mW",
-                    totalOpticalTuningPower_mW / opticalBudgetComputations);
-        }
+    // Optical budget summaries for successfully allocated paths.
+    recordScalar("onoc-optical-total-tuning-power-mW", totalOpticalTuningPower_mW);
+    recordScalar("onoc-optical-budget-computations", static_cast<double>(opticalBudgetComputations));
+    if (opticalBudgetComputations > 0) {
+        recordScalar("onoc-optical-avg-tuning-power-mW",
+                totalOpticalTuningPower_mW / opticalBudgetComputations);
+        recordScalar("onoc-optical-min-signal-margin-dB", minOpticalSignalMargin_dB);
+        recordScalar("onoc-optical-min-snr-dB", minOpticalSNR_dB);
+        recordScalar("onoc-optical-max-ber", maxOpticalBER);
+        recordScalar("onoc-optical-max-temp-adjusted-loss-dB",
+                maxOpticalTempAdjustedLoss_dB);
+        recordScalar("onoc-optical-max-ring-detuning-nm",
+                maxOpticalRingDetuning_nm);
+        recordScalar("onoc-optical-max-path-tuning-power-mW",
+                maxOpticalPathTuningPower_mW);
+        recordScalar("onoc-optical-max-waveguide-crossing-loss-dB",
+                maxOpticalWaveguideCrossingLoss_dB);
     }
 
     // Baseline microring thermal tuning energy
@@ -1227,261 +1252,206 @@ bool LogicalTopologyManager::getDeviceLevelPathMetrics(int srcId, int dstId,
     OpticalDevicePath devPath;
     const int totalWL = maxOpticalWavelengths;
 
-    // Max active wavelength index (for shared through-count computation)
-    int maxWl = 1;
-    for (size_t wi = 0; wi < wavelengths.size(); ++wi)
-        if (wavelengths[wi] > maxWl) maxWl = wavelengths[wi];
-
-    // ---- Source NI: Laser → waveguide → shared modulator chain → router ----
-    // Build active-wavelength lookup (dynamically sized to maxWl)
-    std::vector<bool> isActiveWl(maxWl + 1, false);
-    for (size_t wi = 0; wi < wavelengths.size(); ++wi)
-        if (wavelengths[wi] > 0 && wavelengths[wi] <= maxWl)
-            isActiveWl[wavelengths[wi]] = true;
-
-    // Waveguide: source to modulator chain (shared by all wavelengths)
-    {
-        OpticalDeviceSegment seg;
-        seg.deviceType = DEV_WAVEGUIDE;
-        seg.deviceIndex = srcId;
-        seg.waveguideLength_cm = wgDistances.sourceToModulator_cm;
-        seg.wavelengthIndex = maxWl;
-        devPath.segments.push_back(seg);
-    }
-    // Shared modulator microring chain: rings 1..maxWl on single bus waveguide.
-    // Active-wavelength positions → DROP (modulation), others → THROUGH.
-    // Total distinct rings = maxWl (no per-λ duplication).
-    for (int r = 1; r <= maxWl; ++r) {
-        OpticalDeviceSegment seg;
-        seg.deviceType = isActiveWl[r] ? DEV_RING_DROP : DEV_RING_THROUGH;
-        seg.deviceIndex = srcId * 1000 + r;
-        seg.wavelengthIndex = r;
-        devPath.segments.push_back(seg);
-    }
-    // Waveguide: modulator chain to router core port (shared)
-    {
-        OpticalDeviceSegment seg;
-        seg.deviceType = DEV_WAVEGUIDE;
-        seg.deviceIndex = srcId * 10;
-        seg.waveguideLength_cm = wgDistances.modulatorToRouter_cm;
-        seg.wavelengthIndex = maxWl;
-        devPath.segments.push_back(seg);
-    }
-
-    // ---- Source router: Core→[direction] injection ----
-    // Router injection: expand from Core(0) to the first output port
-    // (handled in the loop below when prevNode=srcId)
-
     // ---- Router hops (use Mesh/Torus XY path according to physicalTopology) ----
     std::vector<long long> pathEdges;
     buildXYPathEdges(srcId, dstId, pathEdges);
 
-    int prevNode = srcId;
-    int prevOutPort = -1;
-    for (size_t e = 0; e < pathEdges.size(); ++e) {
-        long long edgeKey = pathEdges[e];
-        int a = static_cast<int>(edgeKey >> 32);
-        int b = static_cast<int>(edgeKey & 0xFFFFFFFFLL);
-        int nextNode = (a == prevNode) ? b : a;
+    auto outPortBetween = [this](int fromNode, int toNode) -> int {
+        int px, py, nx, ny;
+        rowColByNodeId(fromNode, px, py);
+        rowColByNodeId(toNode, nx, ny);
+        int dx = nx - px;
+        int dy = ny - py;
+        if (dx > 1) dx -= columns; if (dx < -1) dx += columns;
+        if (dy > 1) dy -= rows;    if (dy < -1) dy += rows;
+        if (dx == 0 && dy == -1) return 2; // North
+        if (dx == 0 && dy == 1)  return 4; // South
+        if (dx == -1 && dy == 0) return 1; // West
+        if (dx == 1 && dy == 0)  return 3; // East
+        if (dy < 0) return 2;
+        if (dy > 0) return 4;
+        if (dx < 0) return 1;
+        return 3;
+    };
 
-        // Determine outgoing port direction from this router to the next node
-        int inPort  = -1;
-        int outPort = -1;
-        {
-            int px, py, nx, ny;
-            rowColByNodeId(prevNode, px, py);
-            rowColByNodeId(nextNode, nx, ny);
-            int dx = nx - px;
-            int dy = ny - py;
-            if (dx > 1) dx -= columns; if (dx < -1) dx += columns;
-            if (dy > 1) dy -= rows;    if (dy < -1) dy += rows;
-            // Map delta to outPort only: 0=Local,1=West,2=North,3=East,4=South
-            if (dx == 0 && dy == -1)      { outPort = 2; } // S→N: exit North
-            else if (dx == 0 && dy == 1)  { outPort = 4; } // N→S: exit South
-            else if (dx == -1 && dy == 0) { outPort = 1; } // E→W: exit West
-            else if (dx == 1 && dy == 0)  { outPort = 3; } // W→E: exit East
-            if (outPort < 0) {
-                if (dy < 0)      { outPort = 2; }
-                else if (dy > 0) { outPort = 4; }
-                else if (dx < 0) { outPort = 1; }
-                else             { outPort = 3; }
-            }
+    auto oppositeInputPort = [](int outPort) -> int {
+        switch (outPort) {
+            case 1: return 3;
+            case 3: return 1;
+            case 2: return 4;
+            case 4: return 2;
+            default: return -1;
+        }
+    };
+
+    for (size_t wi = 0; wi < wavelengths.size(); ++wi) {
+        int wl = wavelengths[wi];
+        if (wl <= 0) {
+            continue;
         }
 
-        // Determine incoming port:
-        //   - source router uses Local(0) injection
-        //   - intermediate routers derive from the previous hop's exit port
-        //     (signal exits prevRouter at outPort and arrives from the opposite direction)
-        if (e == 0) {
-            inPort = 0; // Local/Core injection
-        } else {
-            switch (prevOutPort) {
-                case 1: inPort = 3; break; // West ← East
-                case 3: inPort = 1; break; // East ← West
-                case 2: inPort = 4; break; // North ← South
-                case 4: inPort = 2; break; // South ← North
-                default: break;
-            }
-        }
-
-        // Router traversal using wavelength-dependent metadata
-        // Through-count is determined by the MAX active wavelength index:
-        // all wavelengths share the same waveguide, so they all pass through
-        // rings up to the highest-index active wavelength.
-        // Drop rings: one per active wavelength.
-        std::map<int, RouterTurnMetadataMatrix>::const_iterator rtmIt =
-            routerTurnMatrices.find(prevNode);
-        if (rtmIt != routerTurnMatrices.end() && inPort >= 0 && outPort >= 0
-                && inPort < 5 && outPort < 5 && inPort != outPort) {
-            const RouterTurnMetadata &meta = rtmIt->second[inPort][outPort];
-            int formulaType = meta.throughCount;
-
-            int actualThrough = 0;
-            switch (formulaType) {
-                case 0: actualThrough = maxWl - 1; break;
-                case 1: actualThrough = 2*totalWL + maxWl - 1; break;
-                case 2: actualThrough = 3*totalWL + maxWl - 1; break;
-                case 3: actualThrough = 4*totalWL; break;
-                case 4: actualThrough = 4*totalWL + maxWl - 1; break;
-                case 5: actualThrough = 6*totalWL + maxWl - 1; break;
-                default: actualThrough = 0; break;
-            }
-            // Through-state rings (shared by all wavelengths)
-            for (int t = 0; t < actualThrough; ++t) {
-                OpticalDeviceSegment seg;
-                seg.deviceType = DEV_RING_THROUGH;
-                seg.deviceIndex = prevNode * 1000 + inPort * 100 + outPort * 10 + t;
-                seg.wavelengthIndex = maxWl;
-                devPath.segments.push_back(seg);
-            }
-            // Drop rings: one per active wavelength
-            for (size_t wi = 0; wi < wavelengths.size(); ++wi) {
-                OpticalDeviceSegment seg;
-                seg.deviceType = DEV_RING_DROP;
-                seg.deviceIndex = prevNode * 1000 + inPort * 100 + outPort * 10
-                                + actualThrough + static_cast<int>(wi);
-                seg.wavelengthIndex = wavelengths[wi];
-                devPath.segments.push_back(seg);
-            }
-            // Bends
-            for (int b = 0; b < meta.bendCount; ++b) {
-                OpticalDeviceSegment seg;
-                seg.deviceType = DEV_WAVEGUIDE_BEND;
-                seg.deviceIndex = prevNode * 1000 + inPort * 100 + outPort * 10 + b;
-                seg.wavelengthIndex = maxWl;
-                devPath.segments.push_back(seg);
-            }
-        }
-
-        // Waveguide segment between routers
         {
             OpticalDeviceSegment seg;
             seg.deviceType = DEV_WAVEGUIDE;
-            seg.deviceIndex = static_cast<int>(e);
-            seg.waveguideLength_cm = wgDistances.routerToRouter_cm;
-            seg.wavelengthIndex = 1;
+            seg.deviceIndex = srcId * 100000 + 30000 + wl;
+            seg.hostNodeId = srcId;
+            seg.waveguideLength_cm = wgDistances.sourceToModulator_cm;
+            seg.wavelengthIndex = wl;
             devPath.segments.push_back(seg);
         }
-
-        // SOA after router output
-        if (opticalEnableSOA) {
+        buildModulatorSegments(srcId, wl, totalWL, devPath.segments);
+        {
             OpticalDeviceSegment seg;
-            seg.deviceType = DEV_SOA;
-            seg.deviceIndex = nextNode;
-            seg.wavelengthIndex = 1;
+            seg.deviceType = DEV_WAVEGUIDE;
+            seg.deviceIndex = srcId * 100000 + 31000 + wl;
+            seg.hostNodeId = srcId;
+            seg.waveguideLength_cm = wgDistances.modulatorToRouter_cm;
+            seg.wavelengthIndex = wl;
             devPath.segments.push_back(seg);
         }
 
-        prevNode = nextNode;
-        prevOutPort = outPort;
-    }
+        int prevNode = srcId;
+        int prevOutPort = -1;
+        for (size_t e = 0; e < pathEdges.size(); ++e) {
+            long long edgeKey = pathEdges[e];
+            int a = static_cast<int>(edgeKey >> 32);
+            int b = static_cast<int>(edgeKey & 0xFFFFFFFFLL);
+            int nextNode = (a == prevNode) ? b : a;
+            int outPort = outPortBetween(prevNode, nextNode);
+            int inPort = (e == 0) ? 0 : oppositeInputPort(prevOutPort);
 
-    // ---- Destination router: direction→Local egress turn ----
-    // The signal enters from the opposite of prevOutPort and exits to Local(0).
-    {
-        int destInPort = -1;
-        switch (prevOutPort) {
-            case 1: destInPort = 3; break; // West ← East
-            case 3: destInPort = 1; break; // East ← West
-            case 2: destInPort = 4; break; // North ← South
-            case 4: destInPort = 2; break; // South ← North
-            default: break;
-        }
-        if (destInPort >= 0) {
-            int dstRouterId = prevNode; // destination node from loop above
-            auto rtmIt = routerTurnMatrices.find(dstRouterId);
-            if (rtmIt != routerTurnMatrices.end()) {
-                const RouterTurnMetadata &meta = rtmIt->second[destInPort][0];
-                int formulaType = meta.throughCount;
-                int actualThrough = 0;
-                switch (formulaType) {
-                    case 0: actualThrough = maxWl - 1; break;
-                    case 1: actualThrough = 2*totalWL + maxWl - 1; break;
-                    case 2: actualThrough = 3*totalWL + maxWl - 1; break;
-                    case 3: actualThrough = 4*totalWL; break;
-                    case 4: actualThrough = 4*totalWL + maxWl - 1; break;
-                    case 5: actualThrough = 6*totalWL + maxWl - 1; break;
-                    default: actualThrough = 0; break;
-                }
-                const int dstOutPort = 0; // destination always egresses to Local
-                // Through-state rings
+            std::map<int, RouterTurnMetadataMatrix>::const_iterator rtmIt =
+                routerTurnMatrices.find(prevNode);
+            if (rtmIt != routerTurnMatrices.end() && inPort >= 0 && outPort >= 0
+                    && inPort < 5 && outPort < 5 && inPort != outPort) {
+                const RouterTurnMetadata &meta = rtmIt->second[inPort][outPort];
+                int actualThrough = evaluateRouterThroughCount(meta, wl, totalWL);
                 for (int t = 0; t < actualThrough; ++t) {
                     OpticalDeviceSegment seg;
                     seg.deviceType = DEV_RING_THROUGH;
-                    seg.deviceIndex = dstRouterId * 1000 + destInPort * 100
-                                    + dstOutPort * 10 + t;
-                    seg.wavelengthIndex = maxWl;
+                    seg.deviceIndex = prevNode * 100000 + inPort * 10000
+                                    + outPort * 1000 + t;
+                    seg.hostNodeId = prevNode;
+                    seg.wavelengthIndex = wl;
                     devPath.segments.push_back(seg);
                 }
-                // Drop rings: one per active wavelength
-                for (size_t wi = 0; wi < wavelengths.size(); ++wi) {
+                {
                     OpticalDeviceSegment seg;
                     seg.deviceType = DEV_RING_DROP;
-                    seg.deviceIndex = dstRouterId * 1000 + destInPort * 100
-                                    + dstOutPort * 10 + actualThrough + static_cast<int>(wi);
-                    seg.wavelengthIndex = wavelengths[wi];
+                    seg.deviceIndex = prevNode * 100000 + inPort * 10000
+                                    + outPort * 1000 + actualThrough + wl;
+                    seg.hostNodeId = prevNode;
+                    seg.wavelengthIndex = wl;
                     devPath.segments.push_back(seg);
                 }
-                // Bends
-                for (int b = 0; b < meta.bendCount; ++b) {
+                for (int bend = 0; bend < meta.bendCount; ++bend) {
                     OpticalDeviceSegment seg;
                     seg.deviceType = DEV_WAVEGUIDE_BEND;
-                    seg.deviceIndex = dstRouterId * 1000 + destInPort * 100
-                                    + dstOutPort * 10 + b;
-                    seg.wavelengthIndex = maxWl;
+                    seg.deviceIndex = prevNode * 100000 + inPort * 10000
+                                    + outPort * 1000 + bend;
+                    seg.hostNodeId = prevNode;
+                    seg.wavelengthIndex = wl;
+                    devPath.segments.push_back(seg);
+                }
+                int crossingCount = actualThrough / std::max(1, totalWL) + 1;
+                for (int c = 0; c < crossingCount; ++c) {
+                    OpticalDeviceSegment seg;
+                    seg.deviceType = DEV_WAVEGUIDE_CROSSING;
+                    seg.deviceIndex = prevNode * 100000 + inPort * 10000
+                                    + outPort * 1000 + c;
+                    seg.hostNodeId = prevNode;
+                    seg.wavelengthIndex = wl;
+                    devPath.segments.push_back(seg);
+                }
+            }
+
+            {
+                OpticalDeviceSegment seg;
+                seg.deviceType = DEV_WAVEGUIDE;
+                seg.deviceIndex = prevNode * 100000 + 32000 + static_cast<int>(e) * 100 + wl;
+                seg.hostNodeId = prevNode;
+                seg.waveguideLength_cm = wgDistances.routerToRouter_cm;
+                seg.wavelengthIndex = wl;
+                devPath.segments.push_back(seg);
+            }
+
+            if (opticalEnableSOA) {
+                OpticalDeviceSegment seg;
+                seg.deviceType = DEV_SOA;
+                seg.deviceIndex = prevNode * 100000 + 33000 + static_cast<int>(e) * 100 + wl;
+                seg.hostNodeId = prevNode;
+                seg.wavelengthIndex = wl;
+                devPath.segments.push_back(seg);
+            }
+
+            prevNode = nextNode;
+            prevOutPort = outPort;
+        }
+
+        int destInPort = oppositeInputPort(prevOutPort);
+        if (destInPort >= 0) {
+            int dstRouterId = prevNode;
+            std::map<int, RouterTurnMetadataMatrix>::const_iterator rtmIt =
+                routerTurnMatrices.find(dstRouterId);
+            if (rtmIt != routerTurnMatrices.end()) {
+                const int dstOutPort = 0;
+                const RouterTurnMetadata &meta = rtmIt->second[destInPort][dstOutPort];
+                int actualThrough = evaluateRouterThroughCount(meta, wl, totalWL);
+                for (int t = 0; t < actualThrough; ++t) {
+                    OpticalDeviceSegment seg;
+                    seg.deviceType = DEV_RING_THROUGH;
+                    seg.deviceIndex = dstRouterId * 100000 + destInPort * 10000
+                                    + dstOutPort * 1000 + t;
+                    seg.hostNodeId = dstRouterId;
+                    seg.wavelengthIndex = wl;
+                    devPath.segments.push_back(seg);
+                }
+                {
+                    OpticalDeviceSegment seg;
+                    seg.deviceType = DEV_RING_DROP;
+                    seg.deviceIndex = dstRouterId * 100000 + destInPort * 10000
+                                    + dstOutPort * 1000 + actualThrough + wl;
+                    seg.hostNodeId = dstRouterId;
+                    seg.wavelengthIndex = wl;
+                    devPath.segments.push_back(seg);
+                }
+                for (int bend = 0; bend < meta.bendCount; ++bend) {
+                    OpticalDeviceSegment seg;
+                    seg.deviceType = DEV_WAVEGUIDE_BEND;
+                    seg.deviceIndex = dstRouterId * 100000 + destInPort * 10000
+                                    + dstOutPort * 1000 + bend;
+                    seg.hostNodeId = dstRouterId;
+                    seg.wavelengthIndex = wl;
+                    devPath.segments.push_back(seg);
+                }
+                int crossingCount = actualThrough / std::max(1, totalWL) + 1;
+                for (int c = 0; c < crossingCount; ++c) {
+                    OpticalDeviceSegment seg;
+                    seg.deviceType = DEV_WAVEGUIDE_CROSSING;
+                    seg.deviceIndex = dstRouterId * 100000 + destInPort * 10000
+                                    + dstOutPort * 1000 + c;
+                    seg.hostNodeId = dstRouterId;
+                    seg.wavelengthIndex = wl;
                     devPath.segments.push_back(seg);
                 }
             }
         }
-    }
 
-    // ---- Destination NI: Router → shared demodulator chain → per-λ PD ----
-    // Waveguide: router core port to demodulator chain (shared)
-    {
-        OpticalDeviceSegment seg;
-        seg.deviceType = DEV_WAVEGUIDE;
-        seg.deviceIndex = dstId * 10;
-        seg.waveguideLength_cm = wgDistances.routerToDemodulator_cm;
-        seg.wavelengthIndex = maxWl;
-        devPath.segments.push_back(seg);
-    }
-    // Shared demodulator microring chain: rings 1..maxWl on single bus waveguide.
-    // Active-wavelength positions → DROP (couple to PD), others → THROUGH.
-    // Total distinct rings = maxWl (no per-λ duplication).
-    for (int r = 1; r <= maxWl; ++r) {
-        OpticalDeviceSegment seg;
-        seg.deviceType = isActiveWl[r] ? DEV_RING_DROP : DEV_RING_THROUGH;
-        seg.deviceIndex = dstId * 1000 + r;
-        seg.wavelengthIndex = r;
-        devPath.segments.push_back(seg);
-    }
-    // Per-wavelength: drop port → waveguide → photodetector
-    for (size_t wi = 0; wi < wavelengths.size(); ++wi) {
-        int wl = wavelengths[wi];
         {
             OpticalDeviceSegment seg;
             seg.deviceType = DEV_WAVEGUIDE;
-            seg.deviceIndex = dstId * 100 + static_cast<int>(wi);
+            seg.deviceIndex = dstId * 100000 + 34000 + wl;
+            seg.hostNodeId = dstId;
+            seg.waveguideLength_cm = wgDistances.routerToDemodulator_cm;
+            seg.wavelengthIndex = wl;
+            devPath.segments.push_back(seg);
+        }
+        buildDemodulatorSegments(dstId, wl, totalWL, devPath.segments);
+        {
+            OpticalDeviceSegment seg;
+            seg.deviceType = DEV_WAVEGUIDE;
+            seg.deviceIndex = dstId * 100000 + 35000 + wl;
+            seg.hostNodeId = dstId;
             seg.waveguideLength_cm = wgDistances.demodulatorToPD_cm;
             seg.wavelengthIndex = wl;
             devPath.segments.push_back(seg);
@@ -1489,7 +1459,8 @@ bool LogicalTopologyManager::getDeviceLevelPathMetrics(int srcId, int dstId,
         {
             OpticalDeviceSegment seg;
             seg.deviceType = DEV_PHOTODETECTOR;
-            seg.deviceIndex = dstId * 100 + static_cast<int>(wi);
+            seg.deviceIndex = dstId * 100000 + 36000 + wl;
+            seg.hostNodeId = dstId;
             seg.wavelengthIndex = wl;
             devPath.segments.push_back(seg);
         }
@@ -1554,31 +1525,60 @@ bool LogicalTopologyManager::getDeviceLevelPathMetrics(int srcId, int dstId,
     metrics.muxDemuxLoss_dB = 0.0;
     metrics.waveguidePropagationLoss_dB = 0.0;
     metrics.waveguideBendingLoss_dB = 0.0;
+    metrics.waveguideCrossingLoss_dB = 0.0;
     metrics.ringThroughLoss_dB = 0.0;
     metrics.ringDropLoss_dB = 0.0;
     metrics.soaGainTotal_dB = 0.0;
     metrics.detectorLoss_dB = 0.0;
 
-    for (size_t si = 0; si < devPath.segments.size(); ++si) {
-        const OpticalDeviceSegment &seg = devPath.segments[si];
-        const DevicePerWavelengthParams &params =
-            getDeviceParams(deviceParamTable, seg.deviceType, seg.wavelengthIndex);
-        switch (seg.deviceType) {
-            case DEV_MODULATOR:       metrics.modulatorLoss_dB       += params.insertionLoss_dB; break;
-            case DEV_MUX:
-            case DEV_DEMUX:           metrics.muxDemuxLoss_dB        += params.insertionLoss_dB; break;
-            case DEV_WAVEGUIDE:       metrics.waveguidePropagationLoss_dB += params.insertionLoss_dB * seg.waveguideLength_cm; break;
-            case DEV_WAVEGUIDE_BEND:  metrics.waveguideBendingLoss_dB    += params.insertionLoss_dB; break;
-            case DEV_RING_THROUGH:    metrics.ringThroughLoss_dB     += params.insertionLoss_dB; break;
-            case DEV_RING_DROP:       metrics.ringDropLoss_dB        += params.insertionLoss_dB; break;
-            case DEV_SOA:             metrics.soaGainTotal_dB        += params.soaGain_dB; break;
-            case DEV_PHOTODETECTOR:   metrics.detectorLoss_dB        += params.insertionLoss_dB; break;
-            default: break;
+    for (size_t wi = 0; wi < wavelengths.size(); ++wi) {
+        int wl = wavelengths[wi];
+        double modLoss = 0.0;
+        double muxDemuxLoss = 0.0;
+        double waveguideLoss = 0.0;
+        double bendLoss = 0.0;
+        double crossingLoss = 0.0;
+        double ringThroughLoss = 0.0;
+        double ringDropLoss = 0.0;
+        double soaGain = 0.0;
+        double detectorLoss = 0.0;
+
+        for (size_t si = 0; si < devPath.segments.size(); ++si) {
+            const OpticalDeviceSegment &seg = devPath.segments[si];
+            if (seg.wavelengthIndex > 0 && seg.wavelengthIndex != wl) {
+                continue;
+            }
+            const DevicePerWavelengthParams &params =
+                getDeviceParams(deviceParamTable, seg.deviceType, wl);
+            switch (seg.deviceType) {
+                case DEV_MODULATOR:       modLoss       += params.insertionLoss_dB; break;
+                case DEV_MUX:
+                case DEV_DEMUX:           muxDemuxLoss  += params.insertionLoss_dB; break;
+                case DEV_WAVEGUIDE:       waveguideLoss += params.insertionLoss_dB * seg.waveguideLength_cm; break;
+                case DEV_WAVEGUIDE_BEND:  bendLoss      += params.insertionLoss_dB; break;
+                case DEV_WAVEGUIDE_CROSSING: crossingLoss += params.insertionLoss_dB; break;
+                case DEV_RING_THROUGH:    ringThroughLoss += params.insertionLoss_dB; break;
+                case DEV_RING_DROP:       ringDropLoss  += params.insertionLoss_dB; break;
+                case DEV_SOA:             soaGain       += params.soaGain_dB; break;
+                case DEV_PHOTODETECTOR:   detectorLoss  += params.insertionLoss_dB; break;
+                default: break;
+            }
         }
+
+        metrics.modulatorLoss_dB = std::max(metrics.modulatorLoss_dB, modLoss);
+        metrics.muxDemuxLoss_dB = std::max(metrics.muxDemuxLoss_dB, muxDemuxLoss);
+        metrics.waveguidePropagationLoss_dB = std::max(metrics.waveguidePropagationLoss_dB, waveguideLoss);
+        metrics.waveguideBendingLoss_dB = std::max(metrics.waveguideBendingLoss_dB, bendLoss);
+        metrics.waveguideCrossingLoss_dB = std::max(metrics.waveguideCrossingLoss_dB, crossingLoss);
+        metrics.ringThroughLoss_dB = std::max(metrics.ringThroughLoss_dB, ringThroughLoss);
+        metrics.ringDropLoss_dB = std::max(metrics.ringDropLoss_dB, ringDropLoss);
+        metrics.soaGainTotal_dB = std::max(metrics.soaGainTotal_dB, soaGain);
+        metrics.detectorLoss_dB = std::max(metrics.detectorLoss_dB, detectorLoss);
     }
 
     metrics.totalLoss_dB = result.totalLoss_dB;
     metrics.totalCrosstalk_dB = result.totalCrosstalk_dB;
+    metrics.totalCrosstalkNoise_dBm = result.totalCrosstalkNoise_dBm;
     metrics.receivedPower_dBm = result.worstReceivedPower_dBm;
     metrics.estimatedSNR_dB = result.worstSNR_dB;
     metrics.estimatedBER = result.worstBER;
@@ -1591,14 +1591,11 @@ bool LogicalTopologyManager::getDeviceLevelPathMetrics(int srcId, int dstId,
     metrics.maxRingDetuning_nm = result.maxRingDetuning_nm;
     metrics.tempAdjustedLoss_dB = result.tempAdjustedLoss_dB;
     metrics.perRouterTuningPower_mW = result.perRouterTuningPower_mW;
-    if (opticalEnableThermalEffects) {
-        totalOpticalTuningPower_mW += result.totalTuningPower_mW;
-        opticalBudgetComputations++;
-    }
 
     // Per-wavelength detail
     metrics.perWavelengthTotalLoss_dB = result.perWavelengthTotalLoss_dB;
     metrics.perWavelengthCrosstalk_dB = result.perWavelengthCrosstalk_dB;
+    metrics.perWavelengthCrosstalkNoise_dBm = result.perWavelengthCrosstalkNoise_dBm;
     metrics.perWavelengthReceivedPower_dBm = result.perWavelengthReceivedPower_dBm;
     metrics.perWavelengthSNR_dB = result.perWavelengthSNR_dB;
     metrics.perWavelengthBER = result.perWavelengthBER;
@@ -1815,8 +1812,28 @@ bool LogicalTopologyManager::tryAllocateOpticalPathForPacket(int srcId,
 
         // Pre-compute budget at reservation time
         OpticalPathMetrics budgetMetrics;
-        getDeviceLevelPathMetrics(srcId, dstId, bestWls, budgetMetrics);
-        cachedBudgets[pktId] = budgetMetrics;
+        bool haveBudget = getDeviceLevelPathMetrics(srcId, dstId, bestWls, budgetMetrics);
+        if (haveBudget) {
+            cachedBudgets[pktId] = budgetMetrics;
+            opticalBudgetComputations++;
+            if (budgetMetrics.signalMargin_dB < minOpticalSignalMargin_dB)
+                minOpticalSignalMargin_dB = budgetMetrics.signalMargin_dB;
+            if (budgetMetrics.estimatedSNR_dB < minOpticalSNR_dB)
+                minOpticalSNR_dB = budgetMetrics.estimatedSNR_dB;
+            if (budgetMetrics.estimatedBER > maxOpticalBER)
+                maxOpticalBER = budgetMetrics.estimatedBER;
+            if (budgetMetrics.tempAdjustedLoss_dB > maxOpticalTempAdjustedLoss_dB)
+                maxOpticalTempAdjustedLoss_dB = budgetMetrics.tempAdjustedLoss_dB;
+            if (budgetMetrics.maxRingDetuning_nm > maxOpticalRingDetuning_nm)
+                maxOpticalRingDetuning_nm = budgetMetrics.maxRingDetuning_nm;
+            if (budgetMetrics.totalTuningPower_mW > maxOpticalPathTuningPower_mW)
+                maxOpticalPathTuningPower_mW = budgetMetrics.totalTuningPower_mW;
+            if (budgetMetrics.waveguideCrossingLoss_dB > maxOpticalWaveguideCrossingLoss_dB)
+                maxOpticalWaveguideCrossingLoss_dB = budgetMetrics.waveguideCrossingLoss_dB;
+            if (opticalEnableThermalEffects) {
+                totalOpticalTuningPower_mW += budgetMetrics.totalTuningPower_mW;
+            }
+        }
 
         // Build ordered router list from path edges
         std::vector<int> routers;
@@ -1905,17 +1922,8 @@ bool LogicalTopologyManager::tryAllocateOpticalPathForPacket(int srcId,
                 auto rtmIt = routerTurnMatrices.find(routerId);
                 if (rtmIt != routerTurnMatrices.end() && inPort >= 0 && outPort >= 0
                         && inPort < 5 && outPort < 5 && inPort != outPort) {
-                    int formulaType = rtmIt->second[inPort][outPort].throughCount;
-                    int throughCount = 0;
-                    switch (formulaType) {
-                        case 0: throughCount = maxWl - 1; break;
-                        case 1: throughCount = 2*totalWL + maxWl - 1; break;
-                        case 2: throughCount = 3*totalWL + maxWl - 1; break;
-                        case 3: throughCount = 4*totalWL; break;
-                        case 4: throughCount = 4*totalWL + maxWl - 1; break;
-                        case 5: throughCount = 6*totalWL + maxWl - 1; break;
-                        default: break;
-                    }
+                    const RouterTurnMetadata &meta = rtmIt->second[inPort][outPort];
+                    int throughCount = evaluateRouterThroughCount(meta, maxWl, totalWL);
                     ringCount = throughCount + numActiveWL; // through rings + drop rings
                 }
 
@@ -2043,6 +2051,7 @@ void LogicalTopologyManager::releaseOpticalPathForPacket(int pktId) {
         }
     }
 
+    cachedBudgets.erase(pktId);
     opticalPacketAllocations.erase(it);
 }
 
