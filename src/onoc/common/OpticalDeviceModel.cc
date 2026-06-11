@@ -33,6 +33,7 @@ const char *opticalDeviceTypeName(OpticalDeviceType t) {
         case DEV_RING_DROP:       return "ring_drop";
         case DEV_WAVEGUIDE:       return "waveguide";
         case DEV_WAVEGUIDE_BEND:  return "waveguide_bend";
+        case DEV_WAVEGUIDE_CROSSING: return "waveguide_crossing";
         case DEV_MUX:             return "mux";
         case DEV_DEMUX:           return "demux";
         case DEV_SOA:             return "soa";
@@ -116,12 +117,9 @@ RouterTurnMetadataMatrix buildWavelengthDependentRouterMatrix(int n) {
             meta.dropCount = 1;
             meta.bendCount = bendTable[inP][outP];
 
-            // Store formula type; through count will be evaluated per wavelength
-            // We store it as a negative sentinel so expandRouterTurnToSegments
-            // can compute the actual count at expansion time.
-            // formulaType → expression:
             int ft = formulaType[inP][outP];
-            meta.throughCount = ft; // stored as formula type (negative convention)
+            meta.throughFormulaType = ft;
+            meta.throughCount = 0;
         }
     }
     return matrix;
@@ -130,7 +128,7 @@ RouterTurnMetadataMatrix buildWavelengthDependentRouterMatrix(int n) {
 // ────────────────────────────────────────────────────────────
 //  Expand router turn metadata → device segments for wavelength i
 // ────────────────────────────────────────────────────────────
-static int evalThroughCount(int formulaType, int i, int n) {
+static int evalThroughFormula(int formulaType, int i, int n) {
     switch (formulaType) {
         case 0: return i - 1;           // i-1
         case 1: return 2 * n + i - 1;   // 2n+i-1
@@ -142,34 +140,40 @@ static int evalThroughCount(int formulaType, int i, int n) {
     }
 }
 
-void expandRouterTurnToSegments(const RouterTurnMetadata &meta,
-        int wavelengthIndex, int inPort, int outPort, int nodeId,
-        std::vector<OpticalDeviceSegment> &segments) {
-    // Note: meta.throughCount stores the formulaType here (set by builder)
-    // We need totalWavelengths n to evaluate it. The caller must provide it
-    // through a separate mechanism. For now we use the raw stored value
-    // and let the LogicalTopologyManager handle the expansion.
-    //
-    // We emit segments in order: through passes → drop → bends
-    int formulaType = meta.throughCount; // stored as formula type
-    // throughCount will be resolved by caller; for now emit 0 through segments
-    // and let the LogicalTopologyManager inject the correct count.
+int evaluateRouterThroughCount(const RouterTurnMetadata &meta,
+        int wavelengthIndex, int totalWavelengths) {
+    int n = std::max(1, totalWavelengths);
+    int i = std::max(1, wavelengthIndex);
+    return evalThroughFormula(meta.throughFormulaType, i, n);
+}
 
-    // 1. Through passes (count = evalThroughCount(formulaType, i, n))
-    //    Emitted by LogicalTopologyManager which knows i and n.
-    // 2. Drop (always 1)
-    {
+void expandRouterTurnToSegments(const RouterTurnMetadata &meta,
+        int wavelengthIndex, int totalWavelengths, int inPort, int outPort, int nodeId,
+        std::vector<OpticalDeviceSegment> &segments) {
+    // We emit segments in order: through passes → drop → bends
+    int throughCount = evaluateRouterThroughCount(meta, wavelengthIndex, totalWavelengths);
+    for (int t = 0; t < throughCount; ++t) {
         OpticalDeviceSegment seg;
-        seg.deviceType = DEV_RING_DROP;
-        seg.deviceIndex = nodeId * 1000 + inPort * 100 + outPort * 10;
+        seg.deviceType = DEV_RING_THROUGH;
+        seg.deviceIndex = nodeId * 100000 + inPort * 10000 + outPort * 1000 + t;
+        seg.hostNodeId = nodeId;
         seg.wavelengthIndex = wavelengthIndex;
         segments.push_back(seg);
     }
-    // 3. Bends
+    {
+        OpticalDeviceSegment seg;
+        seg.deviceType = DEV_RING_DROP;
+        seg.deviceIndex = nodeId * 100000 + inPort * 10000 + outPort * 1000
+                        + throughCount + wavelengthIndex;
+        seg.hostNodeId = nodeId;
+        seg.wavelengthIndex = wavelengthIndex;
+        segments.push_back(seg);
+    }
     for (int b = 0; b < meta.bendCount; ++b) {
         OpticalDeviceSegment seg;
         seg.deviceType = DEV_WAVEGUIDE_BEND;
-        seg.deviceIndex = nodeId * 1000 + inPort * 100 + outPort * 10 + b;
+        seg.deviceIndex = nodeId * 100000 + inPort * 10000 + outPort * 1000 + b;
+        seg.hostNodeId = nodeId;
         seg.wavelengthIndex = wavelengthIndex;
         segments.push_back(seg);
     }
@@ -187,7 +191,8 @@ void buildModulatorSegments(int srcId, int wavelengthIndex,
     for (int r = 1; r < wavelengthIndex; ++r) {
         OpticalDeviceSegment seg;
         seg.deviceType = DEV_RING_THROUGH;
-        seg.deviceIndex = srcId * 1000 + r;
+        seg.deviceIndex = srcId * 100000 + 10000 + r;
+        seg.hostNodeId = srcId;
         seg.wavelengthIndex = wavelengthIndex;
         segments.push_back(seg);
     }
@@ -195,7 +200,8 @@ void buildModulatorSegments(int srcId, int wavelengthIndex,
     {
         OpticalDeviceSegment seg;
         seg.deviceType = DEV_RING_DROP;
-        seg.deviceIndex = srcId * 1000 + wavelengthIndex;
+        seg.deviceIndex = srcId * 100000 + 10000 + wavelengthIndex;
+        seg.hostNodeId = srcId;
         seg.wavelengthIndex = wavelengthIndex;
         segments.push_back(seg);
     }
@@ -217,7 +223,8 @@ void buildDemodulatorSegments(int dstId, int wavelengthIndex,
     for (int r = 1; r < wavelengthIndex; ++r) {
         OpticalDeviceSegment seg;
         seg.deviceType = DEV_RING_THROUGH;
-        seg.deviceIndex = dstId * 1000 + r;
+        seg.deviceIndex = dstId * 100000 + 20000 + r;
+        seg.hostNodeId = dstId;
         seg.wavelengthIndex = wavelengthIndex;
         segments.push_back(seg);
     }
@@ -225,7 +232,8 @@ void buildDemodulatorSegments(int dstId, int wavelengthIndex,
     {
         OpticalDeviceSegment seg;
         seg.deviceType = DEV_RING_DROP;
-        seg.deviceIndex = dstId * 1000 + wavelengthIndex;
+        seg.deviceIndex = dstId * 100000 + 20000 + wavelengthIndex;
+        seg.hostNodeId = dstId;
         seg.wavelengthIndex = wavelengthIndex;
         segments.push_back(seg);
     }
@@ -315,6 +323,16 @@ void populateDefaultOpticalParams(OpticalParamTable &table, int numWavelengths) 
             table[key] = p;
         }
 
+        // ── Waveguide crossing ──
+        key.deviceType = DEV_WAVEGUIDE_CROSSING;
+        {
+            DevicePerWavelengthParams p;
+            p.insertionLoss_dB = 0.05;          // typical low-loss Si waveguide crossing
+            p.crosstalkToAdjacent_dB = -30.0;   // crossing-induced leakage
+            p.crosstalkToNonAdjacent_dB = -50.0;
+            table[key] = p;
+        }
+
         // ── WDM MUX (e.g. AWG) ──
         key.deviceType = DEV_MUX;
         {
@@ -384,14 +402,33 @@ void populateDefaultOpticalParams(OpticalParamTable &table, int numWavelengths) 
 //  per-wavelength losses, apply SOA gain + ASE noise, compute
 //  SNR and PAM4 BER.
 // ────────────────────────────────────────────────────────────
+static double mWToDbm(double power_mW) {
+    if (power_mW <= 0.0) return -199.0;
+    return 10.0 * std::log10(power_mW);
+}
+
+static int getSegmentHostNodeId(const OpticalDeviceSegment &seg) {
+    if (seg.hostNodeId >= 0) return seg.hostNodeId;
+    if (seg.deviceIndex >= 0) return seg.deviceIndex / 1000;
+    return -1;
+}
+
+static long long makePhysicalSegmentKey(const OpticalDeviceSegment &seg) {
+    int host = getSegmentHostNodeId(seg);
+    unsigned int local = static_cast<unsigned int>(seg.deviceIndex);
+    return (static_cast<long long>(host + 1) << 32) | local;
+}
+
+static bool segmentAppliesToWavelength(const OpticalDeviceSegment &seg, int wavelengthIndex) {
+    return seg.wavelengthIndex <= 0 || seg.wavelengthIndex == wavelengthIndex;
+}
+
 void computeDeviceLevelBudget(const OpticalDevicePath &path,
         const OpticalParamTable &paramTable,
         const OpticalBudgetConstraints &constraints,
         const RouterTurnMetadataMatrix &routerMatrix,
         OpticalDevicePath &result) {
     result = path; // copy segment list
-
-    double launchPower_linear_mW = std::pow(10.0, constraints.launchPower_dBm / 10.0);
 
     // Check waveguide damage threshold at source
     if (constraints.launchPower_dBm > constraints.waveguideMaxPower_dBm) {
@@ -415,19 +452,35 @@ void computeDeviceLevelBudget(const OpticalDevicePath &path,
     }
 
     result.totalLoss_dB = 0.0;
-    result.totalCrosstalk_dB = 0.0;
+    result.totalCrosstalk_dB = -199.0;
+    result.totalCrosstalkNoise_dBm = -199.0;
     result.worstReceivedPower_dBm = 99.0;
     result.worstSNR_dB = 99.0;
     result.worstBER = 0.0;
     result.signalMargin_dB = 99.0;
+    result.totalTuningPower_mW = 0.0;
+    result.maxRingDetuning_nm = 0.0;
+    result.tempAdjustedLoss_dB = 0.0;
+    result.perRouterTuningPower_mW.clear();
+    result.perWavelengthTotalLoss_dB.clear();
+    result.perWavelengthCrosstalk_dB.clear();
+    result.perWavelengthCrosstalkNoise_dBm.clear();
+    result.perWavelengthReceivedPower_dBm.clear();
+    result.perWavelengthSNR_dB.clear();
+    result.perWavelengthBER.clear();
+    result.perWavelengthMeetsSensitivity.clear();
+
+    std::set<long long> tunedRingKeys;
+
     // Per-wavelength accumulators
     for (size_t wi = 0; wi < activeWavelengths.size(); ++wi) {
         int wl = activeWavelengths[wi];
         double totalInsertionLoss_dB = 0.0;  // reset per wavelength
         double currentPower_dBm = constraints.launchPower_dBm;
-        double accumulatedCrosstalk_dB = -199.0; // linear-sum later, track in dB
+        double accumulatedCrosstalkNoise_mW = 0.0;
         double accumulatedNoisePower_mW = 0.0;    // mW
         double accumulatedLoss_dB = 0.0;
+        double wavelengthTempExtraLoss_dB = 0.0;
 
         // Thermal noise floor (mW)
         double thermalNoise_mW = std::pow(10.0, constraints.thermalNoiseFloor_dBm / 10.0);
@@ -436,6 +489,9 @@ void computeDeviceLevelBudget(const OpticalDevicePath &path,
         // Walk segments
         for (size_t si = 0; si < path.segments.size(); ++si) {
             const OpticalDeviceSegment &seg = path.segments[si];
+            if (!segmentAppliesToWavelength(seg, wl)) {
+                continue;
+            }
             const DevicePerWavelengthParams &params =
                 getDeviceParams(paramTable, seg.deviceType, wl);
 
@@ -476,6 +532,7 @@ void computeDeviceLevelBudget(const OpticalDevicePath &path,
                 case DEV_RING_THROUGH:
                 case DEV_RING_DROP:
                 case DEV_WAVEGUIDE_BEND:
+                case DEV_WAVEGUIDE_CROSSING:
                 case DEV_MUX:
                 case DEV_DEMUX:
                 case DEV_PHOTODETECTOR:
@@ -487,21 +544,29 @@ void computeDeviceLevelBudget(const OpticalDevicePath &path,
             // ── Temperature-aware adjustments ──
             double tempExtraLoss_dB = 0.0;
             if (constraints.enableThermalEffects && constraints.getNodeTemperature) {
-                int nodeId = seg.deviceIndex / 1000;
-                double T_K = constraints.getNodeTemperature(nodeId);
+                int nodeId = getSegmentHostNodeId(seg);
+                double T_K = (nodeId >= 0) ? constraints.getNodeTemperature(nodeId)
+                                           : constraints.Tambient_K;
                 double deltaT_K = T_K - constraints.Tambient_K;
 
-                // Microring through/drop: detuning → extra IL + tuning power
+                // Microring through/drop: tuning power compensates thermal detuning.
+                // If tuning is disabled, use the configured dB/K coefficient as
+                // uncompensated residual insertion loss.
                 if (seg.deviceType == DEV_RING_THROUGH || seg.deviceType == DEV_RING_DROP) {
                     double detuning_nm = constraints.thermoOpticCoeff_nm_per_K * deltaT_K;
                     double absDetuning = std::abs(detuning_nm);
-                    // Lorentzian-based excess loss: IL_extra ≈ lossCoeff × (detuning/bandwidth)^2
-                    double excessIL = constraints.ringIL_TempCoeff_dB_per_K * absDetuning;
-                    tempExtraLoss_dB += excessIL;
-                    // Tuning power to compensate detuning
-                    double ringTuningPower = constraints.tuningEfficiency_mW_per_nm * absDetuning;
-                    result.totalTuningPower_mW += ringTuningPower;
-                    result.perRouterTuningPower_mW[nodeId] += ringTuningPower;
+                    if (constraints.tuningEfficiency_mW_per_nm > 0.0) {
+                        long long ringKey = makePhysicalSegmentKey(seg);
+                        if (tunedRingKeys.insert(ringKey).second) {
+                            double ringTuningPower = constraints.tuningEfficiency_mW_per_nm * absDetuning;
+                            result.totalTuningPower_mW += ringTuningPower;
+                            if (nodeId >= 0) {
+                                result.perRouterTuningPower_mW[nodeId] += ringTuningPower;
+                            }
+                        }
+                    } else {
+                        tempExtraLoss_dB += constraints.ringIL_TempCoeff_dB_per_K * std::abs(deltaT_K);
+                    }
                     if (absDetuning > result.maxRingDetuning_nm)
                         result.maxRingDetuning_nm = absDetuning;
                 }
@@ -520,7 +585,7 @@ void computeDeviceLevelBudget(const OpticalDevicePath &path,
             }
 
             segLoss_dB += tempExtraLoss_dB;
-            result.tempAdjustedLoss_dB += tempExtraLoss_dB;
+            wavelengthTempExtraLoss_dB += tempExtraLoss_dB;
             currentPower_dBm -= segLoss_dB;
             accumulatedLoss_dB += segLoss_dB;
 
@@ -529,8 +594,8 @@ void computeDeviceLevelBudget(const OpticalDevicePath &path,
                 totalInsertionLoss_dB += segLoss_dB;
             }
 
-            // Accumulate crosstalk (worst-case sum in dB domain ≈ linear domain approximation)
-            // We use linear summation for crosstalk power
+            // Accumulate crosstalk as optical noise power. The legacy metric
+            // names end in _dB, but the stored value is summed noise in dBm.
             double crosstalk_mW = 0.0;
             if (params.crosstalkToAdjacent_dB > -90.0) {
                 double pwr_mW = std::pow(10.0, currentPower_dBm / 10.0);
@@ -544,10 +609,7 @@ void computeDeviceLevelBudget(const OpticalDevicePath &path,
             }
             if (crosstalk_mW > 0.0) {
                 accumulatedNoisePower_mW += crosstalk_mW;
-                double crosstalk_dBm = 10.0 * std::log10(crosstalk_mW);
-                if (crosstalk_dBm > accumulatedCrosstalk_dB || accumulatedCrosstalk_dB < -190.0) {
-                    accumulatedCrosstalk_dB = crosstalk_dBm;
-                }
+                accumulatedCrosstalkNoise_mW += crosstalk_mW;
             }
         }
 
@@ -562,9 +624,7 @@ void computeDeviceLevelBudget(const OpticalDevicePath &path,
             if (xtalk_dBm > -190.0) {
                 double xtalk_mW = std::pow(10.0, xtalk_dBm / 10.0);
                 accumulatedNoisePower_mW += xtalk_mW;
-                if (xtalk_dBm > accumulatedCrosstalk_dB || accumulatedCrosstalk_dB < -190.0) {
-                    accumulatedCrosstalk_dB = xtalk_dBm;
-                }
+                accumulatedCrosstalkNoise_mW += xtalk_mW;
             }
         }
 
@@ -594,10 +654,12 @@ void computeDeviceLevelBudget(const OpticalDevicePath &path,
             pdSens_dBm = pdParams.pdSensitivity_dBm;
         }
         bool meetsSens = (rxPower_dBm >= pdSens_dBm);
+        double accumulatedCrosstalkNoise_dBm = mWToDbm(accumulatedCrosstalkNoise_mW);
 
         // Store per-wavelength results
         result.perWavelengthTotalLoss_dB[wl] = accumulatedLoss_dB;
-        result.perWavelengthCrosstalk_dB[wl] = accumulatedCrosstalk_dB;
+        result.perWavelengthCrosstalk_dB[wl] = accumulatedCrosstalkNoise_dBm;
+        result.perWavelengthCrosstalkNoise_dBm[wl] = accumulatedCrosstalkNoise_dBm;
         result.perWavelengthReceivedPower_dBm[wl] = rxPower_dBm;
         result.perWavelengthSNR_dB[wl] = snr_dB;
         result.perWavelengthBER[wl] = ber;
@@ -605,8 +667,10 @@ void computeDeviceLevelBudget(const OpticalDevicePath &path,
 
         // Update aggregates (worst across wavelengths)
         result.totalLoss_dB = std::max(result.totalLoss_dB, totalInsertionLoss_dB);
-        if (accumulatedCrosstalk_dB > result.totalCrosstalk_dB) {
-            result.totalCrosstalk_dB = accumulatedCrosstalk_dB;
+        result.tempAdjustedLoss_dB = std::max(result.tempAdjustedLoss_dB, wavelengthTempExtraLoss_dB);
+        if (accumulatedCrosstalkNoise_dBm > result.totalCrosstalkNoise_dBm) {
+            result.totalCrosstalkNoise_dBm = accumulatedCrosstalkNoise_dBm;
+            result.totalCrosstalk_dB = accumulatedCrosstalkNoise_dBm;
         }
         if (rxPower_dBm < result.worstReceivedPower_dBm) {
             result.worstReceivedPower_dBm = rxPower_dBm;

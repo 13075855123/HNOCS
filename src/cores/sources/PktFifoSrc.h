@@ -22,6 +22,7 @@
 #include <omnetpp.h>
 #include <vector>
 #include <map>
+#include <set>
 using namespace omnetpp;
 
 #include "NoCs_m.h"
@@ -111,6 +112,7 @@ private:
 	bool enableTrafficVisualization;
 	simtime_t visualLinkHoldTime;
 	std::map<cMessage *, cFigure *> visualLinkCleanup;
+	std::set<cMessage *> pendingOpticalReleaseMsgs;
 	long setupReqRxCount;
 	long setupAckRxCount;
 	long setupAckAcceptedCount;
@@ -172,6 +174,9 @@ private:
 	void handleControlEvent(int eventType, int requesterId, int targetId, int token,
 			int spatialChannel, int wavelengthMask);
 	void drawTransientTrafficLine(int dstId, bool opticalData);
+	void purgeControlFlitsForSetup(int token);
+	void scheduleOpticalRelease(int token, simtime_t delay);
+	void handleOpticalRelease(cMessage *msg);
 
 protected:
     virtual void initialize();

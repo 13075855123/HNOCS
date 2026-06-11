@@ -286,8 +286,11 @@ def _parse_sca(sca_path: Path) -> OmnetScalars:
                 throttle_ratios.append(value)
             elif is_pe_module and name == "totalEnergyJ":
                 scalars.pe_total_energy_J += value
-            elif is_pe_module and name == "allTasksCompletedAt":
+            elif is_pe_module and name == "allTrafficDrainedAt":
                 scalars.makespan_s = max(scalars.makespan_s, value)
+            elif is_pe_module and name == "allTasksCompletedAt":
+                if scalars.makespan_s <= 0:
+                    scalars.makespan_s = max(scalars.makespan_s, value)
             elif is_pe_module and name == "pe-optical-packets-sent":
                 scalars.optical_packets_sent += int(value)
             elif name == "onoc-soa-total-energy-J":
@@ -296,6 +299,22 @@ def _parse_sca(sca_path: Path) -> OmnetScalars:
                 scalars.tuning_energy_J = value
             elif name == "onoc-laser-total-energy-J":
                 scalars.laser_energy_J = value
+            elif name == "onoc-optical-budget-computations":
+                scalars.optical_budget_count = int(value)
+            elif name == "onoc-optical-min-signal-margin-dB":
+                scalars.optical_min_signal_margin_dB = value
+            elif name == "onoc-optical-min-snr-dB":
+                scalars.optical_min_snr_dB = value
+            elif name == "onoc-optical-max-ber":
+                scalars.optical_max_ber = value
+            elif name == "onoc-optical-max-temp-adjusted-loss-dB":
+                scalars.optical_max_temp_adjusted_loss_dB = value
+            elif name == "onoc-optical-max-ring-detuning-nm":
+                scalars.optical_max_ring_detuning_nm = value
+            elif name == "onoc-optical-max-path-tuning-power-mW":
+                scalars.optical_max_path_tuning_power_mW = value
+            elif name == "onoc-optical-max-waveguide-crossing-loss-dB":
+                scalars.optical_max_waveguide_crossing_loss_dB = value
 
     scalars.throttle_penalty_ratios = throttle_ratios
     return scalars
@@ -313,7 +332,7 @@ def _parse_vec_via_scavetool(
 
     Extracts:
       - pe_max_temp_K: per-PE true peak temperature (over all time steps)
-      - sigma_T_K:     temperature standard deviation (all PEs × all times)
+      - sigma_T_K:     time-averaged spatial PE temperature std. deviation
       - N_hot:          count of PEs whose peak exceeds Tthrottle (327.15 K)
     """
     Tthrottle = 327.15
@@ -354,7 +373,7 @@ def _parse_vec_via_scavetool(
         return
 
     pe_max = [0.0] * num_pes
-    all_temps: list[float] = []
+    temps_by_time: dict[str, list[float]] = {}
     _pe_re = re.compile(r"pe\[(\d+)\]", re.IGNORECASE)
 
     # opp_scavetool JSON format:
@@ -389,40 +408,65 @@ def _parse_vec_via_scavetool(
         if pe < 0 or pe >= num_pes:
             continue
 
-        values = entry.get("value", [])
-        if isinstance(values, (int, float)):
-            values = [values]
-        for v in values:
+        for time_key, v in _json_time_value_pairs(entry):
             try:
                 temp = float(v)
             except (ValueError, TypeError):
                 continue
             if temp > pe_max[pe]:
                 pe_max[pe] = temp
-            all_temps.append(temp)
+            temps_by_time.setdefault(time_key, []).append(temp)
 
     json_path.unlink(missing_ok=True)
 
-    if all_temps:
-        _store_temperature_metrics(scalars, pe_max, all_temps, Tthrottle)
+    if temps_by_time:
+        _store_temperature_metrics(scalars, pe_max, temps_by_time, Tthrottle)
     else:
         _parse_vec_text(vec_path, scalars, num_pes=num_pes, Tthrottle=Tthrottle)
+
+
+def _json_time_value_pairs(entry: dict) -> list[tuple[str, object]]:
+    """Return (time-key, value) pairs from one scavetool JSON vector entry."""
+    values = entry.get("value", [])
+    times = entry.get("time", [])
+
+    if isinstance(values, (int, float)):
+        values = [values]
+    if isinstance(times, (int, float, str)):
+        times = [times]
+
+    if isinstance(values, list) and isinstance(times, list):
+        if len(times) == len(values):
+            return [(str(t), v) for t, v in zip(times, values)]
+        if len(times) == 1:
+            return [(str(times[0]), v) for v in values]
+        return [(str(i), v) for i, v in enumerate(values)]
+
+    return []
 
 
 def _store_temperature_metrics(
     scalars: OmnetScalars,
     pe_max: list[float],
-    all_temps: list[float],
+    temps_by_time: dict[str, list[float]],
     Tthrottle: float,
 ) -> None:
     """Store derived PE temperature metrics on an OmnetScalars object."""
-    if not all_temps:
-        return
-    avg = sum(all_temps) / len(all_temps)
-    var = sum((t - avg) ** 2 for t in all_temps) / len(all_temps)
-    scalars.sigma_T_K = math.sqrt(var)
     scalars.pe_max_temp_K = pe_max
     scalars.N_hot = sum(1 for t in pe_max if t > Tthrottle)
+
+    spatial_stds: list[float] = []
+    for temps in temps_by_time.values():
+        if len(temps) < 2:
+            continue
+        avg = sum(temps) / len(temps)
+        var = sum((t - avg) ** 2 for t in temps) / len(temps)
+        spatial_stds.append(math.sqrt(var))
+
+    if not spatial_stds:
+        return
+
+    scalars.sigma_T_K = sum(spatial_stds) / len(spatial_stds)
 
 
 def _parse_vec_text(
@@ -468,7 +512,7 @@ def _parse_vec_text(
         return
 
     pe_max = [0.0] * num_pes
-    all_temps: list[float] = []
+    temps_by_time: dict[str, list[float]] = {}
     with vec_path.open(encoding="utf-8", errors="replace") as f:
         for line in f:
             if not line or not line[0].isdigit():
@@ -489,9 +533,9 @@ def _parse_vec_text(
                 continue
             if temp > pe_max[pe]:
                 pe_max[pe] = temp
-            all_temps.append(temp)
+            temps_by_time.setdefault(tokens[2], []).append(temp)
 
-    _store_temperature_metrics(scalars, pe_max, all_temps, Tthrottle)
+    _store_temperature_metrics(scalars, pe_max, temps_by_time, Tthrottle)
 
 
 def _parse_thermal_snapshot(json_path: Path, scalars: OmnetScalars) -> None:
@@ -500,7 +544,15 @@ def _parse_thermal_snapshot(json_path: Path, scalars: OmnetScalars) -> None:
         data = json.loads(json_path.read_text(encoding="utf-8"))
         scalars.pe_temps_final_K = data.get("pe_temperatures_K", [])
         scalars.router_temps_final_K = data.get("router_temperatures_K", [])
-    except (json.JSONDecodeError, OSError):
+        pe_temps = [float(t) for t in scalars.pe_temps_final_K]
+        if pe_temps:
+            scalars.pe_max_temp_K = pe_temps
+            scalars.N_hot = sum(1 for t in pe_temps if t > 327.15)
+            if len(pe_temps) >= 2:
+                avg = sum(pe_temps) / len(pe_temps)
+                var = sum((t - avg) ** 2 for t in pe_temps) / len(pe_temps)
+                scalars.sigma_T_K = math.sqrt(var)
+    except (json.JSONDecodeError, OSError, TypeError, ValueError):
         pass
 
 

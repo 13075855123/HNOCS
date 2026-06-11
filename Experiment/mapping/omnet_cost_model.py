@@ -9,10 +9,10 @@ uses aggregate scalars + analytical computation for the cost terms:
 
 Baseline-normalized main experiment terms:
     f_peak       : PE peak temperature excess over ambient
-    f_sigma      : PE temperature standard deviation
+    f_sigma      : time-averaged spatial PE temperature standard deviation
     f_hot        : over-throttle PE count
     f_makespan   : task makespan
-    f_energy     : total system energy
+    f_energy     : PE + optical communication energy
     f_comm       : analytical communication hops * dataSize
     f_congestion : analytical max physical-edge load
     f_dvfs       : average DVFS penalty
@@ -81,7 +81,7 @@ class OmnetScalars:
       .sca  → total_throttle_penalty_s, total_compute_time_nominal_s,
                throttle_penalty_ratios, pe_total_energy_J, makespan_s,
                soa_energy_J, tuning_energy_J, laser_energy_J
-      .vec  → pe_max_temp_K, sigma_T_K, N_hot, all_temp_samples
+      .vec  → pe_max_temp_K, sigma_T_K, N_hot, PE temperature traces
       thermal_snapshot.json → pe_temps_final_K, router_temps_final_K
     """
 
@@ -102,10 +102,20 @@ class OmnetScalars:
     tuning_energy_J: float = 0.0
     laser_energy_J: float = 0.0
 
+    # --- .sca: ONOC optical link-quality summaries (actual allocated paths) ---
+    optical_budget_count: int = 0
+    optical_min_signal_margin_dB: float = 0.0
+    optical_min_snr_dB: float = 0.0
+    optical_max_ber: float = 0.0
+    optical_max_temp_adjusted_loss_dB: float = 0.0
+    optical_max_ring_detuning_nm: float = 0.0
+    optical_max_path_tuning_power_mW: float = 0.0
+    optical_max_waveguide_crossing_loss_dB: float = 0.0
+
     # --- .vec: pe-die-temperature per-PE peak (true T_max, not final) ---
     pe_max_temp_K: list[float] = field(default_factory=list)
 
-    # --- .vec: temperature standard deviation (all PEs × all time steps) ---
+    # --- .vec: time-averaged spatial PE temperature standard deviation ---
     sigma_T_K: float = 0.0
 
     # --- .vec: number of PEs whose peak exceeds Tthrottle ---
@@ -129,9 +139,19 @@ class OmnetScalars:
         return 0.0
 
     @property
-    def total_energy_J(self) -> float:
+    def pe_optical_comm_energy_J(self) -> float:
+        """Modeled PE + optical communication energy.
+
+        This includes PE activity plus SOA, MRR tuning, and laser energy. It
+        intentionally excludes electronic router buffer/crossbar/leakage energy.
+        """
         return (self.pe_total_energy_J + self.soa_energy_J
                 + self.tuning_energy_J + self.laser_energy_J)
+
+    @property
+    def total_energy_J(self) -> float:
+        """Backward-compatible alias for pe_optical_comm_energy_J."""
+        return self.pe_optical_comm_energy_J
 
     @property
     def dvfs_ratio(self) -> float:
@@ -160,7 +180,12 @@ class CostReference:
     sigma_T_K: float = 1.0
     N_hot: float = 1.0
     makespan_s: float = 1.0
-    total_energy_J: float = 1.0
+    pe_optical_comm_energy_J: float = 1.0
+
+    @property
+    def total_energy_J(self) -> float:
+        """Backward-compatible alias for older result readers."""
+        return self.pe_optical_comm_energy_J
     eta_dvfs_pct: float = 1.0
     comm_cost: float = 1.0
     congestion_cost: float = 1.0
@@ -273,7 +298,11 @@ class OmnetCostModel:
         return excess / self._delta_T
 
     def f_sigma(self, scalars: OmnetScalars) -> float:
-        """Temperature uniformity term: sigma_T / baseline sigma_T."""
+        """Temperature uniformity term: sigma_T / baseline sigma_T.
+
+        sigma_T is the time average of the spatial standard deviation across
+        PEs at each sampled time point.
+        """
         if scalars.sigma_T_K <= 0:
             return 0.0
         if self.reference is not None:
@@ -415,14 +444,15 @@ class OmnetCostModel:
     def f_energy(self, scalars: OmnetScalars) -> float:
         """Energy term.
 
-        With a baseline reference, returns total energy / baseline total energy.
+        With a baseline reference, returns PE + optical communication energy
+        normalized by the corresponding baseline value.
         Without a reference, keeps the old ideal-compute-energy overhead term.
         """
-        E_total = scalars.total_energy_J
-        if E_total <= 0:
+        E_pe_opt = scalars.pe_optical_comm_energy_J
+        if E_pe_opt <= 0:
             return 0.0
         if self.reference is not None:
-            return E_total / CostReference.positive(self.reference.total_energy_J)
+            return E_pe_opt / CostReference.positive(self.reference.pe_optical_comm_energy_J)
 
         E_ref = sum(
             self._task_loads.get(tid, 0.0) * 1e-9 * 2.5  # compute_time_s * powerCompute
@@ -430,7 +460,7 @@ class OmnetCostModel:
         )
         if E_ref <= 0:
             return 0.0
-        return max(0.0, (E_total - E_ref) / E_ref)
+        return max(0.0, (E_pe_opt - E_ref) / E_ref)
 
     # ------------------------------------------------------------------
     # Total cost
@@ -463,7 +493,7 @@ class OmnetCostModel:
             sigma_T_K=baseline_scalars.sigma_T_K,
             N_hot=float(baseline_scalars.N_hot),
             makespan_s=baseline_scalars.makespan_s,
-            total_energy_J=baseline_scalars.total_energy_J,
+            pe_optical_comm_energy_J=baseline_scalars.pe_optical_comm_energy_J,
             eta_dvfs_pct=baseline_scalars.eta_dvfs_pct,
             comm_cost=self.comm_cost(baseline_assignment),
             congestion_cost=self.congestion_cost(baseline_assignment),
@@ -509,5 +539,13 @@ class OmnetCostModel:
             "N_hot": scalars.N_hot,
             "eta_dvfs_pct": scalars.eta_dvfs_pct,
             "makespan_s": scalars.makespan_s,
-            "total_energy_J": scalars.total_energy_J,
+            "pe_optical_comm_energy_J": scalars.pe_optical_comm_energy_J,
+            "optical_budget_count": scalars.optical_budget_count,
+            "optical_min_signal_margin_dB": scalars.optical_min_signal_margin_dB,
+            "optical_min_snr_dB": scalars.optical_min_snr_dB,
+            "optical_max_ber": scalars.optical_max_ber,
+            "optical_max_temp_adjusted_loss_dB": scalars.optical_max_temp_adjusted_loss_dB,
+            "optical_max_ring_detuning_nm": scalars.optical_max_ring_detuning_nm,
+            "optical_max_path_tuning_power_mW": scalars.optical_max_path_tuning_power_mW,
+            "optical_max_waveguide_crossing_loss_dB": scalars.optical_max_waveguide_crossing_loss_dB,
         }

@@ -4,6 +4,7 @@
 #include <omnetpp.h>
 #include <queue>
 #include <map>
+#include <set>
 #include <vector>
 #include "TaskDescriptor.h"
 #include "PowerTrace.h"
@@ -46,6 +47,7 @@ private:
     std::vector<simtime_t> setupPendingExpiryByDst;
     std::vector<int> pendingSetupTokenByDst;
     std::vector<int> activeCircuitTokenByDst;
+    std::set<cMessage*> pendingOpticalReleaseMsgs;
     long setupReqRxCount;
     long setupAckRxCount;
     mutable long opticalPacketsSent;
@@ -80,6 +82,7 @@ private:
     // === Periodic DVFS throttling ===
     simtime_t remainingNominalWork;  // how much nominal compute time left
     simtime_t dvfsTickInterval;      // interval between DVFS re-checks (default 100ns)
+    simtime_t lastDvfsUpdateTime;    // last time nominal work was advanced
 
     // === Injection-side state ===
     std::queue<TaskMsg*> injectQ;       // regular data via router (GB)
@@ -160,6 +163,9 @@ private:
     bool sendFlitDirectToSink(TaskMsg *flit);
     cSimpleModule *getDestinationPEModule(int dst) const;
     void handleControlEvent(int eventType, int requesterId, int targetId, int token);
+    void purgeControlFlitsForSetup(int token);
+    void scheduleOpticalRelease(int dstIdx, int token, simtime_t delay);
+    void handleOpticalRelease(cMessage *msg);
 
     // === Helpers ===
     void loadTaskGraphFromCSV(const std::string& csvPath);
@@ -168,6 +174,8 @@ private:
     void startComputation(TaskDescriptor* task);
     void handleDvfsTick();
     void completeComputation();
+    void markDependencySatisfied(int targetTaskId, int producerTaskId,
+            const char *source, bool scheduleImmediately);
     void sendTaskData(TaskDescriptor* task);
     void sendFlitFromQ();
     void handleDataArrival(TaskMsg* msg);

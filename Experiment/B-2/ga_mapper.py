@@ -185,7 +185,15 @@ def evaluate_fitness(
         "soa_total_energy_J": scalars.soa_energy_J,
         "tuning_total_energy_J": scalars.tuning_energy_J,
         "laser_total_energy_J": scalars.laser_energy_J,
-        "total_energy_J": scalars.total_energy_J,
+        "pe_optical_comm_energy_J": scalars.pe_optical_comm_energy_J,
+        "optical_budget_count": scalars.optical_budget_count,
+        "optical_min_signal_margin_dB": scalars.optical_min_signal_margin_dB,
+        "optical_min_snr_dB": scalars.optical_min_snr_dB,
+        "optical_max_ber": scalars.optical_max_ber,
+        "optical_max_temp_adjusted_loss_dB": scalars.optical_max_temp_adjusted_loss_dB,
+        "optical_max_ring_detuning_nm": scalars.optical_max_ring_detuning_nm,
+        "optical_max_path_tuning_power_mW": scalars.optical_max_path_tuning_power_mW,
+        "optical_max_waveguide_crossing_loss_dB": scalars.optical_max_waveguide_crossing_loss_dB,
         "cost_breakdown": cost_model.cost_breakdown(assignment, scalars),
     }
 
@@ -305,7 +313,15 @@ class GAMapper:
                     "eta_dvfs_pct": scalars.eta_dvfs_pct,
                     "makespan_s": scalars.makespan_s,
                     "pe_total_energy_J": scalars.pe_total_energy_J,
-                    "total_energy_J": scalars.total_energy_J,
+                    "pe_optical_comm_energy_J": scalars.pe_optical_comm_energy_J,
+                    "optical_budget_count": scalars.optical_budget_count,
+                    "optical_min_signal_margin_dB": scalars.optical_min_signal_margin_dB,
+                    "optical_min_snr_dB": scalars.optical_min_snr_dB,
+                    "optical_max_ber": scalars.optical_max_ber,
+                    "optical_max_temp_adjusted_loss_dB": scalars.optical_max_temp_adjusted_loss_dB,
+                    "optical_max_ring_detuning_nm": scalars.optical_max_ring_detuning_nm,
+                    "optical_max_path_tuning_power_mW": scalars.optical_max_path_tuning_power_mW,
+                    "optical_max_waveguide_crossing_loss_dB": scalars.optical_max_waveguide_crossing_loss_dB,
                     "cost_breakdown": cost_model.cost_breakdown(assignment, scalars),
                 }
         else:

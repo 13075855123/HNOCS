@@ -83,6 +83,8 @@ void InfiniteBWMultiVCSink::handleMessage(cMessage *msg) {
 	}
 
 	int vc = flit->getVC();
+	bool arrivedViaOptical = hasGate("opticalIn")
+			&& msg->getArrivalGateId() == gate("opticalIn")->getId();
 	int pktClass = 0;
 	int spatialChannel = 0;
 	int wavelengthMask = 0;
@@ -146,7 +148,9 @@ void InfiniteBWMultiVCSink::handleMessage(cMessage *msg) {
 		}
 	}
 
-	sendCredit(vc, 1);
+	if (!arrivedViaOptical) {
+		sendCredit(vc, 1);
+	}
 
 	// some statistics, now tracked per packet id so optical bypass can interleave packets safely
 	if (isDataPacket && simTime() > statStartTime) {

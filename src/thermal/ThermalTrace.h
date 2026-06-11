@@ -33,6 +33,10 @@ class ThermalModel
     std::vector<double> routerPower;  // W
     std::vector<bool>   peReady;
     std::vector<bool>   routerReady;
+    std::vector<std::vector<double> > routerPortPower; // W per router port
+    std::vector<std::vector<bool> > routerPortReady;
+    std::vector<std::vector<bool> > routerPortFinalReady;
+    std::vector<simtime_t> routerPortWindowTime;
 
     // --- optical device power superimposed onto routers (persistent) ---
     std::vector<double> routerOpticalPower;  // W
@@ -61,6 +65,10 @@ class ThermalModel
     bool opened;
     bool headerWritten;
     double currentWindowTime;
+    std::vector<bool> peFinished;
+    std::vector<bool> routerFinished;
+    int finishedPEs;
+    int finishedRouters;
 
   public:
     ThermalModel();
@@ -74,6 +82,10 @@ class ThermalModel
     // ---- power submission (called from TaskPE / InPortSync windows) -------
     void submitPEPower(int peId, simtime_t t, double avgPower);
     void submitRouterPower(int routerId, simtime_t t, double avgPower);
+    void submitRouterPortPower(int routerId, int portId, int numPorts,
+                               simtime_t t, double avgPower,
+                               bool finalWindow = false);
+    void markPEFinished(int peId);
 
     // ---- optical device power on routers ---------------------------------
     void addRouterOpticalPower(int routerId, double power_W);
@@ -94,6 +106,7 @@ class ThermalModel
     bool allReady() const;
     void tryFlush(simtime_t t);
     void updateTemperature(simtime_t dt);
+    void closeIfFinished();
 
     // neighbour indices for the 2-D mesh
     void getPENeighbours(int peId, std::vector<int>& neighbours) const;

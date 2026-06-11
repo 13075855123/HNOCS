@@ -74,6 +74,13 @@ class LogicalTopologyManager : public cSimpleModule {
     mutable double totalOpticalTuningPower_mW;
     mutable int opticalBudgetComputations;
     mutable int opticalWavelengthEvaluations;  // #candidates evaluated per allocation
+    mutable double minOpticalSignalMargin_dB;
+    mutable double minOpticalSNR_dB;
+    mutable double maxOpticalBER;
+    mutable double maxOpticalTempAdjustedLoss_dB;
+    mutable double maxOpticalRingDetuning_nm;
+    mutable double maxOpticalPathTuningPower_mW;
+    mutable double maxOpticalWaveguideCrossingLoss_dB;
 
     // Baseline microring thermal tuning — static always-on power
     double opticalRingTuningPower_mW_per_ring;

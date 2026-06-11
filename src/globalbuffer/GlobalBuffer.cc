@@ -10,6 +10,8 @@
 
 Define_Module(GlobalBuffer);
 
+static const int GB_OPTICAL_RELEASE_MSG = 9301;
+
 void GlobalBuffer::initialize() {
     numConnections  = par("numConnections");
     flitSize        = par("flitSize");
@@ -79,6 +81,11 @@ void GlobalBuffer::initialize() {
 }
 
 void GlobalBuffer::handleMessage(cMessage* msg) {
+    if (msg->getKind() == GB_OPTICAL_RELEASE_MSG) {
+        handleOpticalRelease(msg);
+        return;
+    }
+
     if (msg == optPopMsg) {
         sendOpticalControlFlit();
         scheduleAt(simTime() + tClk_s, optPopMsg);
@@ -177,12 +184,23 @@ void GlobalBuffer::handleMessage(cMessage* msg) {
 
                 // SETUP_ACK from PE → GB receives ACK (GB→PE direction)
                 if (taskMsg->getProducerPE() < 0 && srcPE >= 0 && srcPE < numPEs) {
-                    if (!circuitReadyByDst[srcPE] && setupPendingByDst[srcPE]) {
+                    int pendingToken = pendingSetupTokenByDst[srcPE];
+                    if (!circuitReadyByDst[srcPE] && setupPendingByDst[srcPE]
+                            && pendingToken > 0 && pktId == pendingToken) {
                         circuitReadyByDst[srcPE] = 1;
                         setupPendingByDst[srcPE] = 0;
+                        setupPendingExpiryByDst[srcPE] = SIMTIME_ZERO;
                         activeCircuitTokenByDst[srcPE] = pktId;
                         pendingSetupTokenByDst[srcPE] = 0;
                         flushPendingData(srcPE);
+                    } else if (setupPendingByDst[srcPE]) {
+                        if (pktId > 0 && topologyManager) {
+                            topologyManager->releaseOpticalPathByToken(pktId);
+                        }
+                    } else if (!circuitReadyByDst[srcPE]) {
+                        if (pktId > 0 && topologyManager) {
+                            topologyManager->releaseOpticalPathByToken(pktId);
+                        }
                     }
                     int gId2 = msg->getArrivalGateId();
                     int connIdx3 = -1;
@@ -277,6 +295,8 @@ bool GlobalBuffer::sendFlitDirectToPE(TaskMsg *flit) {
     cSimpleModule *targetMod = check_and_cast<cSimpleModule *>(
             getSystemModule()->getSubmodule("pe", dst));
     flit->setInjectTime(simTime());
+    flit->setFirstNet(false);
+    flit->setFirstNetTime(simTime());
     // Map GB source address to its physical router (column 0 of the GB's row).
     // getSrcId() returns baseId+row; the corresponding router is at (row, col=0).
     int gbRow = flit->getSrcId() - baseId;
@@ -294,20 +314,63 @@ bool GlobalBuffer::sendFlitDirectToPE(TaskMsg *flit) {
 
 void GlobalBuffer::sendFlitOptical() {
     if (opticalDataQ.isEmpty()) return;
+    if (opticalPopMsg && opticalPopMsg->isScheduled()) return;
     TaskMsg *flit = check_and_cast<TaskMsg *>(opticalDataQ.front());
     int dstPE = flit->getDstId();
     if (dstPE < 0 || dstPE >= numPEs || !circuitReadyByDst[dstPE]) return;
     opticalDataQ.pop();
     int flitType = flit->getType();  // save before sendDirect transfers ownership
+    int gbRow = flit->getSrcId() - baseId;
+    int gbRouter = gbRow * numColumns;
+    int hops = abs(gbRouter/numColumns - dstPE/numColumns) + abs(gbRouter%numColumns - dstPE%numColumns);
+    simtime_t propDelay = opticalBasePropagationDelay + opticalPerHopDelay * hops;
+    double effRate = opticalWavelengthBitrate * opticalRequiredWavelengths;
+    double txSec = (8.0 * flit->getByteLength()) / effRate;
+    int64_t txPs = static_cast<int64_t>(txSec * 1e12 + 0.5);
+    if (txPs < 1) txPs = 1;
+    simtime_t txDuration = SimTime(txPs, SIMTIME_PS);
     if (!sendFlitDirectToPE(flit)) return;
     totalFlitsSent++;
     if (flitType == NOC_END_FLIT) {
         int token = activeCircuitTokenByDst[dstPE];
-        if (token > 0 && topologyManager) topologyManager->releaseOpticalPathByToken(token);
         circuitReadyByDst[dstPE] = 0;
         activeCircuitTokenByDst[dstPE] = 0;
-        nextSetupAttemptByDst[dstPE] = SIMTIME_ZERO;
+        simtime_t releaseDelay = propDelay + txDuration;
+        nextSetupAttemptByDst[dstPE] = simTime() + releaseDelay;
+        scheduleOpticalRelease(dstPE, token, releaseDelay);
     }
+    if (opticalPopMsg && !opticalPopMsg->isScheduled()) {
+        scheduleAt(simTime() + txDuration, opticalPopMsg);
+    }
+}
+
+void GlobalBuffer::scheduleOpticalRelease(int dstPE, int token, simtime_t delay) {
+    if (token <= 0) return;
+
+    cMessage *releaseMsg = new cMessage("gbOpticalRelease");
+    releaseMsg->setKind(GB_OPTICAL_RELEASE_MSG);
+    releaseMsg->addPar("dstPE") = dstPE;
+    releaseMsg->addPar("token") = token;
+    pendingOpticalReleaseMsgs.insert(releaseMsg);
+    scheduleAt(simTime() + delay, releaseMsg);
+}
+
+void GlobalBuffer::handleOpticalRelease(cMessage *msg) {
+    pendingOpticalReleaseMsgs.erase(msg);
+
+    int dstPE = (int)msg->par("dstPE").longValue();
+    int token = (int)msg->par("token").longValue();
+    if (token > 0 && topologyManager) {
+        topologyManager->releaseOpticalPathByToken(token);
+    }
+
+    if (dstPE >= 0 && dstPE < (int)activeCircuitTokenByDst.size()
+            && activeCircuitTokenByDst[dstPE] == token) {
+        activeCircuitTokenByDst[dstPE] = 0;
+        circuitReadyByDst[dstPE] = 0;
+    }
+
+    delete msg;
 }
 
 void GlobalBuffer::sendOpticalControlFlit() {
@@ -328,6 +391,10 @@ GlobalBuffer::~GlobalBuffer() {
     cancelAndDelete(injectPopMsg);
     if (optPopMsg) cancelAndDelete(optPopMsg);
     if (opticalPopMsg) cancelAndDelete(opticalPopMsg);
+    for (cMessage *releaseMsg : pendingOpticalReleaseMsgs) {
+        cancelAndDelete(releaseMsg);
+    }
+    pendingOpticalReleaseMsgs.clear();
     while (!opticalDataQ.isEmpty()) delete opticalDataQ.pop();
     for (int d = 0; d < numPEs; d++) {
         for (TaskMsg* f : pendingDataQ[d]) delete f;
@@ -515,7 +582,8 @@ void GlobalBuffer::sendFlitFromQ(int connIdx) {
                 while (!injectQ[dstConn].empty()) {
                     TaskMsg* f = injectQ[dstConn].front();
                     injectQ[dstConn].pop();
-                    if (f->getDstId() == d && f->getTaskId() == -1)
+                    if (f->getDstId() == d && f->getTaskId() == -1
+                            && f->getPktId() == pt)
                         delete f;
                     else
                         cleanQ.push(f);

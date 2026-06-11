@@ -24,6 +24,8 @@ ThermalModel::ThermalModel()
 {
     opened = false;
     headerWritten = false;
+    finishedPEs = 0;
+    finishedRouters = 0;
     numPEs = 0;
     numRouters = 0;
     rows = 0;
@@ -64,6 +66,14 @@ void ThermalModel::open(const char* filename, int r, int c)
     routerOpticalPower.assign(numRouters, 0.0);
     peReady.assign(numPEs, false);
     routerReady.assign(numRouters, false);
+    routerPortPower.assign(numRouters, std::vector<double>());
+    routerPortReady.assign(numRouters, std::vector<bool>());
+    routerPortFinalReady.assign(numRouters, std::vector<bool>());
+    routerPortWindowTime.assign(numRouters, SIMTIME_ZERO);
+    peFinished.assign(numPEs, false);
+    routerFinished.assign(numRouters, false);
+    finishedPEs = 0;
+    finishedRouters = 0;
 
     // Flush any optical power submitted before open() was called
     // (solves the LTM/TaskPE initialization order race)
@@ -89,6 +99,8 @@ void ThermalModel::open(const char* filename, int r, int c)
 
 void ThermalModel::close()
 {
+    if (!opened) return;
+
     if (traceFile.is_open()) {
         traceFile.close();
     }
@@ -201,6 +213,91 @@ void ThermalModel::submitRouterPower(int routerId, simtime_t t, double avgPower)
     routerReady[routerId] = true;
 
     tryFlush(t);
+}
+
+void ThermalModel::submitRouterPortPower(int routerId, int portId, int numPorts,
+                                         simtime_t t, double avgPower,
+                                         bool finalWindow)
+{
+    if (!opened) return;
+
+    if (routerId < 0 || routerId >= numRouters)
+        throw cRuntimeError("Invalid router id %d for thermal trace", routerId);
+    if (numPorts <= 0)
+        throw cRuntimeError("Invalid port count %d for router %d thermal trace",
+                            numPorts, routerId);
+    if (portId < 0 || portId >= numPorts)
+        throw cRuntimeError("Invalid port id %d for router %d thermal trace",
+                            portId, routerId);
+
+    if ((int)routerPortPower[routerId].size() != numPorts) {
+        routerPortPower[routerId].assign(numPorts, 0.0);
+        routerPortReady[routerId].assign(numPorts, false);
+        routerPortFinalReady[routerId].assign(numPorts, false);
+        routerPortWindowTime[routerId] = t;
+    }
+
+    if (routerPortWindowTime[routerId] != t) {
+        std::fill(routerPortPower[routerId].begin(), routerPortPower[routerId].end(), 0.0);
+        std::fill(routerPortReady[routerId].begin(), routerPortReady[routerId].end(), false);
+        std::fill(routerPortFinalReady[routerId].begin(), routerPortFinalReady[routerId].end(), false);
+        routerPortWindowTime[routerId] = t;
+    }
+
+    routerPortPower[routerId][portId] = avgPower;
+    routerPortReady[routerId][portId] = true;
+    if (finalWindow)
+        routerPortFinalReady[routerId][portId] = true;
+
+    bool allPortsReady = true;
+    double routerAvgPower = 0.0;
+    for (int i = 0; i < numPorts; i++) {
+        if (!routerPortReady[routerId][i]) {
+            allPortsReady = false;
+            break;
+        }
+        routerAvgPower += routerPortPower[routerId][i];
+    }
+    if (!allPortsReady)
+        return;
+
+    submitRouterPower(routerId, t, routerAvgPower);
+
+    bool allPortsFinal = finalWindow;
+    if (allPortsFinal) {
+        for (int i = 0; i < numPorts; i++) {
+            if (!routerPortFinalReady[routerId][i]) {
+                allPortsFinal = false;
+                break;
+            }
+        }
+    }
+
+    if (allPortsFinal && !routerFinished[routerId]) {
+        routerFinished[routerId] = true;
+        finishedRouters++;
+        closeIfFinished();
+    }
+}
+
+void ThermalModel::markPEFinished(int peId)
+{
+    if (!opened) return;
+    if (peId < 0 || peId >= numPEs)
+        throw cRuntimeError("Invalid PE id %d for thermal finish", peId);
+    if (peFinished[peId])
+        return;
+    peFinished[peId] = true;
+    finishedPEs++;
+    closeIfFinished();
+}
+
+void ThermalModel::closeIfFinished()
+{
+    if (!opened) return;
+    if (numPEs <= 0 || numRouters <= 0) return;
+    if (finishedPEs >= numPEs && finishedRouters >= numRouters)
+        close();
 }
 
 // ---- optical device power on routers --------------------------------------
