@@ -125,6 +125,14 @@ class OmnetScalars:
     pe_temps_final_K: list[float] = field(default_factory=list)
     router_temps_final_K: list[float] = field(default_factory=list)
 
+    # --- Evaluator status / parser integrity ---
+    run_ok: bool = False
+    failure_reason: str = ""
+    temperature_source: str = ""
+    temperature_complete: bool = False
+    parsed_pe_count: int = 0
+    parsed_temp_timepoints: int = 0
+
     # ==================================================================
     # Derived properties
     # ==================================================================
@@ -170,6 +178,17 @@ class OmnetScalars:
         if not self.throttle_penalty_ratios:
             return 0.0
         return sum(self.throttle_penalty_ratios) / len(self.throttle_penalty_ratios) * 100.0
+
+    @property
+    def valid_for_cost(self) -> bool:
+        """True only when the run has all scalar fields required by fitness."""
+        return (
+            self.run_ok
+            and self.temperature_complete
+            and self.pe_peak_temp_K > 0.0
+            and self.makespan_s > 0.0
+            and self.pe_optical_comm_energy_J > 0.0
+        )
 
 
 @dataclass

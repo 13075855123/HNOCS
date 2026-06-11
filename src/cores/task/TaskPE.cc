@@ -330,7 +330,6 @@ void TaskPE::initialize() {
         sprintf(controlPopName, "control-pop-pe%d", peId);
         controlPopMsg = new cMessage(controlPopName);
         controlPopMsg->setKind(NOC_POP_MSG);
-        scheduleAt(simTime() + tClk_s * 0.5, controlPopMsg);
 
         char opticalPopName[32];
         sprintf(opticalPopName, "optical-pop-pe%d", peId);
@@ -385,7 +384,7 @@ void TaskPE::handleMessage(cMessage* msg) {
 
     if (msg == controlPopMsg) {
         sendControlFlitFromQ();
-        scheduleAt(simTime() + tClk_s, controlPopMsg);
+        scheduleControlPopIfNeeded(tClk_s);
         return;
     }
 
@@ -418,6 +417,7 @@ void TaskPE::handleMessage(cMessage* msg) {
         delete crd;
         // Try controlQ first (priority), then regular injectQ
         sendControlFlitFromQ();
+        scheduleControlPopIfNeeded(tClk_s);
         sendFlitFromQ();
         return;
     }
@@ -681,7 +681,7 @@ void TaskPE::sendControlFlitFromQ() {
                 setupPendingByDst[d] = 0;
                 setupPendingExpiryByDst[d] = SIMTIME_ZERO;
                 pendingSetupTokenByDst[d] = 0;
-                nextSetupAttemptByDst[d] = simTime();
+                nextSetupAttemptByDst[d] = simTime() + setupRetryDelay;
             }
         }
         // Retry handshakes for destinations with pending data but no circuit/setup
@@ -708,6 +708,7 @@ void TaskPE::sendControlFlitFromQ() {
                     sflit->setFlitIdx(fi); sflit->setFlits(2);
                     sflit->setFirstNet(true); sflit->setSchedulingPriority(0);
                     sflit->setType(fi == 0 ? NOC_START_FLIT : NOC_END_FLIT);
+                    sflit->setSL(onocEncodePacketTag(ONOC_PKT_SETUP_REQ, 0, 0));
                     sflit->setTaskId(-1); sflit->setProducerPE(peId);
                     sflit->setConsumerPE(netDst); sflit->setProducerTaskId(-1);
                     sflit->setDataSize(0); sflit->setComputeTime(0);
@@ -717,7 +718,7 @@ void TaskPE::sendControlFlitFromQ() {
                 setupPendingExpiryByDst[d] = simTime() + setupPendingTimeout;
                 pendingSetupTokenByDst[d] = setupToken;
                 nextSetupAttemptByDst[d] = simTime() + setupRetryDelay;
-                // Flit will be sent on next periodic controlPopMsg — no recursive call
+                // Flit will be sent by the control self-message without continuous polling.
             } else {
                 setupReserveFailCount++;
                 nextSetupAttemptByDst[d] = simTime() + setupRetryDelay;
@@ -725,15 +726,30 @@ void TaskPE::sendControlFlitFromQ() {
         }
     }
 
-    if (controlQ.isEmpty()) return;
+    if (controlQ.isEmpty()) {
+        scheduleControlPopIfNeeded(tClk_s);
+        return;
+    }
     if (credits <= 0) return;
 
     cChannel* ch = gate("out$o")->getTransmissionChannel();
-    if (ch && ch->isBusy()) return;
+    if (ch && ch->isBusy()) {
+        scheduleControlPopIfNeeded(tClk_s);
+        return;
+    }
 
     TaskMsg *flit = check_and_cast<TaskMsg *>(controlQ.pop());
     send(flit, "out$o");
     credits--;
+    totalFlitsSent++;
+    windowSendFlits++;
+
+    if (powerTrace) {
+        powerTrace->recordPEEvent(peId, PE_SEND_FLIT, simTime(),
+                                  powerIdle + powerSendPerFlit / tClk_s);
+    }
+
+    scheduleControlPopIfNeeded(tClk_s);
 }
 
 // -----------------------------------------------------------------------
@@ -894,6 +910,40 @@ void TaskPE::handleControlEvent(int eventType, int requesterId,
         int targetId, int token) {
     // Handled via handleDataArrival for TaskPE (SETUP_REQ/ACK are flits)
     (void)eventType; (void)requesterId; (void)targetId; (void)token;
+}
+
+void TaskPE::scheduleControlPopIfNeeded(simtime_t minDelay) {
+    if (!controlPopMsg || controlPopMsg->isScheduled()) return;
+
+    bool haveWork = false;
+    simtime_t when = simTime() + minDelay;
+    auto consider = [&](simtime_t candidate) {
+        if (candidate < simTime()) candidate = simTime();
+        if (!haveWork || candidate < when) {
+            when = candidate;
+            haveWork = true;
+        }
+    };
+
+    if (!controlQ.isEmpty()) {
+        consider(simTime() + minDelay);
+    }
+
+    if (enableSetupHandshake && numNodes > 0) {
+        for (int d = 0; d < numNodes; d++) {
+            if (setupPendingByDst[d]) {
+                consider(setupPendingExpiryByDst[d]);
+                continue;
+            }
+            if (pendingDataQ[d].empty()) continue;
+            if (circuitReadyByDst[d]) continue;
+            consider(nextSetupAttemptByDst[d]);
+        }
+    }
+
+    if (haveWork) {
+        scheduleAt(when, controlPopMsg);
+    }
 }
 
 void TaskPE::purgeControlFlitsForSetup(int token) {
@@ -1234,7 +1284,7 @@ void TaskPE::sendTaskData(TaskDescriptor* task) {
                 setupPendingByDst[optIdx] = 0;
                 setupPendingExpiryByDst[optIdx] = SIMTIME_ZERO;
                 pendingSetupTokenByDst[optIdx] = 0;
-                nextSetupAttemptByDst[optIdx] = simTime();
+                nextSetupAttemptByDst[optIdx] = simTime() + setupRetryDelay;
             }
 
             // Initiate optical circuit with SETUP_REQ/ACK handshake
@@ -1259,6 +1309,7 @@ void TaskPE::sendTaskData(TaskDescriptor* task) {
                         sflit->setFirstNet(true);
                         sflit->setSchedulingPriority(0);
                         sflit->setType(fi == 0 ? NOC_START_FLIT : NOC_END_FLIT);
+                        sflit->setSL(onocEncodePacketTag(ONOC_PKT_SETUP_REQ, 0, 0));
                         sflit->setTaskId(-1);
                         sflit->setProducerPE(peId);
                         sflit->setConsumerPE(dstPE);
@@ -1271,6 +1322,7 @@ void TaskPE::sendTaskData(TaskDescriptor* task) {
                     pendingSetupTokenByDst[optIdx] = setupToken;
                     nextSetupAttemptByDst[optIdx] = simTime() + setupRetryDelay;
                     sendControlFlitFromQ();
+                    scheduleControlPopIfNeeded(tClk_s);
                     printf("[OPTICAL] PE%d SETUP_REQ -> PE%d token=%d at t=%.6fus\n",
                            peId, dstPE, setupToken, simTime().dbl() * 1e6);
                     updateOpticalLabel();
@@ -1332,6 +1384,8 @@ void TaskPE::sendTaskData(TaskDescriptor* task) {
         // Flush if circuit already ready
         if (circuitReadyByDst[optIdx]) {
             flushPendingData(optIdx);
+        } else {
+            scheduleControlPopIfNeeded(tClk_s);
         }
     }
 
@@ -1399,6 +1453,14 @@ void TaskPE::handleDataArrival(TaskMsg* msg) {
     if (msg->getTaskId() == -1 && enableSetupHandshake) {
         int srcPE = msg->getSrcId();
         int pktId = msg->getPktId();
+        totalFlitsReceived++;
+        windowRecvFlits++;
+
+        if (powerTrace) {
+            powerTrace->recordPEEvent(peId, PE_RECV_FLIT, simTime(),
+                                      powerIdle + powerRecvPerFlit / tClk_s);
+        }
+
         sendCredit(msg->getVC(), 1);
 
         // SETUP_REQ from another PE → reply ACK only on END flit (1 response per circuit)
@@ -1422,19 +1484,22 @@ void TaskPE::handleDataArrival(TaskMsg* msg) {
                     ack->setPktId(pktId); ack->setFlitIdx(fi); ack->setFlits(2);
                     ack->setFirstNet(true); ack->setSchedulingPriority(0);
                     ack->setType(fi == 0 ? NOC_START_FLIT : NOC_END_FLIT);
+                    ack->setSL(onocEncodePacketTag(ONOC_PKT_SETUP_ACK, 0, 0));
                     ack->setTaskId(-1); ack->setProducerPE(-1);
                     ack->setConsumerPE(srcPE); ack->setProducerTaskId(-1);
                     ack->setDataSize(0); ack->setComputeTime(0);
                     controlQ.insert(ack);
                 }
                 sendControlFlitFromQ();
+                scheduleControlPopIfNeeded(tClk_s);
                 printf("[OPTICAL] PE%d SETUP_REQ rcvd from PE%d -> ACK sent at t=%.6fus\n",
                        peId, srcPE, simTime().dbl() * 1e6);
             }
         }
 
-        // SETUP_ACK from another PE or GB (response to our SETUP_REQ)
-        if (msg->getProducerPE() < 0 && srcPE != peId) {
+        // SETUP_ACK from another PE or GB (response to our SETUP_REQ).
+        // Process only the END flit so a two-flit ACK is counted once.
+        if (msg->getProducerPE() < 0 && srcPE != peId && msg->getType() == NOC_END_FLIT) {
             setupAckRxCount++;
             // Map GB ID to internal index
             int numPEs_ack = numRows * numColumns;
@@ -1632,18 +1697,9 @@ void TaskPE::handleDataArrival(TaskMsg* msg) {
 
     TaskDescriptor* task = it->second;
 
-    // GB packet complete: activate a CSV-loaded task
+    // GB packet complete: satisfy the CSV dependency from the GB producer.
     if (producerPE == -1) {
-        if (task->state == TASK_WAITING) {
-            task->state = TASK_READY;
-            readyQueue.push(task);
-
-            EV << "-I- TaskPE[" << peId << "] task " << targetTaskId
-               << " activated by GlobalBuffer at " << simTime()
-               << " readyQueueSize=" << readyQueue.size() << endl;
-
-            scheduleNextTask();
-        }
+        markDependencySatisfied(targetTaskId, producerTaskId, "gb", true);
         return;
     }
 

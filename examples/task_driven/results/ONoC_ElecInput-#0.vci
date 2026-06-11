@@ -1,0 +1,142 @@
+file 184201 1781204080                                          
+version 3
+run ONoC_ElecInput-0-20260612-02:54:39-8528
+attr configname ONoC_ElecInput
+attr datetime 20260612-02:54:39
+attr datetimef 20260612-025439
+attr experiment ONoC_ElecInput
+attr inifile omnetpp.ini
+attr iterationvars ""
+attr iterationvarsd ""
+attr iterationvarsf ""
+attr measurement ""
+attr network hnocs.onoc.topologies.ONoCMesh
+attr processid 8528
+attr repetition 0
+attr replication #0
+attr resultdir results
+attr runnumber 0
+attr seedset 0
+config extends ONoCGeneral
+config **.csvFile "\"static/2_trace_elec_input_tasks(1).csv\""
+config network hnocs.onoc.topologies.ONoCMesh
+config sim-time-limit 20ms
+config record-eventlog false
+config **.pe[*].pe-die-temperature.vector-recording true
+config **.vector-recording false
+config **.vector-record-empty false
+config **.cmdenv-log-level off
+config **.rows 4
+config **.columns 4
+config **.routerType "\"hnocs.routers.hier.Router\""
+config **.portType "\"hnocs.routers.hier.Port\""
+config **.inPortType "\"hnocs.routers.hier.inPort.InPortSync\""
+config **.OPCalcType "\"hnocs.onoc.routing.ReconfigurableOPCalc\""
+config **.coreType "\"hnocs.cores.task.TaskPE\""
+config **.VCCalcType "\"hnocs.routers.hier.vcCalc.free.FLUVCCalc\""
+config **.schedType "\"hnocs.routers.hier.sched.wormhole.SchedSync\""
+config **.numVCs 4
+config **.flitSize 16B
+config **.statStartTime 100ns
+config **.bufferBaseId 1000
+config **.pe[*].enableEnergyWindow true
+config **.pe[*].enablePowerTrace false
+config **.pe[*].powerIdle 0.3W
+config **.pe[*].powerCompute 2.5W
+config **.pe[*].powerSendPerFlit 2e-10J
+config **.pe[*].powerRecvPerFlit 1e-10J
+config **.pe[*].opticalModulatorEnergyPerFlit 25e-12J
+config **.pe[*].opticalReceiverEnergyPerFlit 15e-12J
+config **.pe[*].energyWindow 100ns
+config **.pe[*].computeDensity 0
+config **.initialTopology "\"mesh\""
+config **.physicalTopology "\"mesh\""
+config **.enableSetupHandshake true
+config **.enableOpticalBypass true
+config **.pe[*].setupRetryDelay 50ns
+config **.pe[*].setupPendingTimeout 2us
+config **.pe[*].opticalRequiredWavelengths 2
+config **.pe[*].opticalWavelengthBitrate 256Gbps
+config **.pe[*].opticalBasePropagationDelay 0.5ns
+config **.pe[*].opticalPerHopDelay 0.1ns
+config **.availableOpticalWavelengths 8
+config **.opticalEnableThermalEffects true
+config **.opticalTambient_K 318.15
+config **.opticalThermoOpticCoeff_nm_per_K 0.10
+config **.opticalTuningEfficiency_mW_per_nm 0.50
+config **.opticalRingIL_TempCoeff_dB_per_K 0.02
+config **.opticalSoaGain_TempCoeff_dB_per_K 0.05
+config **.opticalWaveguideLoss_TempCoeff_dB_per_cm_per_K 0.001
+config **.opticalRingTuningPower_mW_per_ring 0.0
+config **.opticalNumRingsPerRouter 160
+config **.opticalWavelengthStrategy "\"lowest\""
+config **.opticalCentreWavelengthsNm "\"1544.53,1546.12,1547.72,1549.32,1550.92,1552.52,1554.13,1555.75\""
+config **.defaultOpticalWavelengths 2
+config **.maxOpticalWavelengths 8
+config **.numOpticalSpatialChannels 2
+config **.opticalLaunchPower_dBm 0.0
+config **.opticalReceiverSensitivity_dBm -12.0
+config **.opticalSourceModulatorLoss_dB 2.0
+config **.opticalHopInsertionLoss_dB 0.5
+config **.opticalHopCrosstalkLoss_dB 0.1
+config **.opticalReceiverDemodulatorLoss_dB 2.0
+config **.opticalSoaPumpPower_mW 80.0
+config **.opticalLaserWPE 0.20
+config **.inPort.flitsPerVC 4
+config **.inPort.collectPerHopWait false
+config **.inPort.energyWindow 100ns
+config **.inPort.enableEnergyWindow true
+config **.inPort.eBufferWrite 1e-12J
+config **.inPort.eBufferRead 1e-12J
+config **.inPort.eCrossbar 0.5e-12J
+config **.inPort.pLeak 1e-3W
+config **.RconvPE 8
+config **.RconvRouter 10
+config **.RlateralPE 10
+config **.RlateralRouter 10
+config **.Rpe2router 3
+config **.Cpe 1e-6
+config **.Crouter 1e-7
+config **.Tambient 318.15
+config **.Tthrottle 327.15
+config **.throttleBeta 0.1
+config **.sched.arbitration_type 0
+config **.sched.freeRunningClk false
+config **.heterogeneous false
+config **.givenTclk false
+config **.tClk 1ns
+config result-dir results
+
+vector 0 ONoCMesh.pe[0] pe-die-temperature ETV
+vector 1 ONoCMesh.pe[1] pe-die-temperature ETV
+vector 2 ONoCMesh.pe[2] pe-die-temperature ETV
+vector 3 ONoCMesh.pe[3] pe-die-temperature ETV
+vector 4 ONoCMesh.pe[4] pe-die-temperature ETV
+vector 5 ONoCMesh.pe[5] pe-die-temperature ETV
+vector 6 ONoCMesh.pe[6] pe-die-temperature ETV
+vector 7 ONoCMesh.pe[7] pe-die-temperature ETV
+vector 8 ONoCMesh.pe[8] pe-die-temperature ETV
+vector 9 ONoCMesh.pe[9] pe-die-temperature ETV
+vector 10 ONoCMesh.pe[10] pe-die-temperature ETV
+vector 11 ONoCMesh.pe[11] pe-die-temperature ETV
+vector 12 ONoCMesh.pe[12] pe-die-temperature ETV
+vector 13 ONoCMesh.pe[13] pe-die-temperature ETV
+vector 14 ONoCMesh.pe[14] pe-die-temperature ETV
+vector 15 ONoCMesh.pe[15] pe-die-temperature ETV
+0	4808 11102 1997 334371 0.0000001 0.000031273388 313 318.15 332.17251982825 103083.73394023 33953542.99396
+1	15910 11089 1998 334371 0.0000001 0.000031273388 313 318.15 332.17952895919 103073.92671389 33947351.458781
+2	26999 11088 1999 334371 0.0000001 0.000031273388 313 318.15 332.18697689798 103057.39044797 33936769.833329
+3	38087 11082 2000 334371 0.0000001 0.000031273388 313 318.15 332.19364279117 103042.69508342 33927365.348371
+4	49169 11096 2001 334371 0.0000001 0.000031273388 313 318.15 331.52406660549 102898.1627288 33830997.4739
+5	60265 11097 2002 334371 0.0000001 0.000031273388 313 318.15 331.53457856522 102891.67984787 33826969.494607
+6	71362 11094 2003 334371 0.0000001 0.000031273388 313 318.15 331.54383887574 102879.05792564 33818941.818644
+7	82456 11096 2004 334371 0.0000001 0.000031273388 313 318.15 331.55430905664 102869.78790816 33813095.520833
+8	93552 11109 2005 334371 0.0000001 0.000031273388 313 318.15 329.67736115988 102342.88898364 33465885.075566
+9	104661 11095 2006 334371 0.0000001 0.000031273388 313 318.15 329.68158169486 102339.75967782 33463997.255362
+10	115756 11411 2007 334371 0.0000001 0.000031273388 313 318.15 329.69101226781 102332.83190853 33459645.73686
+11	127167 11410 2008 334371 0.0000001 0.000031273388 313 318.15 329.69968884824 102328.24428654 33456814.044271
+12	138577 11406 2009 334371 0.0000001 0.000031273388 313 318.15 324.1682832081 100953.82302787 32562214.384192
+13	149983 11402 2010 334371 0.0000001 0.000031273388 313 318.15 324.1767147452 100950.94766973 32560386.523891
+14	161385 11396 2011 334371 0.0000001 0.000031273388 313 318.15 324.18443139821 100946.42125202 32557499.833527
+15	172781 11418 2012 334371 0.0000001 0.000031273388 313 318.15 324.19275868742 100943.08150289 32555372.8529
+

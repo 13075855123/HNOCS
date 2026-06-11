@@ -166,8 +166,15 @@ def evaluate_fitness(
 
     scalars = evaluator.evaluate(graph, assignment)
 
-    if scalars.makespan_s <= 0 and not scalars.pe_peak_temp_K:
-        return float("inf"), {}
+    if not scalars.valid_for_cost:
+        return float("inf"), {
+            "run_ok": scalars.run_ok,
+            "failure_reason": scalars.failure_reason,
+            "temperature_source": scalars.temperature_source,
+            "temperature_complete": scalars.temperature_complete,
+            "parsed_pe_count": scalars.parsed_pe_count,
+            "parsed_temp_timepoints": scalars.parsed_temp_timepoints,
+        }
 
     fitness = cost_model.total_cost(assignment, scalars)
 
@@ -179,6 +186,12 @@ def evaluate_fitness(
         "T_max_K": scalars.pe_peak_temp_K,
         "sigma_T_K": scalars.sigma_T_K,
         "N_hot": scalars.N_hot,
+        "run_ok": scalars.run_ok,
+        "failure_reason": scalars.failure_reason,
+        "temperature_source": scalars.temperature_source,
+        "temperature_complete": scalars.temperature_complete,
+        "parsed_pe_count": scalars.parsed_pe_count,
+        "parsed_temp_timepoints": scalars.parsed_temp_timepoints,
         "eta_dvfs_pct": scalars.eta_dvfs_pct,
         "makespan_s": scalars.makespan_s,
         "pe_total_energy_J": scalars.pe_total_energy_J,
@@ -295,9 +308,16 @@ class GAMapper:
                 assignment = ind.to_assignment(self._mappable_ids)
                 scalars = evaluator.evaluate(self.graph, assignment)
 
-                if scalars.makespan_s <= 0 and not scalars.pe_peak_temp_K:
+                if not scalars.valid_for_cost:
                     ind.fitness = float("inf")
-                    ind.omnet_info = {}
+                    ind.omnet_info = {
+                        "run_ok": scalars.run_ok,
+                        "failure_reason": scalars.failure_reason,
+                        "temperature_source": scalars.temperature_source,
+                        "temperature_complete": scalars.temperature_complete,
+                        "parsed_pe_count": scalars.parsed_pe_count,
+                        "parsed_temp_timepoints": scalars.parsed_temp_timepoints,
+                    }
                     continue
 
                 fit = cost_model.total_cost(assignment, scalars)
@@ -310,6 +330,12 @@ class GAMapper:
                     "T_max_K": scalars.pe_peak_temp_K,
                     "sigma_T_K": scalars.sigma_T_K,
                     "N_hot": scalars.N_hot,
+                    "run_ok": scalars.run_ok,
+                    "failure_reason": scalars.failure_reason,
+                    "temperature_source": scalars.temperature_source,
+                    "temperature_complete": scalars.temperature_complete,
+                    "parsed_pe_count": scalars.parsed_pe_count,
+                    "parsed_temp_timepoints": scalars.parsed_temp_timepoints,
                     "eta_dvfs_pct": scalars.eta_dvfs_pct,
                     "makespan_s": scalars.makespan_s,
                     "pe_total_energy_J": scalars.pe_total_energy_J,

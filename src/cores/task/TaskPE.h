@@ -164,6 +164,7 @@ private:
     cSimpleModule *getDestinationPEModule(int dst) const;
     void handleControlEvent(int eventType, int requesterId, int targetId, int token);
     void purgeControlFlitsForSetup(int token);
+    void scheduleControlPopIfNeeded(simtime_t minDelay);
     void scheduleOpticalRelease(int dstIdx, int token, simtime_t delay);
     void handleOpticalRelease(cMessage *msg);
 

@@ -7,6 +7,7 @@
 #include "GlobalBuffer.h"
 #include "utils/TaskGraphParser.h"
 #include "onoc/control/LogicalTopologyManager.h"
+#include "onoc/common/ControlPlaneEvents.h"
 
 Define_Module(GlobalBuffer);
 
@@ -171,6 +172,7 @@ void GlobalBuffer::handleMessage(cMessage* msg) {
                             ack->setPktId(pktId); ack->setFlitIdx(fi); ack->setFlits(2);
                             ack->setFirstNet(true); ack->setSchedulingPriority(0);
                             ack->setType(fi == 0 ? NOC_START_FLIT : NOC_END_FLIT);
+                            ack->setSL(onocEncodePacketTag(ONOC_PKT_SETUP_ACK, 0, 0));
                             ack->setTaskId(-1); ack->setProducerPE(-1);
                             ack->setConsumerPE(srcPE); ack->setProducerTaskId(-1);
                             ack->setDataSize(0); ack->setComputeTime(0);
@@ -427,11 +429,12 @@ void GlobalBuffer::loadTaskGraphFromCSV(const std::string& csvPath) {
 void GlobalBuffer::distributeTasks() {
     int columns = (int)getSystemModule()->par("columns");
 
-    // Explicit GB injection tasks (peId == -1)
-    bool hasExplicit = false;
+    // Explicit GB injection tasks (peId == -1). Empty GB marker rows are
+    // metadata only and must not disable the legacy implicit distribution path.
+    bool queuedExplicit = false;
     for (TaskDescriptor* gbTask : taskList) {
         if (gbTask->assignedPE != -1) continue;
-        hasExplicit = true;
+        if (gbTask->successors.empty()) continue;
 
         for (int succId : gbTask->successors) {
             auto sit = gbTask->successorPE.find(succId);
@@ -440,24 +443,32 @@ void GlobalBuffer::distributeTasks() {
             int dstPE = sit->second;
             int dstRow = dstPE / columns;
             int connIdx = dstRow;
-            if (connIdx < 0 || connIdx >= numConnections) continue;
+            if (dstPE < 0 || connIdx < 0 || connIdx >= numConnections) {
+                throw cRuntimeError("GlobalBuffer: invalid GB successor mapping task %d -> %d on PE %d",
+                        gbTask->taskId, succId, dstPE);
+            }
             queueFlit(connIdx, dstPE, succId, gbTask->outputDataSize,
                       gbTask->computeTime.dbl());
+            queuedExplicit = true;
         }
     }
 
-    if (hasExplicit) {
+    if (queuedExplicit) {
         sendFlitFromAllQs();
         return;
     }
 
     // Implicit mode (backward compat)
     for (TaskDescriptor* task : taskList) {
+        if (task->assignedPE < 0) continue;
         if (!task->predecessors.empty()) continue;
         int dstPE = task->assignedPE;
         int dstRow = dstPE / columns;
         int connIdx = dstRow;
-        if (connIdx < 0 || connIdx >= numConnections) continue;
+        if (connIdx < 0 || connIdx >= numConnections) {
+            throw cRuntimeError("GlobalBuffer: invalid implicit destination PE %d for task %d",
+                    dstPE, task->taskId);
+        }
         queueFlit(connIdx, dstPE, task->taskId, task->outputDataSize,
                   task->computeTime.dbl());
     }
@@ -540,6 +551,7 @@ void GlobalBuffer::queueFlit(int connIdx, int dstPE, int taskId,
                     sflit->setPktId(setupPktId); sflit->setFlitIdx(fi); sflit->setFlits(2);
                     sflit->setFirstNet(true); sflit->setSchedulingPriority(0);
                     sflit->setType(fi==0?NOC_START_FLIT:NOC_END_FLIT);
+                    sflit->setSL(onocEncodePacketTag(ONOC_PKT_SETUP_REQ, 0, 0));
                     sflit->setTaskId(-1); sflit->setProducerPE(baseId);
                     sflit->setConsumerPE(dstPE); sflit->setProducerTaskId(-1);
                     sflit->setDataSize(0); sflit->setComputeTime(0);
@@ -608,6 +620,7 @@ void GlobalBuffer::sendFlitFromQ(int connIdx) {
                     sf->setPktId(setupPktId2); sf->setFlitIdx(fi); sf->setFlits(2);
                     sf->setFirstNet(true); sf->setSchedulingPriority(0);
                     sf->setType(fi==0?NOC_START_FLIT:NOC_END_FLIT);
+                    sf->setSL(onocEncodePacketTag(ONOC_PKT_SETUP_REQ, 0, 0));
                     sf->setTaskId(-1); sf->setProducerPE(baseId);
                     sf->setConsumerPE(d); sf->setProducerTaskId(-1);
                     sf->setDataSize(0); sf->setComputeTime(0);

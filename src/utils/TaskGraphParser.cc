@@ -9,6 +9,49 @@
 #include <sstream>
 #include <map>
 #include <cstdlib>
+#include <cerrno>
+#include <cctype>
+#include <cmath>
+#include <limits>
+
+namespace {
+
+int parseIntField(const std::string& value, const char* filename, int lineNum,
+                  const char* fieldName) {
+    const char* begin = value.c_str();
+    char* end = nullptr;
+    errno = 0;
+    long parsed = std::strtol(begin, &end, 10);
+    while (end && *end != '\0' && std::isspace(static_cast<unsigned char>(*end))) {
+        end++;
+    }
+    if (begin == end || errno == ERANGE || (end && *end != '\0') ||
+            parsed < std::numeric_limits<int>::min() ||
+            parsed > std::numeric_limits<int>::max()) {
+        throw cRuntimeError("TaskGraphParser: %s:%d — invalid integer for %s: '%s'",
+                filename, lineNum, fieldName, value.c_str());
+    }
+    return static_cast<int>(parsed);
+}
+
+double parseDoubleField(const std::string& value, const char* filename, int lineNum,
+                        const char* fieldName) {
+    const char* begin = value.c_str();
+    char* end = nullptr;
+    errno = 0;
+    double parsed = std::strtod(begin, &end);
+    while (end && *end != '\0' && std::isspace(static_cast<unsigned char>(*end))) {
+        end++;
+    }
+    if (begin == end || errno == ERANGE || (end && *end != '\0') ||
+            !std::isfinite(parsed)) {
+        throw cRuntimeError("TaskGraphParser: %s:%d — invalid number for %s: '%s'",
+                filename, lineNum, fieldName, value.c_str());
+    }
+    return parsed;
+}
+
+}
 
 std::vector<std::string> TaskGraphParser::split(const std::string& s, char delim) {
     std::vector<std::string> tokens;
@@ -16,8 +59,8 @@ std::vector<std::string> TaskGraphParser::split(const std::string& s, char delim
     std::string token;
     while (std::getline(ss, token, delim)) {
         // trim leading/trailing whitespace
-        size_t start = token.find_first_not_of(" \t");
-        size_t end   = token.find_last_not_of(" \t");
+        size_t start = token.find_first_not_of(" \t\r");
+        size_t end   = token.find_last_not_of(" \t\r");
         if (start == std::string::npos) {
             tokens.push_back("");
         } else {
@@ -86,10 +129,26 @@ std::vector<TaskDescriptor*> TaskGraphParser::parse(const char* filename) {
         }
 
         // Parse fixed columns
-        int taskId       = std::atoi(tokens[0].c_str());
-        int peId         = std::atoi(tokens[1].c_str());
-        double compNs    = std::atof(tokens[2].c_str());
-        int outSizeB     = std::atoi(tokens[3].c_str());
+        int taskId       = parseIntField(tokens[0], filename, lineNum, "taskId");
+        int peId         = parseIntField(tokens[1], filename, lineNum, "peId");
+        double compNs    = parseDoubleField(tokens[2], filename, lineNum, "compTime_ns");
+        int outSizeB     = parseIntField(tokens[3], filename, lineNum, "outSize_B");
+        if (taskId < 0) {
+            throw cRuntimeError("TaskGraphParser: %s:%d — taskId must be non-negative, got %d",
+                    filename, lineNum, taskId);
+        }
+        if (peId < -2) {
+            throw cRuntimeError("TaskGraphParser: %s:%d — peId must be -2, -1, or >=0, got %d",
+                    filename, lineNum, peId);
+        }
+        if (compNs < 0.0) {
+            throw cRuntimeError("TaskGraphParser: %s:%d — compTime_ns must be non-negative, got %g",
+                    filename, lineNum, compNs);
+        }
+        if (outSizeB < 0) {
+            throw cRuntimeError("TaskGraphParser: %s:%d — outSize_B must be non-negative, got %d",
+                    filename, lineNum, outSizeB);
+        }
         simtime_t compTime = compNs * 1e-9;  // ns → seconds
 
         // Check for duplicate taskId
@@ -110,8 +169,18 @@ std::vector<TaskDescriptor*> TaskGraphParser::parse(const char* filename) {
                     "TaskGraphParser: %s:%d — bad successor format '%s' (need taskId:peId)",
                     filename, lineNum, tokens[i].c_str());
             }
-            int succId = std::atoi(tokens[i].substr(0, colon).c_str());
-            int succPE = std::atoi(tokens[i].substr(colon + 1).c_str());
+            std::string succIdText = tokens[i].substr(0, colon);
+            std::string succPEText = tokens[i].substr(colon + 1);
+            int succId = parseIntField(succIdText, filename, lineNum, "successor taskId");
+            int succPE = parseIntField(succPEText, filename, lineNum, "successor peId");
+            if (succId < -1) {
+                throw cRuntimeError("TaskGraphParser: %s:%d — successor taskId must be -1 or >=0, got %d",
+                        filename, lineNum, succId);
+            }
+            if (succPE < -2) {
+                throw cRuntimeError("TaskGraphParser: %s:%d — successor peId must be -2, -1, or >=0, got %d",
+                        filename, lineNum, succPE);
+            }
             task->successors.push_back(succId);
             task->successorPE[succId] = succPE;
         }

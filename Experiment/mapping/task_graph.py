@@ -52,6 +52,7 @@ class TaskGraph:
     def __init__(self):
         self.tasks: dict[int, TaskNode] = {}
         self._topo_order: Optional[list[int]] = None
+        self._input_order: list[int] = []
 
     # ------------------------------------------------------------------
     # Factory
@@ -112,6 +113,7 @@ class TaskGraph:
                     node.successor_pe[succ_id] = succ_pe
 
                 graph.tasks[task_id] = node
+                graph._input_order.append(task_id)
 
         # Pass 2: compute predecessor sets from successor lists
         for node in graph.tasks.values():
@@ -188,6 +190,11 @@ class TaskGraph:
     @property
     def num_tasks(self) -> int:
         return len(self.tasks)
+
+    @property
+    def input_order(self) -> list[int]:
+        """Return task IDs in the order they appeared in the source CSV."""
+        return list(self._input_order)
 
     def predecessors_of(self, task_id: int) -> set[int]:
         node = self.tasks.get(task_id)

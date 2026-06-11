@@ -52,6 +52,12 @@ BENCHMARKS = {
 
 DEFAULT_SEEDS = [42, 43, 44]
 DEFAULT_LONG_BENCHMARKS = {"GEMM", "VOPD", "HNN"}
+PROTECTED_OUTPUT_DIRS = (
+    (_PROJ / "out" / "B-2-v3-g60-seed42").resolve(),
+    (_PROJ / "out" / "B-2-v3-g60-seed43").resolve(),
+)
+BENCHMARK_RESULT_FILES = ("metrics.json", "history.json", "remapped.csv", "summary.txt")
+MULTI_RUN_SUMMARY_FILES = ("runs_summary.csv", "aggregate_summary.csv", "aggregate_summary.json")
 
 
 def _extract_baseline(graph: TaskGraph) -> dict[int, int]:
@@ -100,6 +106,90 @@ def _parse_benchmark_set(value: str | None) -> set[str]:
     return {part.strip().upper() for part in value.split(",") if part.strip()}
 
 
+def _run_output_dir(
+    output_dir: str,
+    multi_run_layout: bool,
+    seed: int | None,
+    generations: int,
+) -> Path:
+    if not multi_run_layout:
+        return Path(output_dir)
+    seed_label = "seed_none" if seed is None else f"seed_{seed}"
+    return Path(output_dir) / seed_label / f"gen_{generations}"
+
+
+def _is_under(path: Path, parent: Path) -> bool:
+    try:
+        path.relative_to(parent)
+        return True
+    except ValueError:
+        return False
+
+
+def _protected_output_hit(path: Path) -> Path | None:
+    resolved = path.resolve()
+    for protected in PROTECTED_OUTPUT_DIRS:
+        if resolved == protected or _is_under(resolved, protected):
+            return protected
+    return None
+
+
+def _guard_output_paths(
+    output_dir: str,
+    run_plan: list[tuple[str, str, int | None, int, str]],
+    multi_run_layout: bool,
+    force: bool,
+) -> None:
+    result_dirs: list[Path] = []
+    for _, _, seed, generations, csv_path in run_plan:
+        result_dirs.append(
+            _run_output_dir(output_dir, multi_run_layout, seed, generations)
+            / _benchmark_name(csv_path)
+        )
+
+    protected_hits: list[tuple[Path, Path]] = []
+    for result_dir in sorted(set(result_dirs), key=lambda p: str(p)):
+        protected = _protected_output_hit(result_dir)
+        if protected is not None:
+            protected_hits.append((result_dir, protected))
+
+    if protected_hits:
+        details = "\n".join(
+            f"  {result_dir.resolve()} is inside protected {protected}"
+            for result_dir, protected in protected_hits
+        )
+        raise RuntimeError(
+            "Refusing to write into protected paper result directories:\n"
+            f"{details}"
+        )
+
+    if force:
+        return
+
+    collisions: list[Path] = []
+    for result_dir in sorted(set(result_dirs), key=lambda p: str(p)):
+        for filename in BENCHMARK_RESULT_FILES:
+            candidate = result_dir / filename
+            if candidate.exists():
+                collisions.append(candidate)
+
+    if multi_run_layout:
+        summary_dir = Path(output_dir)
+        for filename in MULTI_RUN_SUMMARY_FILES:
+            candidate = summary_dir / filename
+            if candidate.exists():
+                collisions.append(candidate)
+
+    if collisions:
+        details = "\n".join(f"  {path.resolve()}" for path in collisions[:20])
+        extra = "" if len(collisions) <= 20 else f"\n  ... and {len(collisions) - 20} more"
+        raise RuntimeError(
+            "Refusing to overwrite existing B-2 output files. "
+            "Choose a new -o directory or pass --force for non-protected outputs:\n"
+            f"{details}{extra}"
+        )
+
+
 def _safe_pct(before: float, after: float) -> float | None:
     if before == 0:
         return None
@@ -120,6 +210,32 @@ def _energy_metric(full: dict, side: str) -> float:
     if value == 0.0:
         value = _metric(full, side, "energy", LEGACY_TOTAL_ENERGY_KEY)
     return value
+
+
+def _scalars_status(scalars) -> dict:
+    return {
+        "run_ok": scalars.run_ok,
+        "valid_for_cost": scalars.valid_for_cost,
+        "failure_reason": scalars.failure_reason,
+        "temperature_source": scalars.temperature_source,
+        "temperature_complete": scalars.temperature_complete,
+        "parsed_pe_count": scalars.parsed_pe_count,
+        "parsed_temp_timepoints": scalars.parsed_temp_timepoints,
+    }
+
+
+def _require_valid_scalars(name: str, stage: str, scalars) -> None:
+    if scalars.valid_for_cost:
+        return
+    reason = scalars.failure_reason or "unknown evaluator failure"
+    raise RuntimeError(
+        f"{name} {stage} OMNeT++ run is invalid: {reason}. "
+        f"makespan={scalars.makespan_s}, "
+        f"T_max={scalars.pe_peak_temp_K}, "
+        f"E_pe_opt={scalars.pe_optical_comm_energy_J}, "
+        f"temperature_source={scalars.temperature_source}, "
+        f"parsed_pe_count={scalars.parsed_pe_count}"
+    )
 
 
 def _result_record(full: dict, seed: int | None, generations: int, run_type: str) -> dict:
@@ -268,6 +384,7 @@ def run_benchmark(
         Tambient=params.Tambient, T_throttle=params.Tthrottle,
     )
     bl_scalars = evaluator.evaluate(graph, baseline_asgn)
+    _require_valid_scalars(name, "baseline", bl_scalars)
     cost_reference = cm_omnet.make_reference(baseline_asgn, bl_scalars)
     config.cost_reference = cost_reference
     cm_omnet.reference = cost_reference
@@ -306,6 +423,7 @@ def run_benchmark(
             "TR2_composite_cost": bl_composite,
             "cost_terms": bl_cost_terms,
         },
+        "run_status": _scalars_status(bl_scalars),
     }
 
     # 3. B-2 GA optimization
@@ -314,12 +432,20 @@ def run_benchmark(
               f"(pop={config.population_size}, gen={config.num_generations})...")
     ga = GAMapper(graph, params, config, verbose=verbose)
     result = ga.run(seed_assignment=seed_assignment)
+    if not result.best_assignment or not math.isfinite(result.best_fitness):
+        raise RuntimeError(f"{name} GA did not find any valid OMNeT++ evaluation")
 
     # 4. Final OMNeT++ evaluation of best mapping
     if verbose:
         print(f"[{name}] B-2 final OMNeT++ evaluation...")
     b2_scalars = evaluator.evaluate(graph, result.best_assignment)
+    _require_valid_scalars(name, "final B-2", b2_scalars)
     b2_composite = cm_omnet.total_cost(result.best_assignment, b2_scalars)
+    if not math.isclose(b2_composite, result.best_fitness, rel_tol=1e-6, abs_tol=1e-6):
+        raise RuntimeError(
+            f"{name} final B-2 cost does not match GA best fitness: "
+            f"final={b2_composite}, ga_best={result.best_fitness}"
+        )
     b2_cost_terms = cm_omnet.cost_breakdown(result.best_assignment, b2_scalars)
     b2_c1 = _analytical_comm_cost(graph, result.best_assignment, params.rows, params.cols)
     b2_metrics = {
@@ -354,6 +480,7 @@ def run_benchmark(
             "TR2_composite_cost": b2_composite,
             "cost_terms": b2_cost_terms,
         },
+        "run_status": _scalars_status(b2_scalars),
     }
 
     # 5. Speedup
@@ -553,6 +680,11 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Print the planned benchmark/seed/generation runs without launching OMNeT++.",
     )
+    p.add_argument(
+        "--force",
+        action="store_true",
+        help="Allow overwriting existing non-protected B-2 output files.",
+    )
     p.add_argument("--w-T", type=float, default=1.0, help="Peak temperature weight")
     p.add_argument("--w-sigma", type=float, default=1.0, help="Temperature sigma weight")
     p.add_argument("--w-hot", type=float, default=0.6, help="Hot-PE count weight")
@@ -683,11 +815,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.dry_run:
         print("Planned B-2 runs:")
         for run_type, benchmark, seed, generations, csv_path in deduped_plan:
-            if multi_run_layout:
-                seed_label = "seed_none" if seed is None else f"seed_{seed}"
-                run_output = str(Path(args.output) / seed_label / f"gen_{generations}")
-            else:
-                run_output = args.output
+            run_output = str(_run_output_dir(
+                args.output, multi_run_layout, seed, generations,
+            ))
             print(
                 f"  {run_type:4s}  benchmark={benchmark:5s}  "
                 f"seed={seed}  generations={generations}  "
@@ -695,17 +825,20 @@ def main(argv: list[str] | None = None) -> int:
             )
         return 0
 
+    try:
+        _guard_output_paths(args.output, deduped_plan, multi_run_layout, args.force)
+    except RuntimeError as exc:
+        p.error(str(exc))
+
     records: list[dict] = []
     for run_type, benchmark, seed, generations, csv_path in deduped_plan:
         if not Path(csv_path).exists():
             print(f"  SKIP: {csv_path} not found")
             continue
         cfg = replace(base_config, seed=seed, num_generations=generations)
-        if multi_run_layout:
-            seed_label = "seed_none" if seed is None else f"seed_{seed}"
-            run_output = str(Path(args.output) / seed_label / f"gen_{generations}")
-        else:
-            run_output = args.output
+        run_output = str(_run_output_dir(
+            args.output, multi_run_layout, seed, generations,
+        ))
         print(
             f"\n=== {benchmark} | seed={seed} | generations={generations} "
             f"| run={run_type} ==="

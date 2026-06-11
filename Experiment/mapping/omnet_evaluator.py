@@ -3,9 +3,10 @@ OmnetEvaluator — runs OMNeT++ simulation for one GA individual.
 
 Each call to evaluate() creates a unique temp directory, writes a task CSV,
 generates a minimal INI that extends ONoCGeneral, invokes OMNeT++ via
-subprocess, and parses the resulting .sca + thermal_snapshot.json.
+subprocess, and parses the resulting .sca/.vec + thermal_snapshot.json.
 
-Thread safety: UUID-based temp directories isolate parallel workers.
+Thread safety: UUID-based temp directories isolate result files and the
+simulation working directory, including thermal_snapshot.json fallback.
 """
 
 from __future__ import annotations
@@ -89,7 +90,7 @@ class OmnetEvaluator:
     ) -> OmnetScalars:
         """Run one OMNeT++ simulation and return parsed scalars.
 
-        Returns OmnetScalars with all fields zeroed on failure.
+        Returns OmnetScalars with run_ok=False on failure.
         """
         run_id = uuid.uuid4().hex[:12]
         tmp_dir = Path(tempfile.mkdtemp(prefix=f"omnet_ga_{run_id}_"))
@@ -122,6 +123,7 @@ class OmnetEvaluator:
                 ini_path=ini_path,
                 config_name=config_name,
                 result_dir=result_dir,
+                run_cwd=tmp_dir,
             )
 
             return scalars
@@ -138,6 +140,7 @@ class OmnetEvaluator:
         ini_path: Path,
         config_name: str,
         result_dir: Path,
+        run_cwd: Path,
     ) -> OmnetScalars:
         cmd = [
             self.omnet_bin,
@@ -169,7 +172,7 @@ class OmnetEvaluator:
         try:
             proc = subprocess.run(
                 cmd,
-                cwd=str(self.work_dir),
+                cwd=str(run_cwd),
                 env=env,
                 capture_output=True,
                 timeout=self.timeout_s,
@@ -178,24 +181,24 @@ class OmnetEvaluator:
         except subprocess.TimeoutExpired:
             if self.verbose:
                 print(f"  [OMNeT++] TIMEOUT after {self.timeout_s}s")
-            return OmnetScalars()
+            return _invalid_scalars(f"timeout after {self.timeout_s}s")
         except FileNotFoundError:
             if self.verbose:
                 print(f"  [OMNeT++] ERROR: binary not found: {self.omnet_bin}")
-            return OmnetScalars()
+            return _invalid_scalars(f"binary not found: {self.omnet_bin}")
 
         if proc.returncode != 0:
             if self.verbose:
                 tail = (proc.stderr or "(no stderr)")[-300:]
                 print(f"  [OMNeT++] FAILED (rc={proc.returncode}): {tail}")
-            return OmnetScalars()
+            return _invalid_scalars(f"OMNeT++ failed with rc={proc.returncode}")
 
         # Parse .sca output
         sca_files = sorted(result_dir.glob(f"{config_name}-*.sca"))
         if not sca_files:
             if self.verbose:
                 print(f"  [OMNeT++] No .sca found in {result_dir}")
-            return OmnetScalars()
+            return _invalid_scalars(f"no .sca found in {result_dir}")
 
         scalars = _parse_sca(sca_files[0])
 
@@ -206,19 +209,43 @@ class OmnetEvaluator:
             _parse_vec_via_scavetool(vec_files[0], scalars, num_pes=16,
                                      omnetpp_bin=self._omnetpp_bin, env=env)
 
-        # Parse thermal_snapshot.json (fallback if .vec unavailable)
-        if not scalars.pe_max_temp_K:
-            snapshot_path = self.work_dir / "thermal_snapshot.json"
+        # Parse thermal_snapshot.json (fallback if .vec unavailable/incomplete)
+        if not scalars.temperature_complete:
+            snapshot_path = run_cwd / "thermal_snapshot.json"
             if snapshot_path.exists():
                 _parse_thermal_snapshot(snapshot_path, scalars)
                 snapshot_path.unlink(missing_ok=True)
 
+        _finalize_scalars(scalars)
         return scalars
 
 
 # ==========================================================================
 # Module-level helpers (used by evaluate_fitness_omnet for pickling)
 # ==========================================================================
+
+def _invalid_scalars(reason: str) -> OmnetScalars:
+    scalars = OmnetScalars()
+    scalars.failure_reason = reason
+    return scalars
+
+
+def _finalize_scalars(scalars: OmnetScalars) -> None:
+    """Mark a parsed OMNeT++ result valid only if required fields are present."""
+    checks = [
+        (scalars.makespan_s > 0.0, "missing makespan"),
+        (scalars.pe_peak_temp_K > 0.0, "missing PE temperature"),
+        (scalars.temperature_complete, "incomplete PE temperature vectors"),
+        (scalars.pe_optical_comm_energy_J > 0.0, "missing PE/optical energy"),
+    ]
+    failures = [reason for ok, reason in checks if not ok]
+    if failures:
+        scalars.run_ok = False
+        scalars.failure_reason = "; ".join(failures)
+        return
+
+    scalars.run_ok = True
+    scalars.failure_reason = ""
 
 def _write_temp_ini(
     ini_path: Path,
@@ -241,6 +268,7 @@ def _write_temp_ini(
         f'[{config_name}]',
         f'extends = {base_config}',
         f'**.csvFile = "{csv_path_fwd}"',
+        '**.pe[*].enablePowerTrace = false',
         f'result-dir = "{result_dir_fwd}"',
         f'sim-time-limit = {sim_time_limit_s}s',
     ]
@@ -338,7 +366,7 @@ def _parse_vec_via_scavetool(
     Tthrottle = 327.15
 
     _parse_vec_text(vec_path, scalars, num_pes=num_pes, Tthrottle=Tthrottle)
-    if scalars.pe_max_temp_K:
+    if scalars.temperature_complete:
         return
 
     scavetool = "opp_scavetool"
@@ -373,6 +401,7 @@ def _parse_vec_via_scavetool(
         return
 
     pe_max = [0.0] * num_pes
+    observed_pe = [False] * num_pes
     temps_by_time: dict[str, list[float]] = {}
     _pe_re = re.compile(r"pe\[(\d+)\]", re.IGNORECASE)
 
@@ -415,12 +444,16 @@ def _parse_vec_via_scavetool(
                 continue
             if temp > pe_max[pe]:
                 pe_max[pe] = temp
+            observed_pe[pe] = True
             temps_by_time.setdefault(time_key, []).append(temp)
 
     json_path.unlink(missing_ok=True)
 
     if temps_by_time:
-        _store_temperature_metrics(scalars, pe_max, temps_by_time, Tthrottle)
+        _store_temperature_metrics(
+            scalars, pe_max, temps_by_time, Tthrottle,
+            num_pes=num_pes, source="vec", observed_pe=observed_pe,
+        )
     else:
         _parse_vec_text(vec_path, scalars, num_pes=num_pes, Tthrottle=Tthrottle)
 
@@ -450,23 +483,31 @@ def _store_temperature_metrics(
     pe_max: list[float],
     temps_by_time: dict[str, list[float]],
     Tthrottle: float,
+    num_pes: int,
+    source: str,
+    observed_pe: list[bool],
 ) -> None:
     """Store derived PE temperature metrics on an OmnetScalars object."""
     scalars.pe_max_temp_K = pe_max
     scalars.N_hot = sum(1 for t in pe_max if t > Tthrottle)
+    scalars.temperature_source = source
+    scalars.parsed_pe_count = sum(1 for seen in observed_pe if seen)
 
     spatial_stds: list[float] = []
     for temps in temps_by_time.values():
-        if len(temps) < 2:
+        if len(temps) != num_pes:
             continue
         avg = sum(temps) / len(temps)
         var = sum((t - avg) ** 2 for t in temps) / len(temps)
         spatial_stds.append(math.sqrt(var))
 
-    if not spatial_stds:
-        return
-
-    scalars.sigma_T_K = sum(spatial_stds) / len(spatial_stds)
+    scalars.parsed_temp_timepoints = len(spatial_stds)
+    scalars.temperature_complete = (
+        scalars.parsed_pe_count == num_pes
+        and scalars.parsed_temp_timepoints > 0
+    )
+    if spatial_stds:
+        scalars.sigma_T_K = sum(spatial_stds) / len(spatial_stds)
 
 
 def _parse_vec_text(
@@ -512,6 +553,7 @@ def _parse_vec_text(
         return
 
     pe_max = [0.0] * num_pes
+    observed_pe = [False] * num_pes
     temps_by_time: dict[str, list[float]] = {}
     with vec_path.open(encoding="utf-8", errors="replace") as f:
         for line in f:
@@ -533,9 +575,13 @@ def _parse_vec_text(
                 continue
             if temp > pe_max[pe]:
                 pe_max[pe] = temp
+            observed_pe[pe] = True
             temps_by_time.setdefault(tokens[2], []).append(temp)
 
-    _store_temperature_metrics(scalars, pe_max, temps_by_time, Tthrottle)
+    _store_temperature_metrics(
+        scalars, pe_max, temps_by_time, Tthrottle,
+        num_pes=num_pes, source="vec", observed_pe=observed_pe,
+    )
 
 
 def _parse_thermal_snapshot(json_path: Path, scalars: OmnetScalars) -> None:
@@ -548,6 +594,10 @@ def _parse_thermal_snapshot(json_path: Path, scalars: OmnetScalars) -> None:
         if pe_temps:
             scalars.pe_max_temp_K = pe_temps
             scalars.N_hot = sum(1 for t in pe_temps if t > 327.15)
+            scalars.temperature_source = "snapshot"
+            scalars.parsed_pe_count = len(pe_temps)
+            scalars.parsed_temp_timepoints = 1
+            scalars.temperature_complete = len(pe_temps) == 16
             if len(pe_temps) >= 2:
                 avg = sum(pe_temps) / len(pe_temps)
                 var = sum((t - avg) ** 2 for t in pe_temps) / len(pe_temps)
