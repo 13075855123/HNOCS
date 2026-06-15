@@ -1,0 +1,239 @@
+{
+  "name": "gemm",
+  "method": "thermal_greedy",
+  "method_label": "TAPP-inspired ThermalGreedy",
+  "metrics": {
+    "thermal": {
+      "T1_pe_peak_temp_K": 328.0646657784,
+      "T3_temp_std_K": 2.069420662963969,
+      "T5_over_throttle_count": 4
+    },
+    "performance": {
+      "P1_makespan_s": 0.0001195487,
+      "P3_dvfs_penalty_pct": 1.130155875,
+      "P2_speedup": 1.007162771322482
+    },
+    "communication": {
+      "C1_total_comm_cost": 75776.0
+    },
+    "optical": {
+      "O1_budget_count": 14,
+      "O2_min_signal_margin_dB": -6.7539986472442,
+      "O3_min_snr_dB": 11.615243546035,
+      "O4_max_ber": 0.066391642572742,
+      "O5_max_temp_adjusted_loss_dB": 0.61369871918855,
+      "O6_max_ring_detuning_nm": 0.68903732432433,
+      "O7_max_path_tuning_power_mW": 22.833799873369,
+      "O8_max_waveguide_crossing_loss_dB": 0.9
+    },
+    "energy": {
+      "E1_pe_total_energy_J": 0.0015550238321199368,
+      "E4_soa_energy_J": 6.0307456e-07,
+      "E5_tuning_energy_J": 3.4360607266262e-08,
+      "E6_laser_energy_J": 5.977435e-07,
+      "E7_pe_optical_comm_energy_J": 0.0015562590107872029
+    },
+    "tradeoff": {
+      "TR2_composite_cost": 5.27109923107105,
+      "cost_terms": {
+        "f_thermal": 0.9980318955505199,
+        "f_sigma": 0.9654507574502612,
+        "f_hot": 0.6666666666666666,
+        "f_makespan": 0.9928881690959678,
+        "f_comm": 0.7254901960784313,
+        "f_congestion": 0.7272727272727273,
+        "f_dvfs": 0.6158710793293678,
+        "f_load": 0.8758353093339082,
+        "f_energy": 0.9906965880685937,
+        "total_cost": 5.27109923107105,
+        "raw_comm_cost": 75776.0,
+        "raw_congestion_cost": 16384.0,
+        "raw_load_imbalance": 0.8059908748264233,
+        "T_max_K": 328.0646657784,
+        "sigma_T_K": 2.069420662963969,
+        "N_hot": 4,
+        "eta_dvfs_pct": 1.130155875,
+        "makespan_s": 0.0001195487,
+        "pe_optical_comm_energy_J": 0.0015562590107872029,
+        "optical_budget_count": 14,
+        "optical_min_signal_margin_dB": -6.7539986472442,
+        "optical_min_snr_dB": 11.615243546035,
+        "optical_max_ber": 0.066391642572742,
+        "optical_max_temp_adjusted_loss_dB": 0.61369871918855,
+        "optical_max_ring_detuning_nm": 0.68903732432433,
+        "optical_max_path_tuning_power_mW": 22.833799873369,
+        "optical_max_waveguide_crossing_loss_dB": 0.9
+      }
+    },
+    "run_status": {
+      "run_ok": true,
+      "valid_for_cost": true,
+      "failure_reason": "",
+      "temperature_source": "vec",
+      "temperature_complete": true,
+      "parsed_pe_count": 16,
+      "parsed_temp_timepoints": 1196
+    }
+  },
+  "proxy": {
+    "method": "thermal_greedy",
+    "method_label": "TAPP-inspired ThermalGreedy",
+    "not_exact_reproduction": true,
+    "search_objective": "compute_time heat proxy plus center penalty and weak communication tie-breaker",
+    "forbidden_search_inputs": [
+      "OMNeT++ final peak temperature",
+      "DVFS penalty",
+      "optical tuning energy",
+      "makespan",
+      "TR2_composite_cost"
+    ],
+    "config": {
+      "rows": 4,
+      "cols": 4,
+      "alpha_sigma": 0.5,
+      "alpha_center": 0.1,
+      "beta_comm": 0.05,
+      "heat_weight_mode": "compute_time"
+    },
+    "task_order": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      1
+    ],
+    "heat_weights": {
+      "1": 15000.0,
+      "2": 50000.0,
+      "3": 50000.0,
+      "4": 50000.0,
+      "5": 50000.0,
+      "6": 30000.0,
+      "7": 30000.0,
+      "8": 30000.0,
+      "9": 30000.0,
+      "10": 20000.0
+    },
+    "baseline_comm_cost": 104448.0,
+    "original": {
+      "score": 2.8134267121837917,
+      "max_load": 50000.0,
+      "std_load": 21284.439004822278,
+      "ideal_load": 22187.5,
+      "max_load_norm": 2.2535211267605635,
+      "std_load_norm": 0.9592986593722717,
+      "center_heat_penalty": 0.3025625573709235,
+      "raw_comm_cost": 104448.0,
+      "normalized_comm": 1.0,
+      "estimated_heat_load": [
+        45000.0,
+        30000.0,
+        30000.0,
+        30000.0,
+        50000.0,
+        50000.0,
+        0.0,
+        0.0,
+        50000.0,
+        50000.0,
+        0.0,
+        0.0,
+        20000.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "thermal_greedy": {
+      "score": 2.7526680969900745,
+      "max_load": 50000.0,
+      "std_load": 19919.270663104107,
+      "ideal_load": 22187.5,
+      "max_load_norm": 2.2535211267605635,
+      "std_load_norm": 0.8977699453793401,
+      "center_heat_penalty": 0.13987487735919338,
+      "raw_comm_cost": 75776.0,
+      "normalized_comm": 0.7254901960784313,
+      "estimated_heat_load": [
+        30000.0,
+        30000.0,
+        50000.0,
+        50000.0,
+        20000.0,
+        0.0,
+        0.0,
+        15000.0,
+        30000.0,
+        0.0,
+        0.0,
+        50000.0,
+        30000.0,
+        0.0,
+        0.0,
+        50000.0
+      ]
+    },
+    "assignment": {
+      "1": 7,
+      "2": 2,
+      "3": 3,
+      "4": 11,
+      "5": 15,
+      "6": 0,
+      "7": 1,
+      "8": 8,
+      "9": 12,
+      "10": 4
+    },
+    "local_swap": {
+      "enabled": true,
+      "passes": 2,
+      "accepted_swaps": 5,
+      "final_score": 2.7526680969900745
+    }
+  },
+  "config": {
+    "source_csv": "D:\\HNOCS\\examples\\task_driven\\static\\tasks_gemm_static.csv",
+    "rows": 4,
+    "cols": 4,
+    "num_pes": 16,
+    "weights": {
+      "w_T": 1.0,
+      "w_sigma": 1.0,
+      "w_hot": 0.6,
+      "w_makespan": 1.2,
+      "w_H": 0.4,
+      "w_congestion": 0.7,
+      "w_D": 0.4,
+      "w_L": 0.2,
+      "w_E": 0.5
+    },
+    "proxy_config": {
+      "rows": 4,
+      "cols": 4,
+      "alpha_sigma": 0.5,
+      "alpha_center": 0.1,
+      "beta_comm": 0.05,
+      "heat_weight_mode": "compute_time"
+    },
+    "local_swap_passes": 2,
+    "cost_reference": {
+      "peak_excess_K": 9.93421735578005,
+      "sigma_T_K": 2.1434761400252804,
+      "N_hot": 6.0,
+      "makespan_s": 0.000120405,
+      "pe_optical_comm_energy_J": 0.0015708734939939562,
+      "eta_dvfs_pct": 1.8350526805555563,
+      "comm_cost": 104448.0,
+      "congestion_cost": 22528.0,
+      "load_imbalance": 0.9202539178734378
+    },
+    "baseline_temperature_factor": null,
+    "not_exact_reproduction": true
+  }
+}

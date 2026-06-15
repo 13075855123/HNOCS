@@ -1,0 +1,42 @@
+{
+  "method": "thermal_greedy",
+  "method_label": "TAPP-inspired ThermalGreedy",
+  "records": [
+    {
+      "benchmark": "gemm",
+      "mode": "full",
+      "original_cost": 6.000000000000001,
+      "thermal_greedy_cost": 5.271200745804903,
+      "original_proxy_score": 2.8153330552113336,
+      "thermal_greedy_proxy_score": 2.7544682164393968,
+      "elapsed_s": 0.9589189999969676
+    },
+    {
+      "benchmark": "mpeg4",
+      "mode": "full",
+      "original_cost": 6.000000000000001,
+      "thermal_greedy_cost": 4.543809914122519,
+      "original_proxy_score": 2.5543692218853606,
+      "thermal_greedy_proxy_score": 2.5267254394402356,
+      "elapsed_s": 1.1347266999982821
+    },
+    {
+      "benchmark": "vopd",
+      "mode": "full",
+      "original_cost": 5.0,
+      "thermal_greedy_cost": 4.790312799911725,
+      "original_proxy_score": 1.869862479784082,
+      "thermal_greedy_proxy_score": 1.8336576197327776,
+      "elapsed_s": 0.9514215999988664
+    },
+    {
+      "benchmark": "hnn",
+      "mode": "full",
+      "original_cost": 6.000000000000001,
+      "thermal_greedy_cost": 5.854437379221294,
+      "original_proxy_score": 2.2801805482768165,
+      "thermal_greedy_proxy_score": 1.1110039776703504,
+      "elapsed_s": 1.6066542000007757
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "backend": "Python/matplotlib",
+  "dpi": 600,
+  "figure_archetype": "schematic-led composite",
+  "designed_width_in": 8.2,
+  "designed_height_in": 4.55,
+  "single_column_preview": {
+    "path": "D:\\HNOCS\\document\\figures\\figure1_framework\\figure1_framework_single_column_preview.png",
+    "target_width_mm": 89.0,
+    "width_px": 2102,
+    "height_px": 1174,
+    "nonwhite_pixel_fraction": 0.2539
+  },
+  "file_checks": {
+    "svg": {
+      "path": "D:\\HNOCS\\document\\figures\\figure1_framework\\figure1_framework.svg",
+      "bytes": 58676,
+      "nonempty": true
+    },
+    "pdf": {
+      "path": "D:\\HNOCS\\document\\figures\\figure1_framework\\figure1_framework.pdf",
+      "bytes": 61026,
+      "nonempty": true
+    },
+    "png": {
+      "path": "D:\\HNOCS\\document\\figures\\figure1_framework\\figure1_framework.png",
+      "bytes": 679449,
+      "nonempty": true,
+      "width_px": 4962,
+      "height_px": 2772,
+      "nonwhite_pixel_fraction": 0.2501
+    },
+    "tiff": {
+      "path": "D:\\HNOCS\\document\\figures\\figure1_framework\\figure1_framework.tiff",
+      "bytes": 55018862,
+      "nonempty": true,
+      "width_px": 4962,
+      "height_px": 2772,
+      "nonwhite_pixel_fraction": 0.2501
+    }
+  },
+  "text_overlap_check": {
+    "major_overlap_count": 0,
+    "major_overlaps": []
+  },
+  "notes": [
+    "Conceptual pipeline schematic; no experimental numerical values are plotted.",
+    "SVG uses svg.fonttype='none' so labels remain editable text.",
+    "PDF uses TrueType font embedding via pdf.fonttype=42."
+  ]
+}

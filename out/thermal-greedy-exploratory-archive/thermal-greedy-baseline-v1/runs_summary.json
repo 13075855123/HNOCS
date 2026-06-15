@@ -1,0 +1,13 @@
+[
+  {
+    "benchmark": "gemm",
+    "mode": "proxy_only",
+    "original_proxy_score": 2.8134267121837917,
+    "thermal_greedy_proxy_score": 2.7526680969900745,
+    "original_max_load": 50000.0,
+    "thermal_greedy_max_load": 50000.0,
+    "original_std_load": 21284.439004822278,
+    "thermal_greedy_std_load": 19919.270663104107,
+    "elapsed_s": 0.010954099998343736
+  }
+]

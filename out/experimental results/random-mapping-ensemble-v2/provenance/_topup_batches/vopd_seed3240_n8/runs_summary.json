@@ -1,0 +1,16 @@
+[
+  {
+    "benchmark": "vopd",
+    "random_n": 8,
+    "seed_base": 3240,
+    "workers": 8,
+    "n_valid": 8,
+    "n_invalid": 0,
+    "original_cost": 5.0,
+    "random_best_cost": 5.200137603427584,
+    "random_median_cost": 5.618826723661298,
+    "random_p10_cost": 5.200137603427584,
+    "random_p90_cost": 6.270437226901433,
+    "elapsed_s": 1.7094464000001608
+  }
+]

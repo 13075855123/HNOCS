@@ -1,0 +1,5 @@
+[hnn] CommAware-Heuristic
+  TR2_composite_cost: 7.0696
+  raw_comm_cost:      163840
+  raw_congestion:     49152
+  makespan:           352.55 us

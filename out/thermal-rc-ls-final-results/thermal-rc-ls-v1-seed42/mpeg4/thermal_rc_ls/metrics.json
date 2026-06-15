@@ -1,0 +1,399 @@
+{
+  "name": "mpeg4",
+  "method": "thermal_rc_ls",
+  "method_label": "ThermalRC-LS / Thermal-Resistance-Aware Local Search",
+  "metrics": {
+    "thermal": {
+      "T1_pe_peak_temp_K": 327.59825030218,
+      "T3_temp_std_K": 1.206502500809261,
+      "T5_over_throttle_count": 2
+    },
+    "performance": {
+      "P1_makespan_s": 0.0001226228,
+      "P3_dvfs_penalty_pct": 0.07394472222222251,
+      "P2_speedup": 0.995491050603966
+    },
+    "communication": {
+      "C1_total_comm_cost": 444000.0
+    },
+    "optical": {
+      "O1_budget_count": 17,
+      "O2_min_signal_margin_dB": -6.7541389735753,
+      "O3_min_snr_dB": 11.492847362032,
+      "O4_max_ber": 0.069803767819995,
+      "O5_max_temp_adjusted_loss_dB": 0.90949086627055,
+      "O6_max_ring_detuning_nm": 0.6522152106506,
+      "O7_max_path_tuning_power_mW": 24.730554089438,
+      "O8_max_waveguide_crossing_loss_dB": 0.9
+    },
+    "energy": {
+      "E1_pe_total_energy_J": 0.001132680522817973,
+      "E4_soa_energy_J": 1.91366136e-06,
+      "E5_tuning_energy_J": 8.7345178136349e-08,
+      "E6_laser_energy_J": 6.13114e-07,
+      "E7_pe_optical_comm_energy_J": 0.0011352946433561093
+    },
+    "tradeoff": {
+      "TR2_composite_cost": 5.747219751784556,
+      "cost_terms": {
+        "f_thermal": 1.0001705956396982,
+        "f_sigma": 0.9278049480803943,
+        "f_hot": 1.0,
+        "f_makespan": 1.0045293721056543,
+        "f_comm": 1.0571428571428572,
+        "f_congestion": 0.6818181818181818,
+        "f_dvfs": 1.0315339359633842,
+        "f_load": 1.0,
+        "f_energy": 1.0021310340449079,
+        "total_cost": 5.747219751784556,
+        "raw_comm_cost": 444000.0,
+        "raw_congestion_cost": 60000.0,
+        "raw_load_imbalance": 0.5670623064060744,
+        "T_max_K": 327.59825030218,
+        "sigma_T_K": 1.206502500809261,
+        "N_hot": 2,
+        "eta_dvfs_pct": 0.07394472222222251,
+        "makespan_s": 0.0001226228,
+        "pe_optical_comm_energy_J": 0.0011352946433561093,
+        "optical_budget_count": 17,
+        "optical_min_signal_margin_dB": -6.7541389735753,
+        "optical_min_snr_dB": 11.492847362032,
+        "optical_max_ber": 0.069803767819995,
+        "optical_max_temp_adjusted_loss_dB": 0.90949086627055,
+        "optical_max_ring_detuning_nm": 0.6522152106506,
+        "optical_max_path_tuning_power_mW": 24.730554089438,
+        "optical_max_waveguide_crossing_loss_dB": 0.9
+      }
+    },
+    "run_status": {
+      "run_ok": true,
+      "valid_for_cost": true,
+      "failure_reason": "",
+      "temperature_source": "vec",
+      "temperature_complete": true,
+      "parsed_pe_count": 16,
+      "parsed_temp_timepoints": 1227
+    }
+  },
+  "proxy": {
+    "method": "thermal_rc_ls",
+    "method_label": "ThermalRC-LS / Thermal-Resistance-Aware Local Search",
+    "not_exact_reproduction": true,
+    "search_objective": "lightweight RC thermal proxy plus weak Manhattan communication tie-breaker",
+    "forbidden_search_inputs": [
+      "OMNeT++ candidate full simulation",
+      "B-2 full composite cost",
+      "makespan",
+      "congestion",
+      "DVFS penalty",
+      "PE plus optical communication energy"
+    ],
+    "config": {
+      "proxy": {
+        "rows": 4,
+        "cols": 4,
+        "Tambient": 318.15,
+        "T_hot": 327.15,
+        "power_idle": 0.3,
+        "power_compute": 2.5,
+        "leakage_base_power": 0.3,
+        "ridge_lambda": 0.001,
+        "synthetic_self_R": 2.5,
+        "synthetic_decay": 0.55
+      },
+      "objective_weights": {
+        "w_tmax": 0.55,
+        "w_sigma": 0.3,
+        "w_hot": 0.1,
+        "w_comm": 0.05
+      },
+      "search": {
+        "seed": 42,
+        "init_mode": "original",
+        "max_iter": 300,
+        "no_improve_patience": 50,
+        "time_limit_s": 0.0,
+        "hot_pe_count": 4,
+        "cool_pe_count": 4,
+        "candidate_task_limit": 4,
+        "random_swap_rate": 0.1,
+        "random_candidate_count": 8,
+        "enable_sa": false,
+        "sa_initial_temp": 0.05,
+        "sa_cooling": 0.98
+      }
+    },
+    "denominators": {
+      "Tmax_proxy": 331.2918228865589,
+      "SigmaT_proxy": 2.027678339916508,
+      "HotCount_proxy": 8.0,
+      "CommProxy": 420000.0
+    },
+    "original": {
+      "score": 1.0,
+      "Tmax_proxy": 331.2918228865589,
+      "SigmaT_proxy": 2.027678339916508,
+      "HotCount_proxy": 8,
+      "CommProxy": 420000.0,
+      "f_tmax": 1.0,
+      "f_sigma": 1.0,
+      "f_hot": 1.0,
+      "f_comm": 1.0,
+      "weights": {
+        "w_tmax": 0.55,
+        "w_sigma": 0.3,
+        "w_hot": 0.1,
+        "w_comm": 0.05
+      },
+      "temperatures_K": [
+        327.77314172727904,
+        326.6243990673815,
+        326.3722881530041,
+        329.0892529380612,
+        327.7201177280031,
+        326.547751913715,
+        326.3235578254461,
+        327.64010980215,
+        328.79683389597085,
+        322.92316907210244,
+        325.3034003550388,
+        327.5806727046304,
+        331.2918228865589,
+        326.2851504525843,
+        326.06095636431536,
+        331.21181496070585
+      ],
+      "power_W": [
+        3.064397905759162,
+        3.6172774869109947,
+        3.6172774869109947,
+        3.064397905759162,
+        4.907329842931937,
+        3.9858638743455495,
+        3.9858638743455495,
+        4.907329842931937,
+        3.064397905759162,
+        0.3,
+        2.142931937172775,
+        2.142931937172775,
+        0.3,
+        0.3,
+        0.3,
+        0.3
+      ]
+    },
+    "initial": {
+      "score": 1.0,
+      "Tmax_proxy": 331.2918228865589,
+      "SigmaT_proxy": 2.027678339916508,
+      "HotCount_proxy": 8,
+      "CommProxy": 420000.0,
+      "f_tmax": 1.0,
+      "f_sigma": 1.0,
+      "f_hot": 1.0,
+      "f_comm": 1.0,
+      "weights": {
+        "w_tmax": 0.55,
+        "w_sigma": 0.3,
+        "w_hot": 0.1,
+        "w_comm": 0.05
+      },
+      "temperatures_K": [
+        327.77314172727904,
+        326.6243990673815,
+        326.3722881530041,
+        329.0892529380612,
+        327.7201177280031,
+        326.547751913715,
+        326.3235578254461,
+        327.64010980215,
+        328.79683389597085,
+        322.92316907210244,
+        325.3034003550388,
+        327.5806727046304,
+        331.2918228865589,
+        326.2851504525843,
+        326.06095636431536,
+        331.21181496070585
+      ],
+      "power_W": [
+        3.064397905759162,
+        3.6172774869109947,
+        3.6172774869109947,
+        3.064397905759162,
+        4.907329842931937,
+        3.9858638743455495,
+        3.9858638743455495,
+        4.907329842931937,
+        3.064397905759162,
+        0.3,
+        2.142931937172775,
+        2.142931937172775,
+        0.3,
+        0.3,
+        0.3,
+        0.3
+      ]
+    },
+    "thermal_rc_ls": {
+      "score": 0.8282995191714851,
+      "Tmax_proxy": 329.99642041026226,
+      "SigmaT_proxy": 1.284824603554796,
+      "HotCount_proxy": 3,
+      "CommProxy": 444000.0,
+      "f_tmax": 0.9960898447024447,
+      "f_sigma": 0.6336432057599926,
+      "f_hot": 0.375,
+      "f_comm": 1.0571428571428572,
+      "weights": {
+        "w_tmax": 0.55,
+        "w_sigma": 0.3,
+        "w_hot": 0.1,
+        "w_comm": 0.05
+      },
+      "temperatures_K": [
+        327.1132934644379,
+        326.67649016712613,
+        326.7164941300526,
+        326.2535451627135,
+        326.3045835871773,
+        326.15145483692186,
+        327.0234100512138,
+        326.13248059865305,
+        325.8609365496826,
+        326.7710255956092,
+        327.67089763600956,
+        326.6208546077149,
+        329.69221839614033,
+        326.11304746406,
+        324.75693229035136,
+        329.99642041026226
+      ],
+      "power_W": [
+        2.142931937172775,
+        3.6172774869109947,
+        3.6172774869109947,
+        3.064397905759162,
+        3.064397905759162,
+        3.9858638743455495,
+        4.907329842931937,
+        3.0643979057591624,
+        0.2999999999999998,
+        3.9858638743455495,
+        4.907329842931937,
+        2.142931937172775,
+        0.3,
+        0.3,
+        0.3,
+        0.3
+      ]
+    },
+    "assignment": {
+      "1": 7,
+      "2": 1,
+      "3": 6,
+      "4": 5,
+      "5": 9,
+      "6": 10,
+      "7": 4,
+      "8": 2,
+      "9": 0,
+      "10": 11,
+      "11": 3
+    },
+    "calibration": {
+      "source": "calibrated_distance_bins",
+      "distance_coefficients": [
+        1.219867219180893,
+        0.0,
+        0.14335746527934046,
+        0.18677085686439848,
+        0.0,
+        1.1980955314333788,
+        0.0
+      ],
+      "ridge_lambda": 0.001,
+      "used_baseline_temperature": true,
+      "residual_rmse_K": 4.169434570758774,
+      "reason": ""
+    }
+  },
+  "config": {
+    "source_csv": "D:\\HNOCS\\examples\\task_driven\\static\\tasks_mpeg4_static.csv",
+    "rows": 4,
+    "cols": 4,
+    "num_pes": 16,
+    "final_evaluation_weights": {
+      "w_T": 1.0,
+      "w_sigma": 1.0,
+      "w_hot": 0.6,
+      "w_makespan": 1.2,
+      "w_H": 0.4,
+      "w_congestion": 0.7,
+      "w_D": 0.4,
+      "w_L": 0.2,
+      "w_E": 0.5
+    },
+    "proxy_config": {
+      "rows": 4,
+      "cols": 4,
+      "Tambient": 318.15,
+      "T_hot": 327.15,
+      "power_idle": 0.3,
+      "power_compute": 2.5,
+      "leakage_base_power": 0.3,
+      "ridge_lambda": 0.001,
+      "synthetic_self_R": 2.5,
+      "synthetic_decay": 0.55
+    },
+    "objective_weights": {
+      "w_tmax": 0.55,
+      "w_sigma": 0.3,
+      "w_hot": 0.1,
+      "w_comm": 0.05
+    },
+    "search_config": {
+      "seed": 42,
+      "init_mode": "original",
+      "max_iter": 300,
+      "no_improve_patience": 50,
+      "time_limit_s": 0.0,
+      "hot_pe_count": 4,
+      "cool_pe_count": 4,
+      "candidate_task_limit": 4,
+      "random_swap_rate": 0.1,
+      "random_candidate_count": 8,
+      "enable_sa": false,
+      "sa_initial_temp": 0.05,
+      "sa_cooling": 0.98
+    },
+    "cost_reference": {
+      "peak_excess_K": 9.446638746800033,
+      "sigma_T_K": 1.3003837749577485,
+      "N_hot": 2.0,
+      "makespan_s": 0.0001220699,
+      "pe_optical_comm_energy_J": 0.0011328804365769536,
+      "eta_dvfs_pct": 0.07168423611111063,
+      "comm_cost": 420000.0,
+      "congestion_cost": 88000.0,
+      "load_imbalance": 0.5670623064060744
+    },
+    "calibration": {
+      "source": "calibrated_distance_bins",
+      "distance_coefficients": [
+        1.219867219180893,
+        0.0,
+        0.14335746527934046,
+        0.18677085686439848,
+        0.0,
+        1.1980955314333788,
+        0.0
+      ],
+      "ridge_lambda": 0.001,
+      "used_baseline_temperature": true,
+      "residual_rmse_K": 4.169434570758774,
+      "reason": ""
+    },
+    "not_exact_reproduction": true
+  }
+}

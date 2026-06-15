@@ -1,0 +1,8 @@
+[hnn] ThermalOnly-RC-LS
+  calibration: calibrated_distance_bins
+  TR2 cost:    6.0000 -> 6.0690
+  proxy score: 1.0000 -> 0.8625
+  T_max K:     328.818 -> 331.516
+  sigma_T K:   2.454 -> 1.974
+  hot PE:      16 -> 16
+  makespan s:  0.000203178 -> 0.000202189

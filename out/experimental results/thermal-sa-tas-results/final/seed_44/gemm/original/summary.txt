@@ -1,0 +1,1 @@
+[gemm] Original cost=6.0000

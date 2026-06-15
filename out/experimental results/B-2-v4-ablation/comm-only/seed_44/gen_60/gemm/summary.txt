@@ -1,0 +1,8 @@
+[gemm] gen=36 conv=True elapsed=63.1s
+  T_max:    54.9C -> 54.1C  (delta=-0.8C)
+  sigma_T:  2.14K -> 1.26K
+  N_hot:    6 -> 1
+  Makespan: 120.4us -> 295.8us  (delta=+175.4us)
+  eta_dvfs: 1.84% -> 0.03%
+  Comm:     104448 -> 10240
+  E_pe_opt: 1.571mJ -> 2.476mJ

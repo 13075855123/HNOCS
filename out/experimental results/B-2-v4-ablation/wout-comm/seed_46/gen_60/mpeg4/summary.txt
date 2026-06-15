@@ -1,0 +1,8 @@
+[mpeg4] gen=44 conv=True elapsed=58.1s
+  T_max:    54.4C -> 52.0C  (delta=-2.5C)
+  sigma_T:  1.30K -> 0.98K
+  N_hot:    2 -> 0
+  Makespan: 122.1us -> 121.3us  (delta=-0.8us)
+  eta_dvfs: 0.07% -> 0.00%
+  Comm:     420000 -> 448000
+  E_pe_opt: 1.133mJ -> 1.126mJ

@@ -1,0 +1,181 @@
+{
+  "name": "vopd",
+  "baseline": {
+    "thermal": {
+      "T1_pe_peak_temp_K": 325.37271921261,
+      "T3_temp_std_K": 0.9870939912641029,
+      "T5_over_throttle_count": 0
+    },
+    "performance": {
+      "P1_makespan_s": 8.93329e-05,
+      "P3_dvfs_penalty_pct": 0.0
+    },
+    "communication": {
+      "C1_total_comm_cost": 1396000.0
+    },
+    "optical": {
+      "O1_budget_count": 17,
+      "O2_min_signal_margin_dB": -6.7540341665474,
+      "O3_min_snr_dB": 11.652146899077,
+      "O4_max_ber": 0.06538049161693,
+      "O5_max_temp_adjusted_loss_dB": 0.58876695447068,
+      "O6_max_ring_detuning_nm": 0.46218080031203,
+      "O7_max_path_tuning_power_mW": 16.127688148597,
+      "O8_max_waveguide_crossing_loss_dB": 0.9
+    },
+    "energy": {
+      "E1_pe_total_energy_J": 0.000746344269327722,
+      "E4_soa_energy_J": 3.761708e-06,
+      "E5_tuning_energy_J": 1.8588047871527e-07,
+      "E6_laser_energy_J": 4.466645e-07,
+      "E7_pe_optical_comm_energy_J": 0.0007507385223064374
+    },
+    "tradeoff": {
+      "TR2_composite_cost": 3.0,
+      "cost_terms": {
+        "f_thermal": 1.0,
+        "f_sigma": 1.0,
+        "f_hot": 0.0,
+        "f_makespan": 1.0,
+        "f_comm": 1.0,
+        "f_congestion": 1.0,
+        "f_dvfs": 0.0,
+        "f_load": 1.0,
+        "f_energy": 1.0,
+        "total_cost": 3.0,
+        "raw_comm_cost": 1396000.0,
+        "raw_congestion_cost": 252000.0,
+        "raw_load_imbalance": 0.35802469135802467,
+        "T_max_K": 325.37271921261,
+        "sigma_T_K": 0.9870939912641029,
+        "N_hot": 0,
+        "eta_dvfs_pct": 0.0,
+        "makespan_s": 8.93329e-05,
+        "pe_optical_comm_energy_J": 0.0007507385223064374,
+        "optical_budget_count": 17,
+        "optical_min_signal_margin_dB": -6.7540341665474,
+        "optical_min_snr_dB": 11.652146899077,
+        "optical_max_ber": 0.06538049161693,
+        "optical_max_temp_adjusted_loss_dB": 0.58876695447068,
+        "optical_max_ring_detuning_nm": 0.46218080031203,
+        "optical_max_path_tuning_power_mW": 16.127688148597,
+        "optical_max_waveguide_crossing_loss_dB": 0.9
+      }
+    },
+    "run_status": {
+      "run_ok": true,
+      "valid_for_cost": true,
+      "failure_reason": "",
+      "temperature_source": "vec",
+      "temperature_complete": true,
+      "parsed_pe_count": 16,
+      "parsed_temp_timepoints": 894
+    }
+  },
+  "b2": {
+    "thermal": {
+      "T1_pe_peak_temp_K": 325.70132582227,
+      "T3_temp_std_K": 1.0085504815994137,
+      "T5_over_throttle_count": 0
+    },
+    "performance": {
+      "P1_makespan_s": 8.76906e-05,
+      "P3_dvfs_penalty_pct": 0.0,
+      "P2_speedup": 1.0187283471660589
+    },
+    "communication": {
+      "C1_total_comm_cost": 834000.0
+    },
+    "optical": {
+      "O1_budget_count": 17,
+      "O2_min_signal_margin_dB": -6.7540406211168,
+      "O3_min_snr_dB": 11.64901624056,
+      "O4_max_ber": 0.065465952281935,
+      "O5_max_temp_adjusted_loss_dB": 0.59956613004695,
+      "O6_max_ring_detuning_nm": 0.49904934569437,
+      "O7_max_path_tuning_power_mW": 16.23049819035,
+      "O8_max_waveguide_crossing_loss_dB": 0.7
+    },
+    "energy": {
+      "E1_pe_total_energy_J": 0.0007367485647183301,
+      "E4_soa_energy_J": 2.462216e-06,
+      "E5_tuning_energy_J": 1.4215181049241e-07,
+      "E6_laser_energy_J": 4.38453e-07,
+      "E7_pe_optical_comm_energy_J": 0.0007397913855288225
+    },
+    "tradeoff": {
+      "TR2_composite_cost": 2.3096167162447374,
+      "cost_terms": {
+        "f_thermal": 1.0454962459410466,
+        "f_sigma": 1.0217370286165282,
+        "f_hot": 0.0,
+        "f_makespan": 0.9816159555997845,
+        "f_comm": 0.5974212034383954,
+        "f_congestion": 0.2857142857142857,
+        "f_dvfs": 0.0,
+        "f_load": 1.0,
+        "f_energy": 0.9854181762992754,
+        "total_cost": 2.3096167162447374,
+        "raw_comm_cost": 834000.0,
+        "raw_congestion_cost": 72000.0,
+        "raw_load_imbalance": 0.35802469135802467,
+        "T_max_K": 325.70132582227,
+        "sigma_T_K": 1.0085504815994137,
+        "N_hot": 0,
+        "eta_dvfs_pct": 0.0,
+        "makespan_s": 8.76906e-05,
+        "pe_optical_comm_energy_J": 0.0007397913855288225,
+        "optical_budget_count": 17,
+        "optical_min_signal_margin_dB": -6.7540406211168,
+        "optical_min_snr_dB": 11.64901624056,
+        "optical_max_ber": 0.065465952281935,
+        "optical_max_temp_adjusted_loss_dB": 0.59956613004695,
+        "optical_max_ring_detuning_nm": 0.49904934569437,
+        "optical_max_path_tuning_power_mW": 16.23049819035,
+        "optical_max_waveguide_crossing_loss_dB": 0.7
+      }
+    },
+    "run_status": {
+      "run_ok": true,
+      "valid_for_cost": true,
+      "failure_reason": "",
+      "temperature_source": "vec",
+      "temperature_complete": true,
+      "parsed_pe_count": 16,
+      "parsed_temp_timepoints": 877
+    }
+  },
+  "b2_generations": 56,
+  "b2_converged": true,
+  "b2_elapsed_s": 927.2498866003007,
+  "b2_best_fitness": 2.3096167162447374,
+  "config": {
+    "population_size": 50,
+    "num_generations": 60,
+    "crossover_rate": 0.8,
+    "mutation_rate": 0.1,
+    "w_T": 0.0,
+    "w_sigma": 0.0,
+    "w_hot": 0.0,
+    "w_makespan": 1.2,
+    "w_H": 0.4,
+    "w_congestion": 0.7,
+    "w_D": 0.4,
+    "w_L": 0.2,
+    "w_E": 0.5,
+    "w_peak": 0.0,
+    "seed": 42,
+    "fitness": "baseline_normalized_v2",
+    "cost_reference": {
+      "peak_excess_K": 7.222719212610002,
+      "sigma_T_K": 0.9870939912641029,
+      "N_hot": 0.0,
+      "makespan_s": 8.93329e-05,
+      "pe_optical_comm_energy_J": 0.0007507385223064374,
+      "eta_dvfs_pct": 0.0,
+      "comm_cost": 1396000.0,
+      "congestion_cost": 252000.0,
+      "load_imbalance": 0.35802469135802467
+    }
+  }
+}

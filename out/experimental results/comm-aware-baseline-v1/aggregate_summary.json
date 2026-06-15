@@ -1,0 +1,46 @@
+[
+  {
+    "benchmark": "gemm",
+    "mode": "omnet",
+    "original_cost": 6.000000000000001,
+    "comm_aware_cost": 8.166037408710636,
+    "original_raw_comm_cost": 104448.0,
+    "comm_aware_raw_comm_cost": 6144.0,
+    "original_raw_congestion_cost": 22528.0,
+    "comm_aware_raw_congestion_cost": 2048.0,
+    "elapsed_s": 1.537891200001468
+  },
+  {
+    "benchmark": "mpeg4",
+    "mode": "omnet",
+    "original_cost": 6.000000000000001,
+    "comm_aware_cost": 7.341626176097999,
+    "original_raw_comm_cost": 420000.0,
+    "comm_aware_raw_comm_cost": 40000.0,
+    "original_raw_congestion_cost": 88000.0,
+    "comm_aware_raw_congestion_cost": 20000.0,
+    "elapsed_s": 1.1656309999998484
+  },
+  {
+    "benchmark": "vopd",
+    "mode": "omnet",
+    "original_cost": 5.0,
+    "comm_aware_cost": 8.896455532844945,
+    "original_raw_comm_cost": 1396000.0,
+    "comm_aware_raw_comm_cost": 120000.0,
+    "original_raw_congestion_cost": 252000.0,
+    "comm_aware_raw_congestion_cost": 60000.0,
+    "elapsed_s": 0.9495929000004253
+  },
+  {
+    "benchmark": "hnn",
+    "mode": "omnet",
+    "original_cost": 6.000000000000001,
+    "comm_aware_cost": 7.069626153237407,
+    "original_raw_comm_cost": 2195456.0,
+    "comm_aware_raw_comm_cost": 163840.0,
+    "original_raw_congestion_cost": 163840.0,
+    "comm_aware_raw_congestion_cost": 49152.0,
+    "elapsed_s": 1.83236830000169
+  }
+]

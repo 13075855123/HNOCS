@@ -1,0 +1,46 @@
+[
+  {
+    "benchmark": "gemm",
+    "mode": "full",
+    "original_cost": 6.000000000000001,
+    "thermal_sa_tas_cost": 5.867419069913753,
+    "original_proxy_score": 0.98,
+    "thermal_sa_tas_proxy_score": 0.9404235989702803,
+    "iterations": 3213,
+    "converged": true,
+    "elapsed_s": 9.709651199999826
+  },
+  {
+    "benchmark": "mpeg4",
+    "mode": "full",
+    "original_cost": 6.000000000000001,
+    "thermal_sa_tas_cost": 4.893773934332865,
+    "original_proxy_score": 0.98,
+    "thermal_sa_tas_proxy_score": 0.9609744492783087,
+    "iterations": 4684,
+    "converged": true,
+    "elapsed_s": 10.87304310000036
+  },
+  {
+    "benchmark": "vopd",
+    "mode": "full",
+    "original_cost": 5.0,
+    "thermal_sa_tas_cost": 5.226623281190664,
+    "original_proxy_score": 0.98,
+    "thermal_sa_tas_proxy_score": 0.968470072916477,
+    "iterations": 4392,
+    "converged": true,
+    "elapsed_s": 11.89779069999986
+  },
+  {
+    "benchmark": "hnn",
+    "mode": "full",
+    "original_cost": 6.000000000000001,
+    "thermal_sa_tas_cost": 6.537402140763925,
+    "original_proxy_score": 0.98,
+    "thermal_sa_tas_proxy_score": 1.108808403873836,
+    "iterations": 5000,
+    "converged": true,
+    "elapsed_s": 22.898402099999657
+  }
+]

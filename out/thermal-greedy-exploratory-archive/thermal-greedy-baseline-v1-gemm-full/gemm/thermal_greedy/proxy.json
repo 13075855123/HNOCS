@@ -1,0 +1,122 @@
+{
+  "method": "thermal_greedy",
+  "method_label": "TAPP-inspired ThermalGreedy",
+  "not_exact_reproduction": true,
+  "search_objective": "compute_time heat proxy plus center penalty and weak communication tie-breaker",
+  "forbidden_search_inputs": [
+    "OMNeT++ final peak temperature",
+    "DVFS penalty",
+    "optical tuning energy",
+    "makespan",
+    "TR2_composite_cost"
+  ],
+  "config": {
+    "rows": 4,
+    "cols": 4,
+    "alpha_sigma": 0.5,
+    "alpha_center": 0.1,
+    "beta_comm": 0.05,
+    "heat_weight_mode": "compute_time"
+  },
+  "task_order": [
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    1
+  ],
+  "heat_weights": {
+    "1": 15000.0,
+    "2": 50000.0,
+    "3": 50000.0,
+    "4": 50000.0,
+    "5": 50000.0,
+    "6": 30000.0,
+    "7": 30000.0,
+    "8": 30000.0,
+    "9": 30000.0,
+    "10": 20000.0
+  },
+  "baseline_comm_cost": 104448.0,
+  "original": {
+    "score": 2.8134267121837917,
+    "max_load": 50000.0,
+    "std_load": 21284.439004822278,
+    "ideal_load": 22187.5,
+    "max_load_norm": 2.2535211267605635,
+    "std_load_norm": 0.9592986593722717,
+    "center_heat_penalty": 0.3025625573709235,
+    "raw_comm_cost": 104448.0,
+    "normalized_comm": 1.0,
+    "estimated_heat_load": [
+      45000.0,
+      30000.0,
+      30000.0,
+      30000.0,
+      50000.0,
+      50000.0,
+      0.0,
+      0.0,
+      50000.0,
+      50000.0,
+      0.0,
+      0.0,
+      20000.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "thermal_greedy": {
+    "score": 2.7526680969900745,
+    "max_load": 50000.0,
+    "std_load": 19919.270663104107,
+    "ideal_load": 22187.5,
+    "max_load_norm": 2.2535211267605635,
+    "std_load_norm": 0.8977699453793401,
+    "center_heat_penalty": 0.13987487735919338,
+    "raw_comm_cost": 75776.0,
+    "normalized_comm": 0.7254901960784313,
+    "estimated_heat_load": [
+      30000.0,
+      30000.0,
+      50000.0,
+      50000.0,
+      20000.0,
+      0.0,
+      0.0,
+      15000.0,
+      30000.0,
+      0.0,
+      0.0,
+      50000.0,
+      30000.0,
+      0.0,
+      0.0,
+      50000.0
+    ]
+  },
+  "assignment": {
+    "1": 7,
+    "2": 2,
+    "3": 3,
+    "4": 11,
+    "5": 15,
+    "6": 0,
+    "7": 1,
+    "8": 8,
+    "9": 12,
+    "10": 4
+  },
+  "local_swap": {
+    "enabled": true,
+    "passes": 2,
+    "accepted_swaps": 5,
+    "final_score": 2.7526680969900745
+  }
+}

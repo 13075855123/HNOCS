@@ -1,0 +1,6 @@
+[vopd] ThermalGreedy
+  TR2 cost:    5.0000 -> 4.7903
+  proxy score: 1.8699 -> 1.8337
+  T_max K:     325.373 -> 326.305
+  sigma_T K:   0.987 -> 1.127
+  makespan s:  8.93329e-05 -> 8.83406e-05

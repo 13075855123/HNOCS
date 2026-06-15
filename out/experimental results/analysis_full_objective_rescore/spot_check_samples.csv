@@ -1,0 +1,8 @@
+workload,method,seed,stored_TR2_composite_cost,recomputed_full_objective_score,score_from_terms,score_term_difference,delta_vs_reference_full_score,valid,validity_notes,metrics_path
+GEMM,Full-GA,42,3.799907180912859,3.799907180912859,3.799907180912859,0.0,-2.200092819087142,True,,D:\HNOCS\out\experimental results\B-2-v4\seed_42\gen_60\gemm\metrics.json
+GEMM,thermal-only,42,1.166108540420086,7.316525786126099,7.316525786126099,0.0,1.316525786126098,True,,D:\HNOCS\out\experimental results\B-2-v4-ablation\thermal-only\seed_42\gen_60\gemm\metrics.json
+VOPD,wout-thermal,40,2.2888995797970932,4.4150411969020595,4.4150411969020595,0.0,-0.5849588030979405,True,,D:\HNOCS\out\experimental results\B-2-v4-ablation\wout-thermal\seed_40\gen_60\vopd\metrics.json
+HNN,Full-GA,49,5.327389471999339,5.327389471999339,5.327389471999339,0.0,-0.6726105280006616,True,,D:\HNOCS\out\experimental results\B-2-v4\seed_49\gen_60\hnn\metrics.json
+GEMM,RandomBest,348,4.046569270796039,4.046569270796039,4.046569270796039,0.0,,True,,D:\HNOCS\out\experimental results\random-mapping-ensemble-v2\gemm\random\selected\random_best\metrics.json
+VOPD,CommAware-Heuristic,,8.896455532844945,8.896455532844945,8.896455532844945,0.0,,True,,D:\HNOCS\out\experimental results\comm-aware-baseline-v1\vopd\comm_aware\metrics.json
+HNN,Thermal-SA-TAS,49,5.41786078278354,5.41786078278354,5.41786078278354,0.0,-0.5821392172164606,True,,D:\HNOCS\out\experimental results\thermal-sa-tas-results\final\seed_49\hnn\thermal_sa_tas\metrics.json

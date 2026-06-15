@@ -1,0 +1,8 @@
+[hnn] gen=60 conv=False elapsed=130.4s
+  T_max:    55.7C -> 58.2C  (delta=+2.5C)
+  sigma_T:  2.45K -> 2.01K
+  N_hot:    16 -> 11
+  Makespan: 203.2us -> 304.0us  (delta=+100.8us)
+  eta_dvfs: 11.14% -> 6.98%
+  Comm:     2195456 -> 1032192
+  E_pe_opt: 4.651mJ -> 5.063mJ

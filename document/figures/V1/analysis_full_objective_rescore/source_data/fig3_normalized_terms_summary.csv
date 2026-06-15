@@ -1,0 +1,145 @@
+workload,method,display_label,metric_group,term,term_label,n,term_mean,term_ci95,term_min,term_max,display_as
+GEMM,ReferenceMapping,Reference (anchor),thermal_safety,f_thermal,Tmax,10,1.0,0.0,1.0,1.0,single/reference
+GEMM,ReferenceMapping,Reference (anchor),thermal_safety,f_sigma,sigmaT,10,1.0,0.0,1.0,1.0,single/reference
+GEMM,ReferenceMapping,Reference (anchor),thermal_safety,f_hot,Nhot,10,1.0,0.0,1.0,1.0,single/reference
+GEMM,ReferenceMapping,Reference (anchor),performance,f_makespan,makespan,10,1.0,0.0,1.0,1.0,single/reference
+GEMM,ReferenceMapping,Reference (anchor),performance,f_dvfs,DVFS,10,1.0,0.0,1.0,1.0,single/reference
+GEMM,ReferenceMapping,Reference (anchor),communication_pressure,f_comm,comm,10,1.0,0.0,1.0,1.0,single/reference
+GEMM,ReferenceMapping,Reference (anchor),communication_pressure,f_congestion,congestion,10,1.0,0.0,1.0,1.0,single/reference
+GEMM,ReferenceMapping,Reference (anchor),mapping_balance,f_load,load,10,1.0,0.0,1.0,1.0,single/reference
+GEMM,ReferenceMapping,Reference (anchor),energy,f_energy,energy,10,1.0,0.0,1.0,1.0,single/reference
+GEMM,Thermal-SA-TAS,Thermal-SA-TAS,thermal_safety,f_thermal,Tmax,10,0.8697404248285231,0.03925238662676381,0.7813227101673925,0.9425545848583664,mean only; CI not drawn
+GEMM,Thermal-SA-TAS,Thermal-SA-TAS,thermal_safety,f_sigma,sigmaT,10,0.64373799646425,0.031182714142760873,0.5743485406044001,0.7081886970313332,mean only; CI not drawn
+GEMM,Thermal-SA-TAS,Thermal-SA-TAS,thermal_safety,f_hot,Nhot,10,0.06666666666666664,0.053344443287278075,0.0,0.1666666666666666,mean only; CI not drawn
+GEMM,Thermal-SA-TAS,Thermal-SA-TAS,performance,f_makespan,makespan,10,1.3095733565881815,0.11179640945505087,0.9705493957892114,1.4639001702587102,mean only; CI not drawn
+GEMM,Thermal-SA-TAS,Thermal-SA-TAS,performance,f_dvfs,DVFS,10,0.018839751753641838,0.016372875413752527,0.0,0.065754106832219,mean only; CI not drawn
+GEMM,Thermal-SA-TAS,Thermal-SA-TAS,communication_pressure,f_comm,comm,10,0.969607843137255,0.10928191277762195,0.696078431372549,1.2352941176470589,mean only; CI not drawn
+GEMM,Thermal-SA-TAS,Thermal-SA-TAS,communication_pressure,f_congestion,congestion,10,0.7681818181818182,0.11687936533982629,0.4545454545454545,1.0909090909090908,mean only; CI not drawn
+GEMM,Thermal-SA-TAS,Thermal-SA-TAS,mapping_balance,f_load,load,10,2.0733347704246605,0.4770961186661214,0.8758353093339082,3.2073722785082994,mean only; CI not drawn
+GEMM,Thermal-SA-TAS,Thermal-SA-TAS,energy,f_energy,energy,10,1.1056103621678033,0.04619639157585939,0.9654303273989157,1.168601899838465,mean only; CI not drawn
+GEMM,CommAware-Heuristic,CommAware-Heuristic,thermal_safety,f_thermal,Tmax,1,0.8312452228967383,0.0,0.8312452228967383,0.8312452228967383,single/reference
+GEMM,CommAware-Heuristic,CommAware-Heuristic,thermal_safety,f_sigma,sigmaT,1,0.4418482041587528,0.0,0.4418482041587528,0.4418482041587528,single/reference
+GEMM,CommAware-Heuristic,CommAware-Heuristic,thermal_safety,f_hot,Nhot,1,0.0,0.0,0.0,0.0,single/reference
+GEMM,CommAware-Heuristic,CommAware-Heuristic,performance,f_makespan,makespan,1,2.7050371662306385,0.0,2.7050371662306385,2.7050371662306385,single/reference
+GEMM,CommAware-Heuristic,CommAware-Heuristic,performance,f_dvfs,DVFS,1,0.0,0.0,0.0,0.0,single/reference
+GEMM,CommAware-Heuristic,CommAware-Heuristic,communication_pressure,f_comm,comm,1,0.0588235294117647,0.0,0.0588235294117647,0.0588235294117647,single/reference
+GEMM,CommAware-Heuristic,CommAware-Heuristic,communication_pressure,f_congestion,congestion,1,0.0909090909090909,0.0,0.0909090909090909,0.0909090909090909,single/reference
+GEMM,CommAware-Heuristic,CommAware-Heuristic,mapping_balance,f_load,load,1,13.60961414097866,0.0,13.60961414097866,13.60961414097866,single/reference
+GEMM,CommAware-Heuristic,CommAware-Heuristic,energy,f_energy,energy,1,1.6756215571631548,0.0,1.6756215571631548,1.6756215571631548,single/reference
+GEMM,Full-GA,Full-GA,thermal_safety,f_thermal,Tmax,10,0.814086603722191,0.010985709517023509,0.7780030604668743,0.8369929491055624,mean only; CI not drawn
+GEMM,Full-GA,Full-GA,thermal_safety,f_sigma,sigmaT,10,0.6373864687591713,0.010339599918155744,0.6111428640204207,0.6573433855491582,mean only; CI not drawn
+GEMM,Full-GA,Full-GA,thermal_safety,f_hot,Nhot,10,0.0,0.0,0.0,0.0,mean only; CI not drawn
+GEMM,Full-GA,Full-GA,performance,f_makespan,makespan,10,0.9695372285204102,0.00027100622818483486,0.968537020887837,0.9700153648104316,mean only; CI not drawn
+GEMM,Full-GA,Full-GA,performance,f_dvfs,DVFS,10,0.0,0.0,0.0,0.0,mean only; CI not drawn
+GEMM,Full-GA,Full-GA,communication_pressure,f_comm,comm,10,0.5941176470588234,0.041033477203885046,0.4901960784313725,0.6764705882352942,mean only; CI not drawn
+GEMM,Full-GA,Full-GA,communication_pressure,f_congestion,congestion,10,0.37272727272727274,0.017818181818181813,0.3636363636363636,0.4545454545454545,mean only; CI not drawn
+GEMM,Full-GA,Full-GA,mapping_balance,f_load,load,10,0.9172235395559388,0.054080620823453336,0.8758353093339082,1.0827764604440613,mean only; CI not drawn
+GEMM,Full-GA,Full-GA,energy,f_energy,energy,10,0.9652746918240702,0.00018315454232101708,0.9646507890101284,0.9655526513646644,mean only; CI not drawn
+MPEG4,ReferenceMapping,Reference (anchor),thermal_safety,f_thermal,Tmax,10,1.0,0.0,1.0,1.0,single/reference
+MPEG4,ReferenceMapping,Reference (anchor),thermal_safety,f_sigma,sigmaT,10,1.0,0.0,1.0,1.0,single/reference
+MPEG4,ReferenceMapping,Reference (anchor),thermal_safety,f_hot,Nhot,10,1.0,0.0,1.0,1.0,single/reference
+MPEG4,ReferenceMapping,Reference (anchor),performance,f_makespan,makespan,10,1.0,0.0,1.0,1.0,single/reference
+MPEG4,ReferenceMapping,Reference (anchor),performance,f_dvfs,DVFS,10,1.0,0.0,1.0,1.0,single/reference
+MPEG4,ReferenceMapping,Reference (anchor),communication_pressure,f_comm,comm,10,1.0,0.0,1.0,1.0,single/reference
+MPEG4,ReferenceMapping,Reference (anchor),communication_pressure,f_congestion,congestion,10,1.0,0.0,1.0,1.0,single/reference
+MPEG4,ReferenceMapping,Reference (anchor),mapping_balance,f_load,load,10,1.0,0.0,1.0,1.0,single/reference
+MPEG4,ReferenceMapping,Reference (anchor),energy,f_energy,energy,10,1.0,0.0,1.0,1.0,single/reference
+MPEG4,Thermal-SA-TAS,Thermal-SA-TAS,thermal_safety,f_thermal,Tmax,10,0.871473403063361,0.03490509548406504,0.8173977616626515,0.970504137610384,mean only; CI not drawn
+MPEG4,Thermal-SA-TAS,Thermal-SA-TAS,thermal_safety,f_sigma,sigmaT,10,0.8901270506709638,0.03272556563757444,0.8256007090327281,0.9783224730270396,mean only; CI not drawn
+MPEG4,Thermal-SA-TAS,Thermal-SA-TAS,thermal_safety,f_hot,Nhot,10,0.05,0.09799999999999999,0.0,0.5,mean only; CI not drawn
+MPEG4,Thermal-SA-TAS,Thermal-SA-TAS,performance,f_makespan,makespan,10,0.9989161128173283,0.0019052138453705214,0.9933619999688704,1.002389614474985,mean only; CI not drawn
+MPEG4,Thermal-SA-TAS,Thermal-SA-TAS,performance,f_dvfs,DVFS,10,0.007863479205194899,0.015412419242182,0.0,0.078634792051949,mean only; CI not drawn
+MPEG4,Thermal-SA-TAS,Thermal-SA-TAS,communication_pressure,f_comm,comm,10,1.1228571428571428,0.0944241442235283,0.961904761904762,1.4666666666666666,mean only; CI not drawn
+MPEG4,Thermal-SA-TAS,Thermal-SA-TAS,communication_pressure,f_congestion,congestion,10,1.009090909090909,0.19464545716376314,0.6363636363636364,1.5454545454545454,mean only; CI not drawn
+MPEG4,Thermal-SA-TAS,Thermal-SA-TAS,mapping_balance,f_load,load,10,1.3557789916372602,0.18094024378536938,1.0,1.858510175472519,mean only; CI not drawn
+MPEG4,Thermal-SA-TAS,Thermal-SA-TAS,energy,f_energy,energy,10,0.9980269400097468,0.0012674914927947897,0.9944892601359224,1.0004158489304094,mean only; CI not drawn
+MPEG4,CommAware-Heuristic,CommAware-Heuristic,thermal_safety,f_thermal,Tmax,1,0.7985346003799827,0.0,0.7985346003799827,0.7985346003799827,single/reference
+MPEG4,CommAware-Heuristic,CommAware-Heuristic,thermal_safety,f_sigma,sigmaT,1,0.9238498509992,0.0,0.9238498509992,0.9238498509992,single/reference
+MPEG4,CommAware-Heuristic,CommAware-Heuristic,thermal_safety,f_hot,Nhot,1,0.0,0.0,0.0,0.0,single/reference
+MPEG4,CommAware-Heuristic,CommAware-Heuristic,performance,f_makespan,makespan,1,1.580260162415141,0.0,1.580260162415141,1.580260162415141,single/reference
+MPEG4,CommAware-Heuristic,CommAware-Heuristic,performance,f_dvfs,DVFS,1,0.0,0.0,0.0,0.0,single/reference
+MPEG4,CommAware-Heuristic,CommAware-Heuristic,communication_pressure,f_comm,comm,1,0.0952380952380952,0.0,0.0952380952380952,0.0952380952380952,single/reference
+MPEG4,CommAware-Heuristic,CommAware-Heuristic,communication_pressure,f_congestion,congestion,1,0.2272727272727272,0.0,0.2272727272727272,0.2272727272727272,single/reference
+MPEG4,CommAware-Heuristic,CommAware-Heuristic,mapping_balance,f_load,load,1,14.29375936578528,0.0,14.29375936578528,14.29375936578528,single/reference
+MPEG4,CommAware-Heuristic,CommAware-Heuristic,energy,f_energy,energy,1,1.333983018954889,0.0,1.333983018954889,1.333983018954889,single/reference
+MPEG4,Full-GA,Full-GA,thermal_safety,f_thermal,Tmax,10,0.7699587653184972,0.026772462548490177,0.7215802957034932,0.8341172996426044,mean only; CI not drawn
+MPEG4,Full-GA,Full-GA,thermal_safety,f_sigma,sigmaT,10,0.8233438676939947,0.017673092436946817,0.7842641309802807,0.8704510432318746,mean only; CI not drawn
+MPEG4,Full-GA,Full-GA,thermal_safety,f_hot,Nhot,10,0.0,0.0,0.0,0.0,mean only; CI not drawn
+MPEG4,Full-GA,Full-GA,performance,f_makespan,makespan,10,0.996008516431979,0.0016330057307302997,0.9925755653113504,1.0022749260874302,mean only; CI not drawn
+MPEG4,Full-GA,Full-GA,performance,f_dvfs,DVFS,10,0.0,0.0,0.0,0.0,mean only; CI not drawn
+MPEG4,Full-GA,Full-GA,communication_pressure,f_comm,comm,10,0.7923809523809524,0.057621943693889136,0.7047619047619048,0.9523809523809524,mean only; CI not drawn
+MPEG4,Full-GA,Full-GA,communication_pressure,f_congestion,congestion,10,0.39999999999999997,0.0724995424449638,0.2727272727272727,0.5454545454545454,mean only; CI not drawn
+MPEG4,Full-GA,Full-GA,mapping_balance,f_load,load,10,1.2474984289650504,0.14955789293975688,1.0,1.6187460724126264,mean only; CI not drawn
+MPEG4,Full-GA,Full-GA,energy,f_energy,energy,10,0.9953075103211642,0.0009754402193060709,0.993646567241556,0.9992461983453678,mean only; CI not drawn
+VOPD,ReferenceMapping,Reference (anchor),thermal_safety,f_thermal,Tmax,10,1.0,0.0,1.0,1.0,single/reference
+VOPD,ReferenceMapping,Reference (anchor),thermal_safety,f_sigma,sigmaT,10,1.0,0.0,1.0,1.0,single/reference
+VOPD,ReferenceMapping,Reference (anchor),thermal_safety,f_hot,Nhot,10,0.0,0.0,0.0,0.0,single/reference
+VOPD,ReferenceMapping,Reference (anchor),performance,f_makespan,makespan,10,1.0,0.0,1.0,1.0,single/reference
+VOPD,ReferenceMapping,Reference (anchor),performance,f_dvfs,DVFS,10,0.0,0.0,0.0,0.0,single/reference
+VOPD,ReferenceMapping,Reference (anchor),communication_pressure,f_comm,comm,10,1.0,0.0,1.0,1.0,single/reference
+VOPD,ReferenceMapping,Reference (anchor),communication_pressure,f_congestion,congestion,10,1.0,0.0,1.0,1.0,single/reference
+VOPD,ReferenceMapping,Reference (anchor),mapping_balance,f_load,load,10,1.0,0.0,1.0,1.0,single/reference
+VOPD,ReferenceMapping,Reference (anchor),energy,f_energy,energy,10,1.0,0.0,1.0,1.0,single/reference
+VOPD,Thermal-SA-TAS,Thermal-SA-TAS,thermal_safety,f_thermal,Tmax,10,1.000238298784066,0.03638558550084421,0.91705127912158,1.1326540374388672,mean only; CI not drawn
+VOPD,Thermal-SA-TAS,Thermal-SA-TAS,thermal_safety,f_sigma,sigmaT,10,0.9542660505370737,0.013977245378813572,0.9266397977279504,0.9983724429629164,mean only; CI not drawn
+VOPD,Thermal-SA-TAS,Thermal-SA-TAS,thermal_safety,f_hot,Nhot,10,0.0,0.0,0.0,0.0,mean only; CI not drawn
+VOPD,Thermal-SA-TAS,Thermal-SA-TAS,performance,f_makespan,makespan,10,0.9886893854335861,0.006700934124592492,0.9778099669886458,1.0146843995885055,mean only; CI not drawn
+VOPD,Thermal-SA-TAS,Thermal-SA-TAS,performance,f_dvfs,DVFS,10,0.0,0.0,0.0,0.0,mean only; CI not drawn
+VOPD,Thermal-SA-TAS,Thermal-SA-TAS,communication_pressure,f_comm,comm,10,0.6469914040114613,0.0249624656727424,0.5816618911174785,0.6991404011461319,mean only; CI not drawn
+VOPD,Thermal-SA-TAS,Thermal-SA-TAS,communication_pressure,f_congestion,congestion,10,0.5817460317460317,0.04056723998769794,0.5079365079365079,0.746031746031746,mean only; CI not drawn
+VOPD,Thermal-SA-TAS,Thermal-SA-TAS,mapping_balance,f_load,load,10,1.0,0.0,1.0,1.0,mean only; CI not drawn
+VOPD,Thermal-SA-TAS,Thermal-SA-TAS,energy,f_energy,energy,10,0.9898838794370872,0.004492460130461595,0.982219006614486,1.00742866172592,mean only; CI not drawn
+VOPD,CommAware-Heuristic,CommAware-Heuristic,thermal_safety,f_thermal,Tmax,1,1.0471527380138768,0.0,1.0471527380138768,1.0471527380138768,single/reference
+VOPD,CommAware-Heuristic,CommAware-Heuristic,thermal_safety,f_sigma,sigmaT,1,1.187776720878282,0.0,1.187776720878282,1.187776720878282,single/reference
+VOPD,CommAware-Heuristic,CommAware-Heuristic,thermal_safety,f_hot,Nhot,1,0.0,0.0,0.0,0.0,single/reference
+VOPD,CommAware-Heuristic,CommAware-Heuristic,performance,f_makespan,makespan,1,1.23432912174574,0.0,1.23432912174574,1.23432912174574,single/reference
+VOPD,CommAware-Heuristic,CommAware-Heuristic,performance,f_dvfs,DVFS,1,0.0,0.0,0.0,0.0,single/reference
+VOPD,CommAware-Heuristic,CommAware-Heuristic,communication_pressure,f_comm,comm,1,0.0859598853868194,0.0,0.0859598853868194,0.0859598853868194,single/reference
+VOPD,CommAware-Heuristic,CommAware-Heuristic,communication_pressure,f_congestion,congestion,1,0.238095238095238,0.0,0.238095238095238,0.238095238095238,single/reference
+VOPD,CommAware-Heuristic,CommAware-Heuristic,mapping_balance,f_load,load,1,22.03448275862069,0.0,22.03448275862069,22.03448275862069,single/reference
+VOPD,CommAware-Heuristic,CommAware-Heuristic,energy,f_energy,energy,1,1.1447679106247326,0.0,1.1447679106247326,1.1447679106247326,single/reference
+VOPD,Full-GA,Full-GA,thermal_safety,f_thermal,Tmax,10,0.9666927418453459,0.03270073657392728,0.8927303877288628,1.0206207739392663,mean only; CI not drawn
+VOPD,Full-GA,Full-GA,thermal_safety,f_sigma,sigmaT,10,0.9262477306329776,0.021615480916096715,0.8734613387230916,0.9785339547167172,mean only; CI not drawn
+VOPD,Full-GA,Full-GA,thermal_safety,f_hot,Nhot,10,0.0,0.0,0.0,0.0,mean only; CI not drawn
+VOPD,Full-GA,Full-GA,performance,f_makespan,makespan,10,0.9860417606503316,0.005768413723228589,0.9772525015979556,1.0005809729674062,mean only; CI not drawn
+VOPD,Full-GA,Full-GA,performance,f_dvfs,DVFS,10,0.0,0.0,0.0,0.0,mean only; CI not drawn
+VOPD,Full-GA,Full-GA,communication_pressure,f_comm,comm,10,0.7776504297994269,0.042507115240987006,0.66189111747851,0.8810888252148997,mean only; CI not drawn
+VOPD,Full-GA,Full-GA,communication_pressure,f_congestion,congestion,10,0.4412698412698412,0.07106541741812308,0.2857142857142857,0.5714285714285714,mean only; CI not drawn
+VOPD,Full-GA,Full-GA,mapping_balance,f_load,load,10,1.0766283524904214,0.15019157088122612,1.0,1.7662835249042148,mean only; CI not drawn
+VOPD,Full-GA,Full-GA,energy,f_energy,energy,10,0.988923442981784,0.0038921009379578827,0.9828384978033068,0.9988901871460376,mean only; CI not drawn
+HNN,ReferenceMapping,Reference (anchor),thermal_safety,f_thermal,Tmax,10,1.0,0.0,1.0,1.0,single/reference
+HNN,ReferenceMapping,Reference (anchor),thermal_safety,f_sigma,sigmaT,10,1.0,0.0,1.0,1.0,single/reference
+HNN,ReferenceMapping,Reference (anchor),thermal_safety,f_hot,Nhot,10,1.0,0.0,1.0,1.0,single/reference
+HNN,ReferenceMapping,Reference (anchor),performance,f_makespan,makespan,10,1.0,0.0,1.0,1.0,single/reference
+HNN,ReferenceMapping,Reference (anchor),performance,f_dvfs,DVFS,10,1.0,0.0,1.0,1.0,single/reference
+HNN,ReferenceMapping,Reference (anchor),communication_pressure,f_comm,comm,10,1.0,0.0,1.0,1.0,single/reference
+HNN,ReferenceMapping,Reference (anchor),communication_pressure,f_congestion,congestion,10,1.0,0.0,1.0,1.0,single/reference
+HNN,ReferenceMapping,Reference (anchor),mapping_balance,f_load,load,10,1.0,0.0,1.0,1.0,single/reference
+HNN,ReferenceMapping,Reference (anchor),energy,f_energy,energy,10,1.0,0.0,1.0,1.0,single/reference
+HNN,Thermal-SA-TAS,Thermal-SA-TAS,thermal_safety,f_thermal,Tmax,10,1.1678361700807607,0.03142101868070808,1.1042822958470904,1.2505405993071337,mean only; CI not drawn
+HNN,Thermal-SA-TAS,Thermal-SA-TAS,thermal_safety,f_sigma,sigmaT,10,0.7527622599550462,0.024325609003633474,0.6970544587071889,0.8102004366675689,mean only; CI not drawn
+HNN,Thermal-SA-TAS,Thermal-SA-TAS,thermal_safety,f_hot,Nhot,10,0.8125,0.031629363994027236,0.75,0.875,mean only; CI not drawn
+HNN,Thermal-SA-TAS,Thermal-SA-TAS,performance,f_makespan,makespan,10,1.0257551468844794,0.03636820085047426,0.9713013287271808,1.1306412950940317,mean only; CI not drawn
+HNN,Thermal-SA-TAS,Thermal-SA-TAS,performance,f_dvfs,DVFS,10,0.797085484250936,0.07800422497736621,0.6182224018784546,0.9910320172919942,mean only; CI not drawn
+HNN,Thermal-SA-TAS,Thermal-SA-TAS,communication_pressure,f_comm,comm,10,0.8638059701492538,0.05466624580791981,0.6902985074626866,0.9701492537313432,mean only; CI not drawn
+HNN,Thermal-SA-TAS,Thermal-SA-TAS,communication_pressure,f_congestion,congestion,10,1.035,0.09913674058255766,0.9,1.35,mean only; CI not drawn
+HNN,Thermal-SA-TAS,Thermal-SA-TAS,mapping_balance,f_load,load,10,0.8247422680412371,0.11511637909212719,0.5257731958762886,1.0687285223367695,mean only; CI not drawn
+HNN,Thermal-SA-TAS,Thermal-SA-TAS,energy,f_energy,energy,10,0.9950332576260397,0.013170919693413968,0.97290040875727,1.036260053772327,mean only; CI not drawn
+HNN,CommAware-Heuristic,CommAware-Heuristic,thermal_safety,f_thermal,Tmax,1,1.142335599865323,0.0,1.142335599865323,1.142335599865323,single/reference
+HNN,CommAware-Heuristic,CommAware-Heuristic,thermal_safety,f_sigma,sigmaT,1,1.1303846076073836,0.0,1.1303846076073836,1.1303846076073836,single/reference
+HNN,CommAware-Heuristic,CommAware-Heuristic,thermal_safety,f_hot,Nhot,1,0.3125,0.0,0.3125,0.3125,single/reference
+HNN,CommAware-Heuristic,CommAware-Heuristic,performance,f_makespan,makespan,1,1.7351692959149885,0.0,1.7351692959149885,1.7351692959149885,single/reference
+HNN,CommAware-Heuristic,CommAware-Heuristic,performance,f_dvfs,DVFS,1,0.2236656335158266,0.0,0.2236656335158266,0.2236656335158266,single/reference
+HNN,CommAware-Heuristic,CommAware-Heuristic,communication_pressure,f_comm,comm,1,0.0746268656716417,0.0,0.0746268656716417,0.0746268656716417,single/reference
+HNN,CommAware-Heuristic,CommAware-Heuristic,communication_pressure,f_congestion,congestion,1,0.3,0.0,0.3,0.3,single/reference
+HNN,CommAware-Heuristic,CommAware-Heuristic,mapping_balance,f_load,load,1,8.140893470790378,0.0,8.140893470790378,8.140893470790378,single/reference
+HNN,CommAware-Heuristic,CommAware-Heuristic,energy,f_energy,energy,1,1.1394141936673046,0.0,1.1394141936673046,1.1394141936673046,single/reference
+HNN,Full-GA,Full-GA,thermal_safety,f_thermal,Tmax,10,1.0111000199034004,0.04066048699864717,0.911915666531268,1.1139833174621263,mean only; CI not drawn
+HNN,Full-GA,Full-GA,thermal_safety,f_sigma,sigmaT,10,0.7047756419942958,0.022583312980344186,0.6578646605715331,0.7641492410324262,mean only; CI not drawn
+HNN,Full-GA,Full-GA,thermal_safety,f_hot,Nhot,10,0.49375,0.13961178814444317,0.125,0.8125,mean only; CI not drawn
+HNN,Full-GA,Full-GA,performance,f_makespan,makespan,10,1.1162585527114772,0.05204455474794385,0.973467906944924,1.2112195972462996,mean only; CI not drawn
+HNN,Full-GA,Full-GA,performance,f_dvfs,DVFS,10,0.2994671180087639,0.1560151855937994,0.0356932037139672,0.76269668752294,mean only; CI not drawn
+HNN,Full-GA,Full-GA,communication_pressure,f_comm,comm,10,0.7697761194029851,0.02886619341632105,0.7052238805970149,0.8768656716417911,mean only; CI not drawn
+HNN,Full-GA,Full-GA,communication_pressure,f_congestion,congestion,10,0.82,0.05307705091028826,0.65,0.95,mean only; CI not drawn
+HNN,Full-GA,Full-GA,mapping_balance,f_load,load,10,1.4852233676975943,0.3185885434406349,0.8350515463917525,2.47766323024055,mean only; CI not drawn
+HNN,Full-GA,Full-GA,energy,f_energy,energy,10,0.9706756897920839,0.008729047724088175,0.9481424708869408,0.995253070284209,mean only; CI not drawn

@@ -1,0 +1,5 @@
+[mpeg4] CommAware-Heuristic
+  TR2_composite_cost: 7.3416
+  raw_comm_cost:      40000
+  raw_congestion:     20000
+  makespan:           192.90 us

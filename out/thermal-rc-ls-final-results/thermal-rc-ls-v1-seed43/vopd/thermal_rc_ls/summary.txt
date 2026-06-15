@@ -1,0 +1,8 @@
+[vopd] ThermalRC-LS
+  calibration: calibrated_distance_bins
+  TR2 cost:    5.0000 -> 4.4520
+  proxy score: 0.9000 -> 0.8641
+  T_max K:     325.373 -> 325.219
+  sigma_T K:   0.987 -> 0.927
+  hot PE:      0 -> 0
+  makespan s:  8.93329e-05 -> 8.82687e-05

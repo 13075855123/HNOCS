@@ -1,0 +1,122 @@
+{
+  "name": "mpeg4",
+  "method": "comm_aware",
+  "paper_label": "CommAware-Heuristic",
+  "thermal": {
+    "T1_pe_peak_temp_K": 325.69346789661,
+    "T3_temp_std_K": 1.2013593567364933,
+    "T5_over_throttle_count": 0
+  },
+  "performance": {
+    "P1_makespan_s": 0.0001929022,
+    "P3_dvfs_penalty_pct": 0.0,
+    "P2_speedup": 0.6328071945265529
+  },
+  "communication": {
+    "C1_total_comm_cost": 40000.0
+  },
+  "optical": {
+    "O1_budget_count": 8,
+    "O2_min_signal_margin_dB": -6.754060449897,
+    "O3_min_snr_dB": 12.823174617074,
+    "O4_max_ber": 0.037727669140769,
+    "O5_max_temp_adjusted_loss_dB": 0.37485360676982,
+    "O6_max_ring_detuning_nm": 0.48083877944133,
+    "O7_max_path_tuning_power_mW": 7.7700223275127,
+    "O8_max_waveguide_crossing_loss_dB": 0.3
+  },
+  "energy": {
+    "E1_pe_total_energy_J": 0.0015099775620700724,
+    "E4_soa_energy_J": 2.8816e-07,
+    "E5_tuning_energy_J": 1.3031829784502e-08,
+    "E6_laser_energy_J": 9.64511e-07,
+    "E7_pe_optical_comm_energy_J": 0.0015112432648998568
+  },
+  "tradeoff": {
+    "TR2_composite_cost": 7.341626176097999,
+    "cost_terms": {
+      "f_thermal": 0.7985346003799827,
+      "f_sigma": 0.9238498509992001,
+      "f_hot": 0.0,
+      "f_makespan": 1.580260162415141,
+      "f_comm": 0.09523809523809523,
+      "f_congestion": 0.22727272727272727,
+      "f_dvfs": 0.0,
+      "f_load": 14.293759365785279,
+      "f_energy": 1.3339830189548887,
+      "total_cost": 7.341626176097999,
+      "raw_comm_cost": 40000.0,
+      "raw_congestion_cost": 20000.0,
+      "raw_load_imbalance": 8.105452153175627,
+      "T_max_K": 325.69346789661,
+      "sigma_T_K": 1.2013593567364933,
+      "N_hot": 0,
+      "eta_dvfs_pct": 0.0,
+      "makespan_s": 0.0001929022,
+      "pe_optical_comm_energy_J": 0.0015112432648998568,
+      "optical_budget_count": 8,
+      "optical_min_signal_margin_dB": -6.754060449897,
+      "optical_min_snr_dB": 12.823174617074,
+      "optical_max_ber": 0.037727669140769,
+      "optical_max_temp_adjusted_loss_dB": 0.37485360676982,
+      "optical_max_ring_detuning_nm": 0.48083877944133,
+      "optical_max_path_tuning_power_mW": 7.7700223275127,
+      "optical_max_waveguide_crossing_loss_dB": 0.3
+    }
+  },
+  "run_status": {
+    "run_ok": true,
+    "valid_for_cost": true,
+    "failure_reason": "",
+    "temperature_source": "vec",
+    "temperature_complete": true,
+    "parsed_pe_count": 16,
+    "parsed_temp_timepoints": 1930
+  },
+  "config": {
+    "source_csv": "D:\\HNOCS\\examples\\task_driven\\static\\tasks_mpeg4_static.csv",
+    "rows": 4,
+    "cols": 4,
+    "num_pes": 16,
+    "weights": {
+      "w_T": 1.0,
+      "w_sigma": 1.0,
+      "w_hot": 0.6,
+      "w_makespan": 1.2,
+      "w_H": 0.4,
+      "w_congestion": 0.7,
+      "w_D": 0.4,
+      "w_L": 0.2,
+      "w_E": 0.5,
+      "w_peak": 0.0
+    },
+    "cost_reference": {
+      "peak_excess_K": 9.446638746800033,
+      "sigma_T_K": 1.3003837749577485,
+      "N_hot": 2.0,
+      "makespan_s": 0.0001220699,
+      "pe_optical_comm_energy_J": 0.0011328804365769536,
+      "eta_dvfs_pct": 0.07168423611111063,
+      "comm_cost": 420000.0,
+      "congestion_cost": 88000.0,
+      "load_imbalance": 0.5670623064060744
+    },
+    "mapper": {
+      "center_candidates": [
+        5,
+        6,
+        9,
+        10
+      ],
+      "local_swap_passes": 5,
+      "enable_local_swap": true
+    },
+    "proxy": {
+      "rows": 4,
+      "cols": 4,
+      "lambda_cong": 0.25
+    },
+    "objective": "raw_comm_cost + lambda_cong * max_edge_load",
+    "tie_breaker": "lower raw_load_imbalance, then lexicographically smaller task->PE assignment"
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "source_checks": {
+    "figure2_composite_cost_source.csv": {
+      "rows": 80,
+      "valid_rows": 80
+    },
+    "figure4_baseline_and_ablation_source.csv": {
+      "rows": 244,
+      "valid_rows": 244
+    },
+    "full_objective_rescore_runs.csv": {
+      "rows": 348,
+      "valid_rows": 348
+    }
+  },
+  "formula_validation_rows": 80,
+  "formula_mismatches": 0,
+  "validity_rows": 348,
+  "invalid_rows": 0,
+  "copied_source_files": [
+    "D:\\HNOCS\\document\\figures\\analysis_full_objective_rescore\\source_data\\figure2_composite_cost_source.csv",
+    "D:\\HNOCS\\document\\figures\\analysis_full_objective_rescore\\source_data\\figure4_baseline_and_ablation_source.csv",
+    "D:\\HNOCS\\document\\figures\\analysis_full_objective_rescore\\source_data\\full_objective_rescore_runs.csv",
+    "D:\\HNOCS\\document\\figures\\analysis_full_objective_rescore\\source_data\\ablation_vs_reference_full_objective_summary.csv",
+    "D:\\HNOCS\\document\\figures\\analysis_full_objective_rescore\\source_data\\main_baseline_full_objective_summary.csv",
+    "D:\\HNOCS\\document\\figures\\analysis_full_objective_rescore\\source_data\\random_ensemble_full_objective_summary.csv",
+    "D:\\HNOCS\\document\\figures\\analysis_full_objective_rescore\\source_data\\formula_validation_full_ga.csv",
+    "D:\\HNOCS\\document\\figures\\analysis_full_objective_rescore\\source_data\\validity_audit.csv"
+  ],
+  "output_files": {
+    "fig2": [
+      "D:\\HNOCS\\document\\figures\\analysis_full_objective_rescore\\figures\\fig2_full_ga_composite_score.png"
+    ],
+    "fig3": [
+      "D:\\HNOCS\\document\\figures\\analysis_full_objective_rescore\\figures\\fig3_gemm_normalized_terms.png",
+      "D:\\HNOCS\\document\\figures\\analysis_full_objective_rescore\\figures\\fig3_mpeg4_normalized_terms.png",
+      "D:\\HNOCS\\document\\figures\\analysis_full_objective_rescore\\figures\\fig3_vopd_normalized_terms.png",
+      "D:\\HNOCS\\document\\figures\\analysis_full_objective_rescore\\figures\\fig3_hnn_normalized_terms.png"
+    ],
+    "fig2_no_commaware": [
+      "D:\\HNOCS\\document\\figures\\analysis_full_objective_rescore\\figures\\fig2_full_ga_composite_score_no_commaware.png"
+    ],
+    "fig3_no_commaware": [
+      "D:\\HNOCS\\document\\figures\\analysis_full_objective_rescore\\figures\\fig3_gemm_normalized_terms_no_commaware.png",
+      "D:\\HNOCS\\document\\figures\\analysis_full_objective_rescore\\figures\\fig3_mpeg4_normalized_terms_no_commaware.png",
+      "D:\\HNOCS\\document\\figures\\analysis_full_objective_rescore\\figures\\fig3_vopd_normalized_terms_no_commaware.png",
+      "D:\\HNOCS\\document\\figures\\analysis_full_objective_rescore\\figures\\fig3_hnn_normalized_terms_no_commaware.png"
+    ]
+  },
+  "fig2_rows_plotted": 16,
+  "fig3_term_bars_plotted": 144,
+  "fig2_no_commaware_rows_plotted": 12,
+  "fig3_no_commaware_term_bars_plotted": 108
+}

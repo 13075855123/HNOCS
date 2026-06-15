@@ -1,0 +1,58 @@
+[
+  {
+    "benchmark": "gemm",
+    "random_n": 3000,
+    "seed_base": 0,
+    "workers": 8,
+    "n_valid": 3000,
+    "n_invalid": 0,
+    "original_cost": 6.000000000000001,
+    "random_best_cost": 4.046569270796039,
+    "random_median_cost": 5.226566314496941,
+    "random_p10_cost": 4.660018161066887,
+    "random_p90_cost": 5.912984938610217,
+    "elapsed_s": 520.7508584999996
+  },
+  {
+    "benchmark": "mpeg4",
+    "random_n": 3000,
+    "seed_base": 0,
+    "workers": 8,
+    "n_valid": 3000,
+    "n_invalid": 0,
+    "original_cost": 6.000000000000001,
+    "random_best_cost": 4.441197410955547,
+    "random_median_cost": 5.256811453120918,
+    "random_p10_cost": 4.833898391410855,
+    "random_p90_cost": 5.970499856273806,
+    "elapsed_s": 503.74565599999914
+  },
+  {
+    "benchmark": "vopd",
+    "random_n": 3243,
+    "seed_base": 0,
+    "workers": 8,
+    "n_valid": 3000,
+    "n_invalid": 243,
+    "original_cost": 5.0,
+    "random_best_cost": 4.731106373006268,
+    "random_median_cost": 5.528208748808112,
+    "random_p10_cost": 5.148815268613549,
+    "random_p90_cost": 6.029117071317573,
+    "elapsed_s": 2334.3545068999993
+  },
+  {
+    "benchmark": "hnn",
+    "random_n": 3000,
+    "seed_base": 0,
+    "workers": 8,
+    "n_valid": 3000,
+    "n_invalid": 0,
+    "original_cost": 6.000000000000001,
+    "random_best_cost": 5.538187698300438,
+    "random_median_cost": 6.510668384336667,
+    "random_p10_cost": 6.127662755478515,
+    "random_p90_cost": 6.996664373254697,
+    "elapsed_s": 675.6181835999996
+  }
+]

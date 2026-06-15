@@ -1,0 +1,6 @@
+[hnn] Random Mapping Ensemble
+  samples: requested=3000 valid=3000 invalid=0
+  Original cost:     6.0000
+  RandomBest cost:   5.5382 (sample=1048, seed=1048)
+  RandomMedian cost: 6.5107 (sample=2133, seed=2133)
+  RandomP10/P90:     6.1277 / 6.9967

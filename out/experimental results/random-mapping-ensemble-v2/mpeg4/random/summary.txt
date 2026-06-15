@@ -1,0 +1,6 @@
+[mpeg4] Random Mapping Ensemble
+  samples: requested=3000 valid=3000 invalid=0
+  Original cost:     6.0000
+  RandomBest cost:   4.4412 (sample=1761, seed=1761)
+  RandomMedian cost: 5.2568 (sample=2383, seed=2383)
+  RandomP10/P90:     4.8339 / 5.9705

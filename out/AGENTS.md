@@ -129,7 +129,7 @@ python experiment\B-2\run.py `
 python experiment\B-2\run.py --all --credibility --dry-run -o out\B-2-credibility
 ```
 
-终端进度显示使用 `--verbose`。它会打印 baseline、每代 `Gen` 进度、OMNeT++ config 名称和 timeout 信息。例如：
+终端进度显示使用 `--verbose`。它会打印 initial/reference mapping（历史日志字段可能仍写作 baseline）、每代 `Gen` 进度、OMNeT++ config 名称和 timeout 信息。例如：
 
 ```powershell
 python experiment\B-2\run.py `

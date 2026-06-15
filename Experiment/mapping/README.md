@@ -45,11 +45,23 @@ Same format as input, with `peId` and `successorPE` filled by the optimizer for 
 
 ## Experiment Folders
 
-| Folder | Description | Paper Position |
+Current ACP paper terminology:
+
+- `Original` is the initial/reference mapping used for normalization and
+  before/after comparison.  It is not a baseline method in manuscript prose.
+- The proposed method is the B-2 simulator-in-the-loop GA flow.
+- The main method-level baselines are `Thermal-SA-TAS` and
+  `CommAware-Heuristic`.
+
+| Folder | Description | Current Paper Position |
 |--------|-------------|---------------|
-| `../B-1/` | Incremental greedy + multi-round iteration | Baseline (analytical) |
-| `../B-2/` | Genetic algorithm (GA) | Baseline (metaheuristic) |
-| `../C/` | GNN + RL | Proposed (learning-based) |
+| `../B-1/` | Incremental greedy + multi-round iteration | Legacy/auxiliary analytical method |
+| `../B-2/` | Simulator-in-the-loop genetic algorithm (GA) | Proposed method |
+| `../comm_aware_baseline/` | Communication-aware heuristic | Main baseline method |
+| `../thermal_sa_tas_baseline/` | TAS-inspired thermal simulated annealing | Main baseline method |
+| `../thermal_rc_ls_baseline/` | RC-proxy local search | Auxiliary/archival comparison |
+| `../thermal_greedy_baseline/` | TAPP-inspired greedy mapping | Exploratory negative-result archive |
+| `../C/` | GNN + RL | Legacy/future learning-based path |
 
 ## Testing
 

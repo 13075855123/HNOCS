@@ -11,10 +11,17 @@
 - 任务级负载映射会同时影响热源分布、DVFS 节流、光传输路径、波长活动、SOA 激活时间和 MRR 热调谐需求。
 - 方法为基于遗传算法的仿真在环热感知任务重映射。
 - 每个候选映射由全系统 OMNeT++ 模型评估，模型包含 8 波长 WDM 光层、MRR 动态热调谐、SOA 和激光器能耗、紧凑 RC 热网络以及 DVFS 反馈。
-- 优化目标为 baseline-normalized composite cost，联合考虑峰值温度、温度不均衡、热点 PE 数、makespan、通信代价、拥塞、DVFS 惩罚、负载不均衡和总能耗。
+- 优化目标为 initial-mapping-normalized composite cost（代码和部分历史文件中仍称 `baseline_normalized_v2`），联合考虑峰值温度、温度不均衡、热点 PE 数、makespan、通信代价、拥塞、DVFS 惩罚、负载不均衡和总能耗。
 - GEMM 与 MPEG4 可表述为热、性能、通信和能耗同步改善。
 - VOPD 的主要优势是 makespan、通信、拥塞和总能耗显著改善；不要声称 VOPD 的峰值温度和温度标准差也同步改善。
-- HNN 是典型多目标折中：热点 PE 数显著下降，但 makespan 相对 baseline 变差；写作时强调系统级折中，不要写成所有指标都改善。
+- HNN 是典型多目标折中：热点 PE 数显著下降，但 makespan 相对 initial mapping 变差；写作时强调系统级折中，不要写成所有指标都改善。
+
+论文写作口径：
+
+- `Original` 不作为 baseline method 表述，而应称为 `initial mapping`、`reference mapping` 或 `normalization reference`。
+- 当前主文方法级 baselines 为 `Thermal-SA-TAS` 与 `CommAware-Heuristic`。
+- `RandomBest` 只作为 best-of-random sanity/control 使用，不作为普通随机 baseline 的平均水平。
+- 历史脚本、CSV 列名或代码中出现的 `baseline` 多数表示归一化 reference；写作时需要转换成 `initial/reference mapping`。
 
 ## 2. 实验运行手册位置
 
@@ -29,9 +36,9 @@
 - `B-2-v3-g60-seed42`
 - `B-2-v3-g60-seed43`
 
-baseline 在两个 seed 的 `metrics.json` 中一致。seed42 可作为主结果；seed43 可作为随机种子稳健性补充。
+initial/reference mapping 在两个 seed 的 `metrics.json` 中一致。seed42 可作为主结果；seed43 可作为随机种子稳健性补充。
 
-| Workload | Baseline cost | Seed42 cost | Seed43 cost | Seed42 improvement | Seed43 improvement |
+| Workload | Initial/reference cost | Seed42 cost | Seed43 cost | Seed42 improvement | Seed43 improvement |
 |---|---:|---:|---:|---:|---:|
 | GEMM | 6.0000 | 3.9245 | 3.8490 | 34.59% | 35.85% |
 | MPEG4 | 6.0000 | 4.0350 | 3.8743 | 32.75% | 35.43% |
@@ -60,4 +67,4 @@ Seed43 相对 seed42：
 - 路径检查优先于重跑实验。发现无效结果时，先按 `D:\HNOCS\out\AGENTS.md` 核对运行环境和路径参数。
 - 不要删除或覆盖 `out\B-2-v3-g60-seed42`、`out\B-2-v3-g60-seed43` 及其中的 `history.json`、`metrics.json`、`remapped.csv`。
 - 生成论文图表时保留脚本、CSV 中间表和最终图片，便于追溯。
-- 修改实验脚本前，先确认是否会改变 baseline 或 fitness 定义；如果会改变，旧结果不能和新结果直接合并。
+- 修改实验脚本前，先确认是否会改变 initial/reference mapping、external baseline method 或 fitness 定义；如果会改变，旧结果不能和新结果直接合并。

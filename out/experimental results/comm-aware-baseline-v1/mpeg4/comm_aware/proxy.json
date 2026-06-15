@@ -1,0 +1,100 @@
+{
+  "name": "mpeg4",
+  "kind": "CommAware-Heuristic",
+  "config": {
+    "source_csv": "D:\\HNOCS\\examples\\task_driven\\static\\tasks_mpeg4_static.csv",
+    "rows": 4,
+    "cols": 4,
+    "num_pes": 16,
+    "weights": {
+      "w_T": 1.0,
+      "w_sigma": 1.0,
+      "w_hot": 0.6,
+      "w_makespan": 1.2,
+      "w_H": 0.4,
+      "w_congestion": 0.7,
+      "w_D": 0.4,
+      "w_L": 0.2,
+      "w_E": 0.5,
+      "w_peak": 0.0
+    },
+    "cost_reference": {
+      "peak_excess_K": 9.446638746800033,
+      "sigma_T_K": 1.3003837749577485,
+      "N_hot": 2.0,
+      "makespan_s": 0.0001220699,
+      "pe_optical_comm_energy_J": 0.0011328804365769536,
+      "eta_dvfs_pct": 0.07168423611111063,
+      "comm_cost": 420000.0,
+      "congestion_cost": 88000.0,
+      "load_imbalance": 0.5670623064060744
+    },
+    "mapper": {
+      "center_candidates": [
+        5,
+        6,
+        9,
+        10
+      ],
+      "local_swap_passes": 5,
+      "enable_local_swap": true
+    },
+    "proxy": {
+      "rows": 4,
+      "cols": 4,
+      "lambda_cong": 0.25
+    },
+    "objective": "raw_comm_cost + lambda_cong * max_edge_load",
+    "tie_breaker": "lower raw_load_imbalance, then lexicographically smaller task->PE assignment"
+  },
+  "diagnostics": {
+    "method": "comm_aware",
+    "paper_label": "CommAware-Heuristic",
+    "claim_scope": "literature-inspired communication-aware heuristic; not an exact reproduction",
+    "seed_task": 6,
+    "seed_pe": 5,
+    "initial_score": {
+      "raw_comm_cost": 40000.0,
+      "max_edge_load": 20000.0,
+      "comm_proxy": 45000.0
+    },
+    "final_score": {
+      "raw_comm_cost": 40000.0,
+      "max_edge_load": 20000.0,
+      "comm_proxy": 45000.0
+    },
+    "original_score": {
+      "raw_comm_cost": 420000.0,
+      "max_edge_load": 88000.0,
+      "comm_proxy": 442000.0
+    },
+    "comm_degree": {
+      "1": 72000.0,
+      "2": 56000.0,
+      "3": 32000.0,
+      "4": 24000.0,
+      "5": 28000.0,
+      "6": 92000.0,
+      "7": 24000.0,
+      "8": 24000.0,
+      "9": 24000.0,
+      "10": 24000.0,
+      "11": 24000.0
+    },
+    "local_swap_passes": 1,
+    "accepted_swaps": 0,
+    "assignment": {
+      "1": 0,
+      "2": 0,
+      "3": 0,
+      "4": 0,
+      "5": 0,
+      "6": 5,
+      "7": 5,
+      "8": 0,
+      "9": 5,
+      "10": 5,
+      "11": 0
+    }
+  }
+}

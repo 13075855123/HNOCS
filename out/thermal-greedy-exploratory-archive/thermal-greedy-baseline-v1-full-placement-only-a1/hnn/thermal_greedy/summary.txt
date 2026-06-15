@@ -1,0 +1,6 @@
+[hnn] ThermalGreedy
+  TR2 cost:    6.0000 -> 5.7848
+  proxy score: 4.0217 -> 2.5734
+  T_max K:     328.818 -> 333.121
+  sigma_T K:   2.454 -> 1.138
+  makespan s:  0.000203178 -> 0.000166202

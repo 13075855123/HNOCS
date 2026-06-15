@@ -1,0 +1,6 @@
+[mpeg4] Thermal-SA-TAS
+  TR2 cost:    6.0000 -> 4.8938
+  proxy score: 0.9800 -> 0.9610
+  T_max K:     327.597 -> 325.947
+  sigma_T K:   1.300 -> 1.095
+  makespan s:  0.00012207 -> 0.000132002

@@ -1,0 +1,2 @@
+benchmark,random_n,seed_base,workers,n_valid,n_invalid,original_cost,random_best_cost,random_median_cost,random_p10_cost,random_p90_cost,elapsed_s
+vopd,8,3240,8,8,0,5.0,5.200137603427584,5.618826723661298,5.200137603427584,6.270437226901433,1.7094464000001608

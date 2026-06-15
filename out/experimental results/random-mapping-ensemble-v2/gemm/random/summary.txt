@@ -1,0 +1,6 @@
+[gemm] Random Mapping Ensemble
+  samples: requested=3000 valid=3000 invalid=0
+  Original cost:     6.0000
+  RandomBest cost:   4.0466 (sample=348, seed=348)
+  RandomMedian cost: 5.2266 (sample=2153, seed=2153)
+  RandomP10/P90:     4.6600 / 5.9130

@@ -1,0 +1,6 @@
+[vopd] Random Mapping Ensemble
+  samples: requested=3243 valid=3000 invalid=243
+  Original cost:     5.0000
+  RandomBest cost:   4.7311 (sample=2449, seed=2449)
+  RandomMedian cost: 5.5282 (sample=2441, seed=2441)
+  RandomP10/P90:     5.1488 / 6.0291

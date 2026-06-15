@@ -1,0 +1,5 @@
+[gemm] Original
+  TR2_composite_cost: 6.0000
+  raw_comm_cost:      104448
+  raw_congestion:     22528
+  makespan:           120.41 us

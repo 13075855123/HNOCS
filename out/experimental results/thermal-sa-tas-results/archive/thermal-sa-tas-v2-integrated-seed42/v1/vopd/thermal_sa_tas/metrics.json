@@ -1,0 +1,366 @@
+{
+  "name": "vopd",
+  "method": "thermal_sa_tas",
+  "method_label": "Thermal-SA-TAS-Mapping",
+  "metrics": {
+    "thermal": {
+      "T1_pe_peak_temp_K": 325.41777512697,
+      "T3_temp_std_K": 0.918265684256274,
+      "T5_over_throttle_count": 0
+    },
+    "performance": {
+      "P1_makespan_s": 8.95268e-05,
+      "P3_dvfs_penalty_pct": 0.0,
+      "P2_speedup": 0.9978341680926829
+    },
+    "communication": {
+      "C1_total_comm_cost": 1384000.0
+    },
+    "optical": {
+      "O1_budget_count": 17,
+      "O2_min_signal_margin_dB": -2.2008186867676,
+      "O3_min_snr_dB": 11.603538744103,
+      "O4_max_ber": 0.066714068643893,
+      "O5_max_temp_adjusted_loss_dB": 0.65654176936776,
+      "O6_max_ring_detuning_nm": 0.47104004067389,
+      "O7_max_path_tuning_power_mW": 17.809792011079,
+      "O8_max_waveguide_crossing_loss_dB": 0.9
+    },
+    "energy": {
+      "E1_pe_total_energy_J": 0.000747198213609372,
+      "E4_soa_energy_J": 3.728716e-06,
+      "E5_tuning_energy_J": 1.8031386801548e-07,
+      "E6_laser_energy_J": 4.47634e-07,
+      "E7_pe_optical_comm_energy_J": 0.0007515548774773874
+    },
+    "tradeoff": {
+      "TR2_composite_cost": 4.958442029633455,
+      "cost_terms": {
+        "f_thermal": 1.0062380819513754,
+        "f_sigma": 0.930271779975395,
+        "f_hot": 0.0,
+        "f_makespan": 1.002170532916764,
+        "f_comm": 0.9914040114613181,
+        "f_congestion": 1.0317460317460319,
+        "f_dvfs": 0.0,
+        "f_load": 1.0,
+        "f_energy": 1.0010874027996353,
+        "total_cost": 4.958442029633455,
+        "raw_comm_cost": 1384000.0,
+        "raw_congestion_cost": 260000.0,
+        "raw_load_imbalance": 0.35802469135802467,
+        "T_max_K": 325.41777512697,
+        "sigma_T_K": 0.918265684256274,
+        "N_hot": 0,
+        "eta_dvfs_pct": 0.0,
+        "makespan_s": 8.95268e-05,
+        "pe_optical_comm_energy_J": 0.0007515548774773874,
+        "optical_budget_count": 17,
+        "optical_min_signal_margin_dB": -2.2008186867676,
+        "optical_min_snr_dB": 11.603538744103,
+        "optical_max_ber": 0.066714068643893,
+        "optical_max_temp_adjusted_loss_dB": 0.65654176936776,
+        "optical_max_ring_detuning_nm": 0.47104004067389,
+        "optical_max_path_tuning_power_mW": 17.809792011079,
+        "optical_max_waveguide_crossing_loss_dB": 0.9
+      }
+    },
+    "run_status": {
+      "run_ok": true,
+      "valid_for_cost": true,
+      "failure_reason": "",
+      "temperature_source": "vec",
+      "temperature_complete": true,
+      "parsed_pe_count": 16,
+      "parsed_temp_timepoints": 896
+    }
+  },
+  "proxy": {
+    "method": "thermal_sa_tas",
+    "method_label": "Thermal-SA-TAS-Mapping",
+    "not_exact_reproduction": true,
+    "search_objective": "TAS-inspired thermal simulated annealing with RC temperature proxy and DAG list-scheduling proxy",
+    "forbidden_search_inputs": [
+      "OMNeT++ candidate full simulation",
+      "B-2 full composite cost",
+      "congestion",
+      "DVFS penalty",
+      "PE plus optical communication energy",
+      "SOA, laser, or MRR tuning energy"
+    ],
+    "denominators": {
+      "Tmax_proxy": 325.29178949941723,
+      "SigmaT_proxy": 1.2565369207730452,
+      "HotCount_proxy": 0.0,
+      "MakespanProxy_ns": 85460.0,
+      "CommProxy": 1396000.0
+    },
+    "config": {
+      "proxy": {
+        "rows": 4,
+        "cols": 4,
+        "Tambient": 318.15,
+        "T_hot": 327.15,
+        "power_idle": 0.3,
+        "power_compute": 2.5,
+        "leakage_base_power": 0.3,
+        "ridge_lambda": 0.001,
+        "synthetic_self_R": 2.5,
+        "synthetic_decay": 0.55
+      },
+      "schedule": {
+        "comm_delay_per_byte_hop_ns": 0.01,
+        "use_critical_path_priority": true
+      },
+      "objective_weights": {
+        "w_tmax": 0.6,
+        "w_sigma": 0.25,
+        "w_hot": 0.1,
+        "w_makespan": 0.05,
+        "w_comm": 0.0
+      },
+      "search": {
+        "seed": 42,
+        "init_mode": "original",
+        "init_temperature": 0.1,
+        "final_temperature": 0.0001,
+        "alpha": 0.95,
+        "iterations_per_temperature": 0,
+        "max_total_iter": 2000,
+        "restarts": 3,
+        "no_improve_patience": 300,
+        "time_limit_s": 0.0,
+        "hot_pe_count": 4,
+        "cool_pe_count": 4,
+        "dependency_aware_rate": 0.15
+      }
+    },
+    "original": {
+      "score": 0.9,
+      "Tmax_proxy": 325.29178949941723,
+      "SigmaT_proxy": 1.2565369207730452,
+      "HotCount_proxy": 0.0,
+      "MakespanProxy_ns": 85460.0,
+      "CommProxy": 1396000.0,
+      "f_tmax": 1.0,
+      "f_sigma": 1.0,
+      "f_hot": 0.0,
+      "f_makespan": 1.0,
+      "f_comm": 1.0,
+      "weights": {
+        "w_tmax": 0.6,
+        "w_sigma": 0.25,
+        "w_hot": 0.1,
+        "w_makespan": 0.05,
+        "w_comm": 0.0
+      },
+      "temperatures_K": [
+        324.13483458393296,
+        324.8639095630262,
+        324.72187181156295,
+        325.01144868354396,
+        324.97820195324897,
+        324.21148616165215,
+        324.6435956858738,
+        324.9775370797057,
+        325.29178949941723,
+        323.92936577648436,
+        323.7261609057045,
+        321.45206148955424,
+        322.1923295485097,
+        324.24840089102065,
+        321.6038674978577,
+        322.1313308690213
+      ],
+      "power_W": [
+        2.9074074074074074,
+        3.559259259259259,
+        3.559259259259259,
+        2.5814814814814815,
+        3.559259259259259,
+        3.559259259259259,
+        3.559259259259259,
+        3.559259259259259,
+        3.559259259259259,
+        2.9074074074074074,
+        2.9074074074074074,
+        0.3,
+        0.3,
+        2.5814814814814815,
+        0.3,
+        0.3
+      ]
+    },
+    "thermal_sa_tas": {
+      "score": 0.8787399538810083,
+      "Tmax_proxy": 325.074473512595,
+      "SigmaT_proxy": 1.146167054994189,
+      "HotCount_proxy": 0.0,
+      "MakespanProxy_ns": 87340.0,
+      "CommProxy": 1384000.0,
+      "f_tmax": 0.999331935222968,
+      "f_sigma": 0.9121634518220486,
+      "f_hot": 0.0,
+      "f_makespan": 1.0219985958343085,
+      "f_comm": 0.9914040114613181,
+      "weights": {
+        "w_tmax": 0.6,
+        "w_sigma": 0.25,
+        "w_hot": 0.1,
+        "w_makespan": 0.05,
+        "w_comm": 0.0
+      },
+      "temperatures_K": [
+        321.99939264046503,
+        323.8042516597334,
+        323.813903537731,
+        322.1890979973033,
+        325.065791918192,
+        324.4410484571647,
+        323.62302470882975,
+        324.20940787849673,
+        324.9687972958815,
+        324.4265379297214,
+        324.42854391780446,
+        325.074473512595,
+        321.78588257564985,
+        324.99380637460195,
+        324.18342851618155,
+        321.9122185624073
+      ],
+      "power_W": [
+        0.3,
+        2.5814814814814815,
+        2.5814814814814815,
+        0.3,
+        3.559259259259259,
+        3.559259259259259,
+        2.9074074074074074,
+        2.9074074074074074,
+        3.559259259259259,
+        3.559259259259259,
+        3.559259259259259,
+        3.559259259259259,
+        0.3,
+        3.559259259259259,
+        2.9074074074074074,
+        0.3
+      ],
+      "iterations": 1856,
+      "converged": true
+    },
+    "assignment": {
+      "1": 14,
+      "2": 13,
+      "3": 8,
+      "4": 10,
+      "5": 4,
+      "6": 9,
+      "7": 11,
+      "8": 5,
+      "9": 6,
+      "10": 7,
+      "11": 2,
+      "12": 1
+    },
+    "calibration": {
+      "source": "calibrated_distance_bins",
+      "distance_coefficients": [
+        1.3431245924030115,
+        0.04983559635203691,
+        0.01454676412411391,
+        0.08820179666189121,
+        0.06464245464383266,
+        0.26720582714573,
+        0.0
+      ],
+      "ridge_lambda": 0.001,
+      "used_baseline_temperature": true,
+      "residual_rmse_K": 0.6355377137002586,
+      "reason": ""
+    }
+  },
+  "config": {
+    "source_csv": "D:\\HNOCS\\examples\\task_driven\\static\\tasks_vopd_static.csv",
+    "rows": 4,
+    "cols": 4,
+    "num_pes": 16,
+    "final_evaluation_weights": {
+      "w_T": 1.0,
+      "w_sigma": 1.0,
+      "w_hot": 0.6,
+      "w_makespan": 1.2,
+      "w_H": 0.4,
+      "w_congestion": 0.7,
+      "w_D": 0.4,
+      "w_L": 0.2,
+      "w_E": 0.5
+    },
+    "proxy_config": {
+      "rows": 4,
+      "cols": 4,
+      "Tambient": 318.15,
+      "T_hot": 327.15,
+      "power_idle": 0.3,
+      "power_compute": 2.5,
+      "leakage_base_power": 0.3,
+      "ridge_lambda": 0.001,
+      "synthetic_self_R": 2.5,
+      "synthetic_decay": 0.55
+    },
+    "schedule_config": {
+      "comm_delay_per_byte_hop_ns": 0.01,
+      "use_critical_path_priority": true
+    },
+    "objective_weights": {
+      "w_tmax": 0.6,
+      "w_sigma": 0.25,
+      "w_hot": 0.1,
+      "w_makespan": 0.05,
+      "w_comm": 0.0
+    },
+    "search_config": {
+      "seed": 42,
+      "init_mode": "original",
+      "init_temperature": 0.1,
+      "final_temperature": 0.0001,
+      "alpha": 0.95,
+      "iterations_per_temperature": 0,
+      "max_total_iter": 2000,
+      "restarts": 3,
+      "no_improve_patience": 300,
+      "time_limit_s": 0.0,
+      "hot_pe_count": 4,
+      "cool_pe_count": 4,
+      "dependency_aware_rate": 0.15
+    },
+    "cost_reference": {
+      "peak_excess_K": 7.222719212610002,
+      "sigma_T_K": 0.9870939912641029,
+      "N_hot": 0.0,
+      "makespan_s": 8.93329e-05,
+      "pe_optical_comm_energy_J": 0.0007507385223064374,
+      "eta_dvfs_pct": 0.0,
+      "comm_cost": 1396000.0,
+      "congestion_cost": 252000.0,
+      "load_imbalance": 0.35802469135802467
+    },
+    "calibration": {
+      "source": "calibrated_distance_bins",
+      "distance_coefficients": [
+        1.3431245924030115,
+        0.04983559635203691,
+        0.01454676412411391,
+        0.08820179666189121,
+        0.06464245464383266,
+        0.26720582714573,
+        0.0
+      ],
+      "ridge_lambda": 0.001,
+      "used_baseline_temperature": true,
+      "residual_rmse_K": 0.6355377137002586,
+      "reason": ""
+    },
+    "not_exact_reproduction": true
+  }
+}

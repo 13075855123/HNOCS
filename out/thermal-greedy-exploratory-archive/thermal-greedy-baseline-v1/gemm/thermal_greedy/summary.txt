@@ -1,0 +1,5 @@
+[gemm] ThermalGreedy proxy-only
+  proxy score: 2.8134 -> 2.7527
+  max load:    50000.0 -> 50000.0
+  std load:    21284.4 -> 19919.3
+  comm proxy:  104448.0 -> 75776.0

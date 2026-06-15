@@ -26,6 +26,9 @@ Do not frame the paper as if MRR thermal sensitivity alone causes PE hotspots, D
 
 Preferred terms:
 
+- `initial mapping`
+- `reference mapping`
+- `normalization reference`
 - `WDM optical transmission activity`
 - `wavelength-channel activity`
 - `MRR alignment`
@@ -35,6 +38,13 @@ Preferred terms:
 - `optical-layer energy`
 - `task-to-PE mapping`
 - `simulator-in-the-loop thermal-aware task remapping`
+
+Baseline terminology for the ACP paper:
+
+- Treat `Original` as the initial/reference mapping used for normalization and before/after comparison, not as a baseline method.
+- Treat `Thermal-SA-TAS` and `CommAware-Heuristic` as the main method-level baseline methods.
+- Treat `RandomBest` only as a best-of-random sanity/control comparison if it is used; do not describe it as an average random control or an average random method.
+- Historical code, CSV files, and plotting sources may still use `baseline` in column names or implementation terms. Convert that wording to `initial/reference mapping` in manuscript prose unless it names a code-level field.
 
 Avoid these terms in the paper narrative unless the user explicitly asks to discuss the simulator implementation details:
 

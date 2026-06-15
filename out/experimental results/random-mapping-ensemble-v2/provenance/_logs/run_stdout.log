@@ -1,0 +1,106 @@
+[gemm] completed 150/3000 valid=150 invalid=0
+[gemm] completed 300/3000 valid=300 invalid=0
+[gemm] completed 450/3000 valid=450 invalid=0
+[gemm] completed 600/3000 valid=600 invalid=0
+[gemm] completed 750/3000 valid=750 invalid=0
+[gemm] completed 900/3000 valid=900 invalid=0
+[gemm] completed 1050/3000 valid=1050 invalid=0
+[gemm] completed 1200/3000 valid=1200 invalid=0
+[gemm] completed 1350/3000 valid=1350 invalid=0
+[gemm] completed 1500/3000 valid=1500 invalid=0
+[gemm] completed 1650/3000 valid=1650 invalid=0
+[gemm] completed 1800/3000 valid=1800 invalid=0
+[gemm] completed 1950/3000 valid=1950 invalid=0
+[gemm] completed 2100/3000 valid=2100 invalid=0
+[gemm] completed 2250/3000 valid=2250 invalid=0
+[gemm] completed 2400/3000 valid=2400 invalid=0
+[gemm] completed 2550/3000 valid=2550 invalid=0
+[gemm] completed 2700/3000 valid=2700 invalid=0
+[gemm] completed 2850/3000 valid=2850 invalid=0
+[gemm] completed 3000/3000 valid=3000 invalid=0
+[gemm] Random Mapping Ensemble
+  samples: requested=3000 valid=3000 invalid=0
+  Original cost:     6.0000
+  RandomBest cost:   4.0466 (sample=348, seed=348)
+  RandomMedian cost: 5.2266 (sample=2153, seed=2153)
+  RandomP10/P90:     4.6600 / 5.9130
+[mpeg4] completed 150/3000 valid=150 invalid=0
+[mpeg4] completed 300/3000 valid=300 invalid=0
+[mpeg4] completed 450/3000 valid=450 invalid=0
+[mpeg4] completed 600/3000 valid=600 invalid=0
+[mpeg4] completed 750/3000 valid=750 invalid=0
+[mpeg4] completed 900/3000 valid=900 invalid=0
+[mpeg4] completed 1050/3000 valid=1050 invalid=0
+[mpeg4] completed 1200/3000 valid=1200 invalid=0
+[mpeg4] completed 1350/3000 valid=1350 invalid=0
+[mpeg4] completed 1500/3000 valid=1500 invalid=0
+[mpeg4] completed 1650/3000 valid=1650 invalid=0
+[mpeg4] completed 1800/3000 valid=1800 invalid=0
+[mpeg4] completed 1950/3000 valid=1950 invalid=0
+[mpeg4] completed 2100/3000 valid=2100 invalid=0
+[mpeg4] completed 2250/3000 valid=2250 invalid=0
+[mpeg4] completed 2400/3000 valid=2400 invalid=0
+[mpeg4] completed 2550/3000 valid=2550 invalid=0
+[mpeg4] completed 2700/3000 valid=2700 invalid=0
+[mpeg4] completed 2850/3000 valid=2850 invalid=0
+[mpeg4] completed 3000/3000 valid=3000 invalid=0
+[mpeg4] Random Mapping Ensemble
+  samples: requested=3000 valid=3000 invalid=0
+  Original cost:     6.0000
+  RandomBest cost:   4.4412 (sample=1761, seed=1761)
+  RandomMedian cost: 5.2568 (sample=2383, seed=2383)
+  RandomP10/P90:     4.8339 / 5.9705
+[vopd] completed 150/3000 valid=143 invalid=7
+[vopd] completed 300/3000 valid=283 invalid=17
+[vopd] completed 450/3000 valid=420 invalid=30
+[vopd] completed 600/3000 valid=559 invalid=41
+[vopd] completed 750/3000 valid=698 invalid=52
+[vopd] completed 900/3000 valid=839 invalid=61
+[vopd] completed 1050/3000 valid=981 invalid=69
+[vopd] completed 1200/3000 valid=1119 invalid=81
+[vopd] completed 1350/3000 valid=1259 invalid=91
+[vopd] completed 1500/3000 valid=1398 invalid=102
+[vopd] completed 1650/3000 valid=1534 invalid=116
+[vopd] completed 1800/3000 valid=1676 invalid=124
+[vopd] completed 1950/3000 valid=1816 invalid=134
+[vopd] completed 2100/3000 valid=1954 invalid=146
+[vopd] completed 2250/3000 valid=2092 invalid=158
+[vopd] completed 2400/3000 valid=2226 invalid=174
+[vopd] completed 2550/3000 valid=2367 invalid=183
+[vopd] completed 2700/3000 valid=2505 invalid=195
+[vopd] completed 2850/3000 valid=2647 invalid=203
+[vopd] completed 3000/3000 valid=2779 invalid=221
+[vopd] Random Mapping Ensemble
+  samples: requested=3000 valid=2779 invalid=221
+  Original cost:     5.0000
+  RandomBest cost:   4.7311 (sample=2449, seed=2449)
+  RandomMedian cost: 5.5241 (sample=2505, seed=2505)
+  RandomP10/P90:     5.1471 / 6.0275
+[hnn] completed 150/3000 valid=150 invalid=0
+[hnn] completed 300/3000 valid=300 invalid=0
+[hnn] completed 450/3000 valid=450 invalid=0
+[hnn] completed 600/3000 valid=600 invalid=0
+[hnn] completed 750/3000 valid=750 invalid=0
+[hnn] completed 900/3000 valid=900 invalid=0
+[hnn] completed 1050/3000 valid=1050 invalid=0
+[hnn] completed 1200/3000 valid=1200 invalid=0
+[hnn] completed 1350/3000 valid=1350 invalid=0
+[hnn] completed 1500/3000 valid=1500 invalid=0
+[hnn] completed 1650/3000 valid=1650 invalid=0
+[hnn] completed 1800/3000 valid=1800 invalid=0
+[hnn] completed 1950/3000 valid=1950 invalid=0
+[hnn] completed 2100/3000 valid=2100 invalid=0
+[hnn] completed 2250/3000 valid=2250 invalid=0
+[hnn] completed 2400/3000 valid=2400 invalid=0
+[hnn] completed 2550/3000 valid=2550 invalid=0
+[hnn] completed 2700/3000 valid=2700 invalid=0
+[hnn] completed 2850/3000 valid=2850 invalid=0
+[hnn] completed 3000/3000 valid=3000 invalid=0
+[hnn] Random Mapping Ensemble
+  samples: requested=3000 valid=3000 invalid=0
+  Original cost:     6.0000
+  RandomBest cost:   5.5382 (sample=1048, seed=1048)
+  RandomMedian cost: 6.5107 (sample=2133, seed=2133)
+  RandomP10/P90:     6.1277 / 6.9967
+
+Wrote Random Mapping Ensemble results to D:\HNOCS\out\random-mapping-ensemble-v2

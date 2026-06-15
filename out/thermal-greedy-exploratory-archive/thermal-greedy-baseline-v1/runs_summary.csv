@@ -1,0 +1,2 @@
+benchmark,mode,original_proxy_score,thermal_greedy_proxy_score,original_max_load,thermal_greedy_max_load,original_std_load,thermal_greedy_std_load,elapsed_s
+gemm,proxy_only,2.8134267121837917,2.7526680969900745,50000.0,50000.0,21284.439004822278,19919.270663104107,0.010954099998343736

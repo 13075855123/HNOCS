@@ -1,0 +1,5 @@
+[hnn] Original
+  TR2_composite_cost: 6.0000
+  raw_comm_cost:      2195456
+  raw_congestion:     163840
+  makespan:           203.18 us

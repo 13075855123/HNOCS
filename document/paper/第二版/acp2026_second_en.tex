@@ -44,58 +44,37 @@ The main contributions of this work are as follows. First, we formulate task-to-
 
 \section{Method}
 
+\noindent\textit{Figure 1 placeholder: insert the method framework figure here. The final figure should show the closed-loop flow from DAG workload and initial/reference mapping, through GA candidate remapping and full-system OMNeT++ evaluation, to normalized objective terms and next-generation selection.}
+
+\noindent\textit{To be written: open the method section by using Figure 1 as the in-text roadmap of the proposed simulator-in-the-loop task remapping framework. The text should explain the data flow, feedback loop, and why full-system simulation is used inside the search.}
+
 \subsection{System Model}
 
-We model a many-core ONoC in which PEs communicate through an 8-wavelength WDM optical layer. Optical waveguides, MRR-based filtering structures, SOA-assisted optical transmission, and off-chip laser power are included in the energy model. The thermal model uses a compact RC network that tracks PE and router temperatures over time. PE execution power, SOA pump power, and MRR tuning power are injected into the thermal network, and DVFS throttling is applied when PE temperatures exceed the configured thermal threshold.
-
-In this model, task mapping changes where traffic is generated, which wavelengths and paths are active, how long optical components remain active, and how much thermal tuning is required. The optical layer is therefore evaluated through WDM transmission activity, device alignment, and optical-layer energy rather than through protocol-specific control-flow events.
+\noindent\textit{To be written: define the simulated ONoC platform, including the 4$\times$4 PE array, 8-wavelength WDM optical layer, MRR tuning, SOA/laser energy accounting, compact RC thermal network, and DVFS feedback. This subsection should make clear which physical and system-level effects are evaluated in OMNeT++ and which assumptions bound the model.}
 
 \subsection{Task Remapping}
 
-A workload is represented as a directed acyclic graph $\mathcal{G}=(\mathcal{T},\mathcal{E})$, where each task has a nominal execution time and each edge carries a data dependency. A mapping $M:\mathcal{T}\rightarrow\mathcal{P}$ assigns tasks to PEs. The genetic algorithm encodes each individual as a complete task-to-PE assignment. For each candidate, the framework generates a temporary workload configuration and invokes the OMNeT++ simulator. The resulting metrics are parsed from simulator outputs and converted into a scalar fitness value.
+\noindent\textit{To be written: formulate the DAG workload, task-to-PE mapping vector, initial/reference mapping, and GA individual representation. This subsection should explain how a candidate mapping is converted into a temporary workload configuration and evaluated by the same simulator used for final validation.}
 
 \subsection{Multi-Objective Fitness}
 
-The optimizer minimizes a baseline-normalized objective:
-\begin{equation}
-\begin{aligned}
-\mathcal{F}(M) ={}& w_T f_T + w_\sigma f_\sigma + w_{\mathrm{hot}} f_{\mathrm{hot}}
-+ w_M f_M + w_H f_H \\
-&+ w_C f_C + w_D f_D + w_L f_L + w_E f_E .
-\end{aligned}
-\label{eq:fitness}
-\end{equation}
-Here, $f_T$ captures peak temperature, $f_\sigma$ captures temperature imbalance, $f_{\mathrm{hot}}$ counts over-threshold PEs, $f_M$ captures makespan, $f_H$ and $f_C$ capture communication distance and congestion, $f_D$ captures DVFS penalty, $f_L$ captures load imbalance, and $f_E$ captures total energy. Each term is normalized against the original static mapping for the same workload. Therefore, $\mathcal{F}(M)<\mathcal{F}(M_0)$ indicates a better system-level tradeoff than the baseline mapping.
+\noindent\textit{To be written: introduce the initial-mapping-normalized composite objective. The text should define the nine terms: peak temperature $T_{\max}$, temperature imbalance $\sigma_T$, hot-PE count $N_{\mathrm{hot}}$, makespan, communication cost, congestion proxy, DVFS penalty, load imbalance, and total energy. It should also state that the weights express the paper's full-system design priority rather than being tuned post hoc to favor one method.}
 
 \section{Results}
 
-We evaluate the method on four DAG workloads: GEMM, MPEG4, VOPD, and HNN. The proposed remapping reduces the composite objective for all workloads, but the source of improvement depends on workload structure.
+\noindent\textit{To be written: open the section with the experimental setting, workload list, and comparator definitions. Use ``ReferenceMapping'' only as a normalization anchor / initial mapping, while treating Thermal-SA-TAS and CommAware-Heuristic as external baseline methods with narrower native objectives.}
 
-\begin{table}[t]
-\centering
-\caption{Summary of workload-dependent effects.}
-\label{tab:summary}
-\begin{tabular}{lccc}
-\toprule
-\textbf{Workload} & \textbf{Thermal Effect} & \textbf{Makespan} & \textbf{Energy} \\
-\midrule
-GEMM & improved & $-3.1\%$ & $-3.4\%$ \\
-MPEG4 & improved & $-25.3\%$ & $-14.5\%$ \\
-VOPD & mixed & $-51.6\%$ & $-33.0\%$ \\
-HNN & safer hotspots & $+29.6\%$ & $-1.7\%$ \\
-\bottomrule
-\end{tabular}
-\end{table}
+\noindent\textit{Figure 2 placeholder: insert the full-objective comparable score figure here. It should be discussed as a comparable score under the proposed full-system objective; ReferenceMapping is the normalization anchor, not a baseline method.}
 
-GEMM and MPEG4 represent favorable cases in which thermal, performance, communication, and energy metrics improve together. GEMM reduces peak temperature by \SI{2.04}{\degreeCelsius}, removes all six hot PEs, and reduces makespan by 3.1\%. MPEG4 reduces peak temperature by \SI{1.69}{\degreeCelsius}, reduces makespan by 25.3\%, and reduces total energy by 14.5\%.
+\noindent\textit{To be written: use Figure 2 to report the overall score ranking. The paragraph should emphasize that Full-GA directly optimizes this objective, so the figure demonstrates its behavior under the proposed design objective but should not be used alone as a universal fairness claim.}
 
-VOPD shows a performance- and energy-oriented tradeoff. Makespan decreases by 51.6\% and total energy decreases by 33.0\%, but the temperature standard deviation increases. This case shows that a lower composite cost does not necessarily require every thermal metric to improve when the workload remains below the hot-PE threshold.
+\noindent\textit{Figure 3 placeholder: insert the workload-level normalized-term decomposition here, with panels for GEMM, MPEG4, VOPD, and HNN. The figure should break the objective into thermal safety ($T_{\max}$, $\sigma_T$, and $N_{\mathrm{hot}}$), performance (makespan and DVFS), communication pressure (communication cost and congestion proxy), mapping balance (load imbalance), and energy (total energy).}
 
-HNN shows a thermal-safety-oriented tradeoff. The number of hot PEs decreases from 16 to 4, and the average DVFS penalty decreases from 11.01\% to 0.63\%. However, makespan increases by 29.6\%. This result highlights the need to evaluate ONoC task remapping as a coupled optimization problem rather than a single-metric minimization task.
+\noindent\textit{To be written: use Figure 3 to explain where the score reduction comes from. GEMM and MPEG4 should be framed as favorable cases with broad improvements. VOPD should be framed as a performance/energy-oriented tradeoff, without claiming that all thermal terms improve. HNN should be framed as the main multi-objective tradeoff case: hotspot/DVFS-related safety improves, while makespan can worsen relative to the initial mapping.}
 
 \section{Conclusion}
 
-This paper presents a simulator-in-the-loop task remapping framework for thermally stable silicon-photonic ONoCs. By evaluating each candidate mapping with a full-system OMNeT++ model, the framework captures the coupling among task placement, PE heat generation, MRR alignment, optical transmission activity, SOA activation, DVFS feedback, and application performance. Results across four workloads show that task remapping can reduce the composite thermal-optical-performance cost, but the best mapping is workload dependent. These findings support task remapping as a system-level control mechanism that complements device-level tuning, wavelength assignment, and routing in ONoC thermal management.
+\noindent\textit{To be written: close with four points: the contribution of simulator-in-the-loop task remapping for ONoC thermal management, the decisive evidence from the full-objective score and metric-level decomposition, the implication that mapping can act as a system-level control variable alongside device-level tuning/routing/wavelength assignment, and the boundary that gains are workload dependent and should not be stated as uniform improvement across all metrics.}
 
 \begin{thebibliography}{00}
 

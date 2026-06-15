@@ -1,0 +1,11 @@
+[
+  {
+    "benchmark": "gemm",
+    "mode": "full",
+    "original_cost": 6.000000000000001,
+    "thermal_greedy_cost": 5.27109923107105,
+    "original_proxy_score": 2.8134267121837917,
+    "thermal_greedy_proxy_score": 2.7526680969900745,
+    "elapsed_s": 0.9597519999988435
+  }
+]

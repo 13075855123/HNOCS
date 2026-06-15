@@ -1,0 +1,31 @@
+{
+  "source_reference": "D:\\HNOCS\\document\\figures\\figure1_framework\\figure1_framework_gpt_image2_alt.png",
+  "method": "manual structured redraw with Python/matplotlib; not bitmap autotrace",
+  "backend": "Python/matplotlib",
+  "editable_text": "SVG generated with svg.fonttype=none",
+  "outputs": {
+    "svg": {
+      "path": "D:\\HNOCS\\document\\figures\\figure1_framework\\figure1_framework_gpt_image2_alt_editable.svg",
+      "bytes": 125917
+    },
+    "pdf": {
+      "path": "D:\\HNOCS\\document\\figures\\figure1_framework\\figure1_framework_gpt_image2_alt_editable.pdf",
+      "bytes": 73312
+    },
+    "png_preview": {
+      "path": "D:\\HNOCS\\document\\figures\\figure1_framework\\figure1_framework_gpt_image2_alt_editable.png",
+      "bytes": 1288060,
+      "width_px": 10182,
+      "height_px": 5597
+    }
+  },
+  "text_overlap_check": {
+    "major_overlap_count": 0,
+    "major_overlaps": []
+  },
+  "notes": [
+    "The output is an editable vector reconstruction of the AI raster design.",
+    "It preserves the five-module layout, central ONoC hero panel, metric blocks, and feedback loop.",
+    "Text and shapes are separately editable in SVG-capable editors, subject to each editor's SVG import behavior."
+  ]
+}

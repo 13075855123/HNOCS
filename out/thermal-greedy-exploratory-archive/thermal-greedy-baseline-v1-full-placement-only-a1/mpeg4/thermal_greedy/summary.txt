@@ -1,0 +1,6 @@
+[mpeg4] ThermalGreedy
+  TR2 cost:    6.0000 -> 4.4883
+  proxy score: 4.1588 -> 3.6449
+  T_max K:     327.597 -> 326.340
+  sigma_T K:   1.300 -> 1.276
+  makespan s:  0.00012207 -> 0.000122152

@@ -1,0 +1,122 @@
+{
+  "method": "thermal_greedy",
+  "method_label": "TAPP-inspired ThermalGreedy",
+  "not_exact_reproduction": true,
+  "search_objective": "compute_time heat proxy plus center penalty and weak communication tie-breaker",
+  "forbidden_search_inputs": [
+    "OMNeT++ final peak temperature",
+    "DVFS penalty",
+    "optical tuning energy",
+    "makespan",
+    "TR2_composite_cost"
+  ],
+  "config": {
+    "rows": 4,
+    "cols": 4,
+    "alpha_sigma": 0.5,
+    "alpha_center": 0.1,
+    "beta_comm": 0.05,
+    "heat_weight_mode": "baseline_temp"
+  },
+  "task_order": [
+    4,
+    2,
+    5,
+    3,
+    6,
+    7,
+    8,
+    9,
+    10,
+    1
+  ],
+  "heat_weights": {
+    "1": 15146.581703090038,
+    "2": 50427.977701072225,
+    "3": 50248.594493616896,
+    "4": 50427.98375031057,
+    "5": 50248.59601131184,
+    "6": 30293.163406180076,
+    "7": 30292.355722772878,
+    "8": 30292.276212119945,
+    "9": 30292.225175576717,
+    "10": 20049.547620905974
+  },
+  "baseline_comm_cost": 104448.0,
+  "original": {
+    "score": 2.8153330552113336,
+    "max_load": 50427.98375031057,
+    "std_load": 21444.308634204997,
+    "ideal_load": 22357.456362309822,
+    "max_load_norm": 2.2555331399560288,
+    "std_load_norm": 0.9591569043764653,
+    "center_heat_penalty": 0.3022146306707231,
+    "raw_comm_cost": 104448.0,
+    "normalized_comm": 1.0,
+    "estimated_heat_load": [
+      45439.745109270116,
+      30292.355722772878,
+      30292.276212119945,
+      30292.225175576717,
+      50427.977701072225,
+      50248.594493616896,
+      0.0,
+      0.0,
+      50427.98375031057,
+      50248.59601131184,
+      0.0,
+      0.0,
+      20049.547620905974,
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "thermal_greedy": {
+    "score": 2.7544682164393968,
+    "max_load": 50427.98375031057,
+    "std_load": 20062.493326527077,
+    "ideal_load": 22357.456362309822,
+    "max_load_norm": 2.2555331399560288,
+    "std_load_norm": 0.8973513355637545,
+    "center_heat_penalty": 0.13984898897569692,
+    "raw_comm_cost": 75776.0,
+    "normalized_comm": 0.7254901960784313,
+    "estimated_heat_load": [
+      30293.163406180076,
+      30292.276212119945,
+      50427.977701072225,
+      50427.98375031057,
+      20049.547620905974,
+      0.0,
+      0.0,
+      15146.581703090038,
+      30292.355722772878,
+      0.0,
+      0.0,
+      50248.594493616896,
+      30292.225175576717,
+      0.0,
+      0.0,
+      50248.59601131184
+    ]
+  },
+  "assignment": {
+    "1": 7,
+    "2": 2,
+    "3": 11,
+    "4": 3,
+    "5": 15,
+    "6": 0,
+    "7": 8,
+    "8": 1,
+    "9": 12,
+    "10": 4
+  },
+  "local_swap": {
+    "enabled": true,
+    "passes": 2,
+    "accepted_swaps": 5,
+    "final_score": 2.7544682164393968
+  }
+}

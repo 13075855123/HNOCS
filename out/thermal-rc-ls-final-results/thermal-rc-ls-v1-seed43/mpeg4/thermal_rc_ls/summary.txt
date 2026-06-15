@@ -1,0 +1,8 @@
+[mpeg4] ThermalRC-LS
+  calibration: calibrated_distance_bins
+  TR2 cost:    6.0000 -> 4.5116
+  proxy score: 1.0000 -> 0.8202
+  T_max K:     327.597 -> 326.854
+  sigma_T K:   1.300 -> 1.151
+  hot PE:      2 -> 0
+  makespan s:  0.00012207 -> 0.000122248

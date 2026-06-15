@@ -1,0 +1,6 @@
+[vopd] Thermal-SA-TAS
+  TR2 cost:    5.0000 -> 4.4167
+  proxy score: 1.3100 -> 1.1662
+  T_max K:     325.373 -> 325.019
+  sigma_T K:   0.987 -> 0.935
+  makespan s:  8.93329e-05 -> 8.76008e-05

@@ -1,0 +1,8 @@
+[gemm] ThermalRC-LS
+  calibration: calibrated_distance_bins
+  TR2 cost:    6.0000 -> 4.3679
+  proxy score: 1.0000 -> 0.9697
+  T_max K:     328.084 -> 326.806
+  sigma_T K:   2.143 -> 1.604
+  hot PE:      6 -> 0
+  makespan s:  0.000120405 -> 0.000116837

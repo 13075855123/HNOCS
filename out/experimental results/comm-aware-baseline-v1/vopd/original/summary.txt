@@ -1,0 +1,5 @@
+[vopd] Original
+  TR2_composite_cost: 5.0000
+  raw_comm_cost:      1396000
+  raw_congestion:     252000
+  makespan:           89.33 us

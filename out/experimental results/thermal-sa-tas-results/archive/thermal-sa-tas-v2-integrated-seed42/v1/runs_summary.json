@@ -1,0 +1,46 @@
+[
+  {
+    "benchmark": "gemm",
+    "mode": "full",
+    "original_cost": 6.000000000000001,
+    "thermal_sa_tas_cost": 4.863922395063637,
+    "original_proxy_score": 1.0,
+    "thermal_sa_tas_proxy_score": 0.9714514625400258,
+    "iterations": 2000,
+    "converged": true,
+    "elapsed_s": 3.849572199999784
+  },
+  {
+    "benchmark": "mpeg4",
+    "mode": "full",
+    "original_cost": 6.000000000000001,
+    "thermal_sa_tas_cost": 4.647607573474175,
+    "original_proxy_score": 1.0,
+    "thermal_sa_tas_proxy_score": 0.860819828491115,
+    "iterations": 2000,
+    "converged": true,
+    "elapsed_s": 3.2552952000000914
+  },
+  {
+    "benchmark": "vopd",
+    "mode": "full",
+    "original_cost": 5.0,
+    "thermal_sa_tas_cost": 4.958442029633455,
+    "original_proxy_score": 0.9,
+    "thermal_sa_tas_proxy_score": 0.8787399538810083,
+    "iterations": 1856,
+    "converged": true,
+    "elapsed_s": 3.555257200000142
+  },
+  {
+    "benchmark": "hnn",
+    "mode": "full",
+    "original_cost": 6.000000000000001,
+    "thermal_sa_tas_cost": 6.311718120169917,
+    "original_proxy_score": 1.0,
+    "thermal_sa_tas_proxy_score": 0.840561030844235,
+    "iterations": 1107,
+    "converged": true,
+    "elapsed_s": 13.33020499999975
+  }
+]

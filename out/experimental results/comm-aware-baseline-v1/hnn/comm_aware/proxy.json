@@ -1,0 +1,142 @@
+{
+  "name": "hnn",
+  "kind": "CommAware-Heuristic",
+  "config": {
+    "source_csv": "D:\\HNOCS\\examples\\task_driven\\static\\tasks_hnn_static.csv",
+    "rows": 4,
+    "cols": 4,
+    "num_pes": 16,
+    "weights": {
+      "w_T": 1.0,
+      "w_sigma": 1.0,
+      "w_hot": 0.6,
+      "w_makespan": 1.2,
+      "w_H": 0.4,
+      "w_congestion": 0.7,
+      "w_D": 0.4,
+      "w_L": 0.2,
+      "w_E": 0.5,
+      "w_peak": 0.0
+    },
+    "cost_reference": {
+      "peak_excess_K": 10.667576241619997,
+      "sigma_T_K": 2.454372247071413,
+      "N_hot": 16.0,
+      "makespan_s": 0.000203177525,
+      "pe_optical_comm_energy_J": 0.004651317011228462,
+      "eta_dvfs_pct": 11.14198573637825,
+      "comm_cost": 2195456.0,
+      "congestion_cost": 163840.0,
+      "load_imbalance": 0.3028095733610822
+    },
+    "mapper": {
+      "center_candidates": [
+        5,
+        6,
+        9,
+        10
+      ],
+      "local_swap_passes": 5,
+      "enable_local_swap": true
+    },
+    "proxy": {
+      "rows": 4,
+      "cols": 4,
+      "lambda_cong": 0.25
+    },
+    "objective": "raw_comm_cost + lambda_cong * max_edge_load",
+    "tie_breaker": "lower raw_load_imbalance, then lexicographically smaller task->PE assignment"
+  },
+  "diagnostics": {
+    "method": "comm_aware",
+    "paper_label": "CommAware-Heuristic",
+    "claim_scope": "literature-inspired communication-aware heuristic; not an exact reproduction",
+    "seed_task": 29,
+    "seed_pe": 5,
+    "initial_score": {
+      "raw_comm_cost": 163840.0,
+      "max_edge_load": 49152.0,
+      "comm_proxy": 176128.0
+    },
+    "final_score": {
+      "raw_comm_cost": 163840.0,
+      "max_edge_load": 49152.0,
+      "comm_proxy": 176128.0
+    },
+    "original_score": {
+      "raw_comm_cost": 2195456.0,
+      "max_edge_load": 163840.0,
+      "comm_proxy": 2236416.0
+    },
+    "comm_degree": {
+      "1": 16384.0,
+      "2": 16384.0,
+      "3": 16384.0,
+      "4": 16384.0,
+      "5": 40960.0,
+      "6": 40960.0,
+      "7": 40960.0,
+      "8": 40960.0,
+      "9": 40960.0,
+      "10": 40960.0,
+      "11": 40960.0,
+      "12": 40960.0,
+      "13": 49152.0,
+      "14": 49152.0,
+      "15": 49152.0,
+      "16": 49152.0,
+      "17": 49152.0,
+      "18": 49152.0,
+      "19": 49152.0,
+      "20": 49152.0,
+      "21": 49152.0,
+      "22": 49152.0,
+      "23": 49152.0,
+      "24": 49152.0,
+      "25": 49152.0,
+      "26": 49152.0,
+      "27": 49152.0,
+      "28": 49152.0,
+      "29": 131072.0,
+      "30": 131072.0,
+      "31": 131072.0,
+      "32": 131072.0
+    },
+    "local_swap_passes": 1,
+    "accepted_swaps": 0,
+    "assignment": {
+      "1": 0,
+      "2": 1,
+      "3": 4,
+      "4": 6,
+      "5": 5,
+      "6": 0,
+      "7": 1,
+      "8": 2,
+      "9": 4,
+      "10": 1,
+      "11": 2,
+      "12": 4,
+      "13": 5,
+      "14": 5,
+      "15": 0,
+      "16": 0,
+      "17": 1,
+      "18": 1,
+      "19": 2,
+      "20": 2,
+      "21": 5,
+      "22": 0,
+      "23": 1,
+      "24": 2,
+      "25": 1,
+      "26": 2,
+      "27": 5,
+      "28": 0,
+      "29": 5,
+      "30": 0,
+      "31": 1,
+      "32": 2
+    }
+  }
+}

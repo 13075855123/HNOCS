@@ -1,0 +1,46 @@
+source_root,metrics_node,canonical_field,candidate_paths,notes
+B-2-v4,baseline or b2,T_max_K,cost_terms.T_max_K; thermal.T1_pe_peak_temp_K,raw field used for full-objective rescore
+B-2-v4,baseline or b2,sigma_T_K,cost_terms.sigma_T_K; thermal.T3_temp_std_K,raw field used for full-objective rescore
+B-2-v4,baseline or b2,N_hot,cost_terms.N_hot; thermal.T5_over_throttle_count,raw field used for full-objective rescore
+B-2-v4,baseline or b2,makespan_s,cost_terms.makespan_s; performance.P1_makespan_s,raw field used for full-objective rescore
+B-2-v4,baseline or b2,eta_dvfs_pct,cost_terms.eta_dvfs_pct; performance.P3_dvfs_penalty_pct,raw field used for full-objective rescore
+B-2-v4,baseline or b2,raw_comm_cost,cost_terms.raw_comm_cost; communication.C1_total_comm_cost,raw field used for full-objective rescore
+B-2-v4,baseline or b2,raw_congestion_cost,cost_terms.raw_congestion_cost,raw field used for full-objective rescore
+B-2-v4,baseline or b2,raw_load_imbalance,cost_terms.raw_load_imbalance,raw field used for full-objective rescore
+B-2-v4,baseline or b2,pe_optical_comm_energy_J,cost_terms.pe_optical_comm_energy_J; energy.E7_pe_optical_comm_energy_J,raw field used for full-objective rescore
+B-2-v4-ablation,baseline or b2,T_max_K,cost_terms.T_max_K; thermal.T1_pe_peak_temp_K,raw field used for full-objective rescore
+B-2-v4-ablation,baseline or b2,sigma_T_K,cost_terms.sigma_T_K; thermal.T3_temp_std_K,raw field used for full-objective rescore
+B-2-v4-ablation,baseline or b2,N_hot,cost_terms.N_hot; thermal.T5_over_throttle_count,raw field used for full-objective rescore
+B-2-v4-ablation,baseline or b2,makespan_s,cost_terms.makespan_s; performance.P1_makespan_s,raw field used for full-objective rescore
+B-2-v4-ablation,baseline or b2,eta_dvfs_pct,cost_terms.eta_dvfs_pct; performance.P3_dvfs_penalty_pct,raw field used for full-objective rescore
+B-2-v4-ablation,baseline or b2,raw_comm_cost,cost_terms.raw_comm_cost; communication.C1_total_comm_cost,raw field used for full-objective rescore
+B-2-v4-ablation,baseline or b2,raw_congestion_cost,cost_terms.raw_congestion_cost,raw field used for full-objective rescore
+B-2-v4-ablation,baseline or b2,raw_load_imbalance,cost_terms.raw_load_imbalance,raw field used for full-objective rescore
+B-2-v4-ablation,baseline or b2,pe_optical_comm_energy_J,cost_terms.pe_optical_comm_energy_J; energy.E7_pe_optical_comm_energy_J,raw field used for full-objective rescore
+random-mapping-ensemble-v2,metrics wrapper or selected metrics,T_max_K,cost_terms.T_max_K; thermal.T1_pe_peak_temp_K,raw field used for full-objective rescore
+random-mapping-ensemble-v2,metrics wrapper or selected metrics,sigma_T_K,cost_terms.sigma_T_K; thermal.T3_temp_std_K,raw field used for full-objective rescore
+random-mapping-ensemble-v2,metrics wrapper or selected metrics,N_hot,cost_terms.N_hot; thermal.T5_over_throttle_count,raw field used for full-objective rescore
+random-mapping-ensemble-v2,metrics wrapper or selected metrics,makespan_s,cost_terms.makespan_s; performance.P1_makespan_s,raw field used for full-objective rescore
+random-mapping-ensemble-v2,metrics wrapper or selected metrics,eta_dvfs_pct,cost_terms.eta_dvfs_pct; performance.P3_dvfs_penalty_pct,raw field used for full-objective rescore
+random-mapping-ensemble-v2,metrics wrapper or selected metrics,raw_comm_cost,cost_terms.raw_comm_cost; communication.C1_total_comm_cost,raw field used for full-objective rescore
+random-mapping-ensemble-v2,metrics wrapper or selected metrics,raw_congestion_cost,cost_terms.raw_congestion_cost,raw field used for full-objective rescore
+random-mapping-ensemble-v2,metrics wrapper or selected metrics,raw_load_imbalance,cost_terms.raw_load_imbalance,raw field used for full-objective rescore
+random-mapping-ensemble-v2,metrics wrapper or selected metrics,pe_optical_comm_energy_J,cost_terms.pe_optical_comm_energy_J; energy.E7_pe_optical_comm_energy_J,raw field used for full-objective rescore
+comm-aware-baseline-v1,top-level metrics,T_max_K,cost_terms.T_max_K; thermal.T1_pe_peak_temp_K,raw field used for full-objective rescore
+comm-aware-baseline-v1,top-level metrics,sigma_T_K,cost_terms.sigma_T_K; thermal.T3_temp_std_K,raw field used for full-objective rescore
+comm-aware-baseline-v1,top-level metrics,N_hot,cost_terms.N_hot; thermal.T5_over_throttle_count,raw field used for full-objective rescore
+comm-aware-baseline-v1,top-level metrics,makespan_s,cost_terms.makespan_s; performance.P1_makespan_s,raw field used for full-objective rescore
+comm-aware-baseline-v1,top-level metrics,eta_dvfs_pct,cost_terms.eta_dvfs_pct; performance.P3_dvfs_penalty_pct,raw field used for full-objective rescore
+comm-aware-baseline-v1,top-level metrics,raw_comm_cost,cost_terms.raw_comm_cost; communication.C1_total_comm_cost,raw field used for full-objective rescore
+comm-aware-baseline-v1,top-level metrics,raw_congestion_cost,cost_terms.raw_congestion_cost,raw field used for full-objective rescore
+comm-aware-baseline-v1,top-level metrics,raw_load_imbalance,cost_terms.raw_load_imbalance,raw field used for full-objective rescore
+comm-aware-baseline-v1,top-level metrics,pe_optical_comm_energy_J,cost_terms.pe_optical_comm_energy_J; energy.E7_pe_optical_comm_energy_J,raw field used for full-objective rescore
+thermal-sa-tas-results,metrics wrapper,T_max_K,cost_terms.T_max_K; thermal.T1_pe_peak_temp_K,raw field used for full-objective rescore
+thermal-sa-tas-results,metrics wrapper,sigma_T_K,cost_terms.sigma_T_K; thermal.T3_temp_std_K,raw field used for full-objective rescore
+thermal-sa-tas-results,metrics wrapper,N_hot,cost_terms.N_hot; thermal.T5_over_throttle_count,raw field used for full-objective rescore
+thermal-sa-tas-results,metrics wrapper,makespan_s,cost_terms.makespan_s; performance.P1_makespan_s,raw field used for full-objective rescore
+thermal-sa-tas-results,metrics wrapper,eta_dvfs_pct,cost_terms.eta_dvfs_pct; performance.P3_dvfs_penalty_pct,raw field used for full-objective rescore
+thermal-sa-tas-results,metrics wrapper,raw_comm_cost,cost_terms.raw_comm_cost; communication.C1_total_comm_cost,raw field used for full-objective rescore
+thermal-sa-tas-results,metrics wrapper,raw_congestion_cost,cost_terms.raw_congestion_cost,raw field used for full-objective rescore
+thermal-sa-tas-results,metrics wrapper,raw_load_imbalance,cost_terms.raw_load_imbalance,raw field used for full-objective rescore
+thermal-sa-tas-results,metrics wrapper,pe_optical_comm_energy_J,cost_terms.pe_optical_comm_energy_J; energy.E7_pe_optical_comm_energy_J,raw field used for full-objective rescore

@@ -1,0 +1,2 @@
+benchmark,mode,original_cost,thermal_greedy_cost,original_proxy_score,thermal_greedy_proxy_score,elapsed_s
+gemm,full,6.000000000000001,5.27109923107105,2.8134267121837917,2.7526680969900745,0.9597519999988435
